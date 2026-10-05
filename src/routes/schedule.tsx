@@ -45,7 +45,9 @@ function SchedulePage() {
   };
 
   const todayKey = toDateKey(new Date());
-  const weekLabel = `${days[0].toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${days[6].toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`;
+  const firstDay = days[0]!;
+  const lastDay = days[6]!;
+  const weekLabel = `${firstDay.toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${lastDay.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`;
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">
@@ -103,7 +105,7 @@ function SchedulePage() {
       </div>
 
       <p className="mt-6 text-sm text-muted-foreground">
-        Studio hours: {formatTime(TIME_SLOTS[0])} – {formatTime(TIME_SLOTS[TIME_SLOTS.length - 1])}, Monday–Sunday.{" "}
+        Studio hours: {formatTime(TIME_SLOTS[0]!)} – {formatTime(TIME_SLOTS[TIME_SLOTS.length - 1]!)}, Monday–Sunday.{" "}
         <Link to="/book" className="font-medium text-primary underline underline-offset-4">
           Book a new appointment
         </Link>

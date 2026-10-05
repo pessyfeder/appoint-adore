@@ -86,7 +86,7 @@ export function toDateKey(d: Date): string {
 }
 
 export function formatTime(t: string): string {
-  const [h, m] = t.split(":").map(Number);
+  const [h = 0, m = 0] = t.split(":").map(Number);
   const ampm = h >= 12 ? "PM" : "AM";
   const hr = h % 12 === 0 ? 12 : h % 12;
   return `${hr}:${String(m).padStart(2, "0")} ${ampm}`;
