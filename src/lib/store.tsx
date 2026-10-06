@@ -20,6 +20,7 @@ type Store = StoreState & {
   setClientStatus: (appointmentId: string, clientId: string, status: Appointment["clients"][number]["status"]) => void;
   addPayment: (input: { clientId: string; amount: number; method: Payment["method"]; notes: string }) => void;
   addBlockedTime: (input: Omit<BlockedTime, "id">) => void;
+  removeBlockedTime: (id: string) => void;
   startClient: (appointmentId: string, clientId: string) => void;
   endClient: (appointmentId: string) => EndSummary | null;
   correctTimes: (appointmentId: string, input: { durationMin: number; clients: { clientId: string; startedAt: string; endedAt?: string }[] }) => void;
@@ -155,6 +156,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     addBlockedTime(input) {
       const parsed = blockedSchema.parse(input);
       setState((current) => ({ ...current, blockedTimes: [...current.blockedTimes, { ...parsed, id: nextId("blocked") }] }));
+    },
+    removeBlockedTime(id) {
+      setState((current) => ({ ...current, blockedTimes: current.blockedTimes.filter((item) => item.id !== id) }));
     },
   }), [ready, state, highlightId]);
 
