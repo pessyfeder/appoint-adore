@@ -123,6 +123,7 @@ function ClientsPage() {
       <p className="text-xs font-medium uppercase text-muted-foreground">Practitioner only</p>
       <h1 className="mt-1 font-serif text-3xl">Clients &amp; Billing</h1>
     <section className="mt-5">
+      <h2 className="font-serif text-2xl">Clients</h2>
     <div className="mt-2 flex justify-end">
       <Button className="h-11" variant="outline" onClick={() => startNew()}><UserPlus /> New client</Button>
     </div>
