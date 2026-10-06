@@ -16,6 +16,8 @@ export type AppointmentClient = {
 
 export type Appointment = {
   id: string;
+  startedAt?: string;
+  endedAt?: string;
   date: string;
   time: string;
   durationMin: number;
@@ -152,3 +154,15 @@ export function notesIssue(raw: string): string | null {
   }
   return null;
 }
+
+export type AppointmentProgress = "scheduled" | "in_progress" | "ended" | "cancelled";
+
+export function appointmentProgress(item: Appointment): AppointmentProgress {
+  if (item.endedAt) return "ended";
+  if (item.startedAt) return "in_progress";
+  if (item.clients.every((client) => client.status === "cancelled")) return "cancelled";
+  if (item.clients.every((client) => client.status !== "scheduled")) return "ended";
+  return "scheduled";
+}
+
+export const PROGRESS_LABEL: Record<AppointmentProgress, string> = { scheduled: "Scheduled", in_progress: "In progress", ended: "Ended", cancelled: "Cancelled" };

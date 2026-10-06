@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, UserPlus } from "lucide-react";
@@ -58,7 +59,9 @@ function BookPage() {
     const issue = validateAppointment({ date, time, durationMin, ...(edit ? { excludeId: edit } : {}) }, store.appointments, store.blockedTimes);
     if (issue) { setError(issue); setStep(1); return; }
     const input = { date, time, durationMin, clientIds, notes };
-    if (edit) store.updateAppointment(edit, input); else store.addAppointment(input);
+    const savedId = edit ? (store.updateAppointment(edit, input), edit) : store.addAppointment(input).id;
+    store.setHighlightId(savedId);
+    toast.success(edit ? "Appointment updated" : "Appointment confirmed", { description: `${fromDateKey(date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} at ${formatTime(time)}` });
     navigate({ to: "/schedule" });
   }
 

@@ -17,6 +17,10 @@ type Store = StoreState & {
   setClientStatus: (appointmentId: string, clientId: string, status: Appointment["clients"][number]["status"]) => void;
   addPayment: (input: { clientId: string; amount: number; method: Payment["method"]; notes: string }) => void;
   addBlockedTime: (input: Omit<BlockedTime, "id">) => void;
+  startAppointment: (id: string) => void;
+  endAppointment: (id: string) => void;
+  highlightId: string | null;
+  setHighlightId: (id: string | null) => void;
 };
 
 const StoreContext = createContext<Store | null>(null);
@@ -28,6 +32,7 @@ function nextId(prefix: string) {
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<StoreState>(() => makeSeedData());
   const [ready, setReady] = useState(false);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = window.localStorage.getItem(STORAGE_KEY);
@@ -44,6 +49,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const value = useMemo<Store>(() => ({
     ...state,
     ready,
+    highlightId,
+    setHighlightId,
+    startAppointment(id) {
+      setState((current) => ({ ...current, appointments: current.appointments.map((item) => item.id === id && !item.startedAt ? { ...item, startedAt: new Date().toISOString() } : item) }));
+    },
+    endAppointment(id) {
+      setState((current) => ({ ...current, appointments: current.appointments.map((item) => item.id === id && !item.endedAt ? { ...item, startedAt: item.startedAt ?? new Date().toISOString(), endedAt: new Date().toISOString(), clients: item.clients.map((client) => client.status === "scheduled" ? { ...client, status: "completed", charge: item.durationMin * 2.5 } : client) } : item) }));
+    },
     addClient(input) {
       const parsed = clientSchema.parse({ ...input, phone: formatPhone(input.phone) });
       const client: Client = { ...parsed, id: nextId("client"), createdAt: new Date().toISOString(), archived: false };
@@ -72,7 +85,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const parsed = blockedSchema.parse(input);
       setState((current) => ({ ...current, blockedTimes: [...current.blockedTimes, { ...parsed, id: nextId("blocked") }] }));
     },
-  }), [ready, state]);
+  }), [ready, state, highlightId]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }
