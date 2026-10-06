@@ -38,7 +38,7 @@ function ClientsPage() {
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState({ name: "", phone: "" });
   const [payOpen, setPayOpen] = useState(false);
-  const [billingFor, setBillingFor] = useState<string | null>(null);
+  const [pageUnlocked, setPageUnlocked] = useState(false);
 
   const selected = store.clients.find((client) => client.id === selectedId) ?? null;
   const balance = selected ? clientBalance(selected.id, store.appointments, store.payments) : 0;
