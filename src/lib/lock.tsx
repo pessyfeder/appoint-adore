@@ -1,3 +1,4 @@
+import type React from "react";
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,9 @@ type Lock = {
   confirmPassphrase: (action: string) => Promise<boolean>;
 };
 
-const LockContext = createContext<Lock | null>(null);
+// Keep one context instance across live code reloads, so the provider and its users never point at different copies.
+const contextHost = globalThis as unknown as { __lumiereLockContext?: React.Context<Lock | null> };
+const LockContext = contextHost.__lumiereLockContext ??= createContext<Lock | null>(null);
 
 export function useLock() {
   const lock = useContext(LockContext);
