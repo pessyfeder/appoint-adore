@@ -9,7 +9,7 @@ import { DURATION_OPTIONS, formatDuration, formatPhone, formatTime, fromDateKey,
 import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/book")({
-  validateSearch: (search: Record<string, unknown>) => ({ edit: typeof search.edit === "string" ? search.edit : undefined }),
+  validateSearch: (search: Record<string, unknown>) => ({ edit: typeof search["edit"] === "string" ? search["edit"] : undefined }),
   head: () => ({ meta: [
     { title: "New Appointment | Lumière Electrolysis" },
     { name: "description", content: "Schedule an electrolysis appointment safely within business hours." },
@@ -53,7 +53,7 @@ function BookPage() {
 
   function finish() {
     if (!time) return;
-    const issue = validateAppointment({ date, time, durationMin, excludeId: edit }, store.appointments, store.blockedTimes);
+    const issue = validateAppointment({ date, time, durationMin, ...(edit ? { excludeId: edit } : {}) }, store.appointments, store.blockedTimes);
     if (issue) { setError(issue); setStep(1); return; }
     const input = { date, time, durationMin, clientIds, notes };
     if (edit) store.updateAppointment(edit, input); else store.addAppointment(input);

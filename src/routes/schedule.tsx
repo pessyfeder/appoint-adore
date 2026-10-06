@@ -60,7 +60,7 @@ function SchedulePage() {
         <div><p className="text-xs font-medium uppercase text-muted-foreground">Calendar</p><h1 className="mt-1 font-serif text-3xl">Schedule</h1></div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" className="h-11" onClick={() => setBlockOpen(true)}><Clock3 /> Block time</Button>
-          <Button asChild className="h-11"><Link to="/book"><Plus /> New appointment</Link></Button>
+          <Button asChild className="h-11"><Link to="/book" search={{ edit: undefined }}><Plus /> New appointment</Link></Button>
         </div>
       </div>
 
