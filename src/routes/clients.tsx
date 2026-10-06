@@ -158,9 +158,19 @@ function ClientsPage() {
               <span className="block font-medium">{c.name}</span>
               <span className="block text-xs text-muted-foreground">{c.phone}</span>
             </span>
-            <span className="text-right">
-              <span className={`block text-sm font-semibold ${owed > 0 ? "text-destructive" : ""}`}>${owed.toFixed(2)}</span>
-              <span className="block text-xs text-muted-foreground">balance</span>
+            <span className="flex items-center gap-3">
+              <span className="text-right">
+                <span className={`block text-sm font-semibold ${owed > 0 ? "text-destructive" : ""}`}>${owed.toFixed(2)}</span>
+                <span className="block text-xs text-muted-foreground">balance</span>
+              </span>
+              <span
+                role="button"
+                tabIndex={0}
+                aria-label={`View billing info for ${c.name}`}
+                onClick={(event) => { event.stopPropagation(); setBillingInfoId(c.id); }}
+                onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); event.stopPropagation(); setBillingInfoId(c.id); } }}
+                className="flex h-11 w-11 items-center justify-center rounded-md border text-muted-foreground"
+              ><ReceiptText className="h-4 w-4" /></span>
             </span>
           </button>
         </li>;
@@ -187,11 +197,15 @@ function ClientsPage() {
           <p className="text-xs text-muted-foreground">balance</p>
         </div>
       </div>
-      <Button className="mt-4 h-11" variant="outline" onClick={() => setPayOpen(true)}><CreditCard /> Record payment</Button>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button className="h-11" variant="outline" onClick={() => setBillingInfoId(selected.id)}><ReceiptText /> View billing info</Button>
+        <Button className="h-11" variant="outline" onClick={() => setPayOpen(true)}><CreditCard /> Record payment</Button>
+      </div>
       <p className="mt-4 text-sm text-muted-foreground">{visits} completed visit{visits === 1 ? "" : "s"}</p>
     </article> : <p className="mt-5 border border-dashed p-6 text-center text-sm text-muted-foreground">Start typing above to pull up a client, or create a new one.</p>}
 
     {selected && <RecordPaymentDialog open={payOpen} onOpenChange={setPayOpen} clientIds={[selected.id]} />}
+    <ClientBillingDialog client={store.clients.find((c) => c.id === billingInfoId) ?? null} onClose={() => setBillingInfoId(null)} />
       </TabsContent>
     </Tabs>
   </main>;
