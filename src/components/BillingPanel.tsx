@@ -9,6 +9,13 @@ import { buildReport, paymentsCsv, type LedgerRow } from "@/lib/billing";
 import { fromDateKey, toDateKey } from "@/lib/data";
 import { clientBalance } from "@/lib/scheduling";
 import { useStore } from "@/lib/store";
+import { collectionPriorities, type Priority } from "@/lib/collections";
+
+const PRIORITY_STYLE: Record<Priority, string> = {
+  high: "border-status-noshow/40 bg-status-noshow/15 text-status-noshow",
+  medium: "border-status-progress/40 bg-status-progress/15 text-status-progress",
+  low: "border-border bg-muted text-muted-foreground",
+};
 
 const money = (n: number) => `${n < 0 ? "-" : ""}$${Math.abs(n).toFixed(2)}`;
 
@@ -33,6 +40,7 @@ function BillingContent() {
   })).sort((a, b) => b.balance - a.balance), [store.clients, store.appointments, store.payments]);
   const report = useMemo(() => buildReport(from, to, store.appointments, store.payments, store.clients), [from, to, store.appointments, store.payments, store.clients]);
   const recent = [...store.payments].sort((a, b) => b.paidAt.localeCompare(a.paidAt)).slice(0, 8);
+  const priorities = useMemo(() => collectionPriorities(store.clients, store.appointments, store.payments), [store.clients, store.appointments, store.payments]);
 
   function exportCsv() {
     const blob = new Blob([paymentsCsv(from, to, store.payments, store.clients)], { type: "text/csv" });
@@ -44,6 +52,20 @@ function BillingContent() {
   }
 
   return <div>
+    <section className="mb-7 overflow-hidden rounded-xl border bg-card">
+      <div className="border-b p-5"><h2 className="font-serif text-xl">Collection priorities</h2><p className="mt-1 text-sm text-muted-foreground">Who to follow up with first, based on amount owed, how long it's been owed, missed appointments and last payment.</p></div>
+      {priorities.length === 0 ? <p className="p-6 text-center text-sm text-muted-foreground">No one owes anything right now.</p> : <ol className="divide-y">{priorities.map((p, i) => <li key={p.client.id} className="flex flex-wrap items-center gap-4 p-4">
+        <span className="w-6 text-center font-serif text-lg text-muted-foreground">{i + 1}</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2"><span className="font-medium">{p.client.name}</span><span className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${PRIORITY_STYLE[p.priority]}`}>{p.priority === "high" ? "High" : p.priority === "medium" ? "Medium" : "Low"} priority</span></div>
+          <p className="mt-1 text-sm text-muted-foreground">{p.reasons.join(" · ")}</p>
+          <p className="mt-1 text-sm font-medium">{p.action}</p>
+        </div>
+        <span className="font-semibold text-destructive">{money(p.balance)}</span>
+        <Button variant="outline" className="h-11" onClick={() => setPayClient(p.client.id)}><CreditCard /> Record payment</Button>
+      </li>)}</ol>}
+    </section>
+
 
     <section className="mt-2 rounded-xl border bg-card p-5">
       <h2 className="font-serif text-xl">Payment report</h2>
