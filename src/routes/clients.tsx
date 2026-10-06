@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { CreditCard, Lock, Phone, UserPlus } from "lucide-react";
+import { CreditCard, Lock, Phone, ReceiptText, UserPlus } from "lucide-react";
 import { BillingPanel } from "@/components/BillingPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RecordPaymentDialog } from "@/components/RecordPaymentDialog";
 import { ClientCombobox } from "@/components/ClientCombobox";
+import { ClientBillingDialog } from "@/components/ClientBillingDialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,7 @@ function ClientsPage() {
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState({ name: "", phone: "" });
   const [payOpen, setPayOpen] = useState(false);
+  const [billingInfoId, setBillingInfoId] = useState<string | null>(null);
   const [pageUnlocked, setPageUnlocked] = useState(false);
 
   const selected = store.clients.find((client) => client.id === selectedId) ?? null;
@@ -146,11 +148,11 @@ function ClientsPage() {
     <ul className="mt-4 divide-y border bg-card">
       {store.clients.filter((c) => !c.archived).map((c) => {
         const owed = clientBalance(c.id, store.appointments, store.payments);
-        return <li key={c.id}>
+        return <li key={c.id} className={`flex items-center gap-2 px-4 py-3 ${selectedId === c.id ? "bg-primary/10" : ""}`}>
           <button
             type="button"
             onClick={() => { setSelectedId(c.id); setCreating(false); }}
-            className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left ${selectedId === c.id ? "bg-primary/10" : ""}`}
+            className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
           >
             <span>
               <span className="block font-medium">{c.name}</span>
@@ -161,6 +163,12 @@ function ClientsPage() {
               <span className="block text-xs text-muted-foreground">balance</span>
             </span>
           </button>
+          <Button
+            variant="outline"
+            className="h-11 shrink-0"
+            aria-label={`View billing info for ${c.name}`}
+            onClick={() => setBillingInfoId(c.id)}
+          ><ReceiptText /> <span className="hidden sm:inline">Billing info</span></Button>
         </li>;
       })}
     </ul>
@@ -185,11 +193,15 @@ function ClientsPage() {
           <p className="text-xs text-muted-foreground">balance</p>
         </div>
       </div>
-      <Button className="mt-4 h-11" variant="outline" onClick={() => setPayOpen(true)}><CreditCard /> Record payment</Button>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button className="h-11" variant="outline" onClick={() => setBillingInfoId(selected.id)}><ReceiptText /> View billing info</Button>
+        <Button className="h-11" variant="outline" onClick={() => setPayOpen(true)}><CreditCard /> Record payment</Button>
+      </div>
       <p className="mt-4 text-sm text-muted-foreground">{visits} completed visit{visits === 1 ? "" : "s"}</p>
     </article> : <p className="mt-5 border border-dashed p-6 text-center text-sm text-muted-foreground">Start typing above to pull up a client, or create a new one.</p>}
 
     {selected && <RecordPaymentDialog open={payOpen} onOpenChange={setPayOpen} clientIds={[selected.id]} />}
+    <ClientBillingDialog client={store.clients.find((c) => c.id === billingInfoId) ?? null} onClose={() => setBillingInfoId(null)} />
       </TabsContent>
     </Tabs>
   </main>;
