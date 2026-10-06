@@ -91,7 +91,7 @@ function ClientsPage() {
       <ClientCombobox
         clients={store.clients}
         onNewClient={startNew}
-        onSelect={(client) => { setSelectedId(client.id); setCreating(false); setBillingFor(null); }}
+        onSelect={(client) => { setSelectedId(client.id); setCreating(false); }}
       />
       <p className="mt-2 text-xs text-muted-foreground">{store.clients.length} client{store.clients.length === 1 ? "" : "s"} on file</p>
     </div>
@@ -111,12 +111,12 @@ function ClientsPage() {
           <h2 className="font-serif text-2xl">{selected.name}</h2>
           <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground"><Phone className="h-4 w-4" /> {selected.phone}</p>
         </div>
-        {billingFor === selected.id ? <div className="text-right">
+        <div className="text-right">
           <p className={`text-xl font-semibold ${balance > 0 ? "text-destructive" : ""}`}>${balance.toFixed(2)}</p>
           <p className="text-xs text-muted-foreground">balance</p>
-        </div> : <Button variant="outline" className="h-11" onClick={showBilling}><Lock /> Show billing</Button>}
+        </div>
       </div>
-      {billingFor === selected.id && <Button className="mt-4 h-11" variant="outline" onClick={() => setPayOpen(true)}><CreditCard /> Record payment</Button>}
+      <Button className="mt-4 h-11" variant="outline" onClick={() => setPayOpen(true)}><CreditCard /> Record payment</Button>
       <p className="mt-4 text-sm text-muted-foreground">{visits} completed visit{visits === 1 ? "" : "s"}</p>
     </article> : <p className="mt-5 border border-dashed p-6 text-center text-sm text-muted-foreground">Start typing above to pull up a client, or create a new one.</p>}
 
