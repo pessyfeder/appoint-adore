@@ -143,6 +143,28 @@ function ClientsPage() {
       <p className="mt-2 text-xs text-muted-foreground">{store.clients.length} client{store.clients.length === 1 ? "" : "s"} on file</p>
     </div>
 
+    <ul className="mt-4 divide-y border bg-card">
+      {store.clients.filter((c) => !c.archived).map((c) => {
+        const owed = clientBalance(c.id, store.appointments, store.payments);
+        return <li key={c.id}>
+          <button
+            type="button"
+            onClick={() => { setSelectedId(c.id); setCreating(false); }}
+            className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left ${selectedId === c.id ? "bg-primary/10" : ""}`}
+          >
+            <span>
+              <span className="block font-medium">{c.name}</span>
+              <span className="block text-xs text-muted-foreground">{c.phone}</span>
+            </span>
+            <span className="text-right">
+              <span className={`block text-sm font-semibold ${owed > 0 ? "text-destructive" : ""}`}>${owed.toFixed(2)}</span>
+              <span className="block text-xs text-muted-foreground">balance</span>
+            </span>
+          </button>
+        </li>;
+      })}
+    </ul>
+
     {creating && <div className="mt-4 grid gap-2 border bg-card p-4 sm:grid-cols-[1fr_1fr_auto]">
       <Input className="h-11" placeholder="Full name" value={draft.name} onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))} />
       <Input className="h-11" inputMode="tel" placeholder="Phone" value={draft.phone} onChange={(event) => setDraft((current) => ({ ...current, phone: formatPhone(event.target.value) }))} />
