@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/ConfirmDialog";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { CLIENT_BADGE, CLIENT_LABEL, STATUS_CARD, StartEndControls, StatusBadge } from "@/components/AppointmentControls";
@@ -36,6 +37,8 @@ function clientNames(item: Appointment, clients: { id: string; name: string }[])
 
 function SchedulePage() {
   const { appointments, clients, blockedTimes, addBlockedTime, setClientStatus, highlightId, setHighlightId } = useStore();
+  const { confirm, dialog: confirmDialog } = useConfirm();
+  const cancelClient = async (...args: [string, string]) => { const n = clients.find((c) => c.id === args[1])?.name ?? "this client"; if (await confirm({ title: `Cancel ${n}'s appointment?`, description: "This frees the time slot. It can't be undone.", confirmLabel: "Cancel appointment", cancelLabel: "Keep appointment", destructive: true })) setClientStatus(args[0], args[1], "cancelled"); };
   const { request, prompt } = usePassphraseGate();
   const [view, setView] = useState<"week" | "month">("week");
   const [cursor, setCursor] = useState(() => new Date());
@@ -150,7 +153,7 @@ function SchedulePage() {
         <DialogFooter><Button onClick={saveBlock}>Save block</Button></DialogFooter>
       </DialogContent></Dialog>
       </div>
-    </main>
+    {confirmDialog}</main>
   );
 }
 
