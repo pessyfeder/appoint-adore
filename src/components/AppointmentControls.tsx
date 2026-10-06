@@ -45,7 +45,8 @@ export function StartEndControls({ item }: { item: Appointment }) {
   const name = (id: string) => clients.find((c) => c.id === id)?.name ?? "Client";
   const first = (id: string) => name(id).split(" ")[0];
   const running = item.clients.find(clientInSession);
-  const waiting = item.clients.find((c) => c.status === "scheduled" && !c.startedAt);
+  const waitingAll = item.clients.filter((c) => c.status === "scheduled" && !c.startedAt);
+  const waiting = waitingAll[0];
   const shared = item.clients.length > 1;
   async function start(clientId: string) { if (await confirmPassphrase(`Starting ${name(clientId)}'s session`)) startClient(item.id, clientId); }
   function end() { setSummary(endClient(item.id)); }
@@ -57,11 +58,11 @@ export function StartEndControls({ item }: { item: Appointment }) {
         <div className="flex justify-between p-4"><span className="text-muted-foreground">Duration</span><span className="font-semibold">{formatDuration(summary.minutes)}</span></div>
         <div className="flex justify-between p-4"><span className="text-muted-foreground">Amount owed</span><span className="text-lg font-semibold">${summary.amount.toFixed(2)}</span></div>
       </div>
-      {summary.nextClientId && <p className="rounded-lg bg-muted p-3 text-sm">{name(summary.nextClientId)} is still waiting on this appointment.</p>}
+      {summary.nextClientId && <p className="rounded-lg bg-muted p-3 text-sm">{waitingAll.length > 1 ? "Choose who to start next." : `${name(summary.nextClientId)} is still waiting on this appointment.`}</p>}
       <DialogFooter className="flex-wrap gap-2">
         <Button className="h-11" variant="outline" onClick={() => setSummary(null)}>Done</Button>
         <Button className="h-11" variant="outline" onClick={() => { setPaying(summary); setSummary(null); }}><CreditCard /> Record payment</Button>
-        {summary.nextClientId && <Button className="h-11" onClick={() => { const next = summary.nextClientId!; setSummary(null); void start(next); }}><Play /> Start {first(summary.nextClientId)}</Button>}
+        {waitingAll.map((c) => <Button key={c.clientId} className="h-11" onClick={() => { setSummary(null); void start(c.clientId); }}><Play /> Start {first(c.clientId)}</Button>)}
       </DialogFooter>
     </>}</DialogContent>
   </Dialog>;
@@ -69,7 +70,7 @@ export function StartEndControls({ item }: { item: Appointment }) {
   let control = null;
   if (running) control = <div className="flex items-center gap-2"><span className="text-xs text-muted-foreground">{shared ? `${first(running.clientId)} · ` : ""}started {clock(running.startedAt)}</span><Button className="h-11" variant="destructive" onClick={end}><Square /> End{shared ? ` ${first(running.clientId)}` : ""}</Button></div>;
   else if (waiting && busyElsewhere) control = <span className="text-xs text-muted-foreground">Another session is running</span>;
-  else if (waiting) control = <Button className="h-11" onClick={() => start(waiting.clientId)}><Play /> Start{shared ? ` ${first(waiting.clientId)}` : ""}</Button>;
+  else if (waiting) control = <div className="flex flex-wrap items-center gap-2">{waitingAll.map((c) => <Button key={c.clientId} className="h-11" onClick={() => start(c.clientId)}><Play /> Start{shared ? ` ${first(c.clientId)}` : ""}</Button>)}</div>;
   else if (item.startedAt && item.endedAt) control = <span className="text-xs text-muted-foreground">{clock(item.startedAt)} – {clock(item.endedAt)}</span>;
   return <>{control}{popup}{payment}</>;
 }

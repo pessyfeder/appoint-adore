@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CLIENT_BADGE, CLIENT_LABEL, STATUS_CARD, StartEndControls, StatusBadge } from "@/components/AppointmentControls";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { ChevronLeft, ChevronRight, Clock3, Plus, UserRound } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarPlus, Clock3, Plus, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -86,7 +86,7 @@ function SchedulePage() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" className="h-11" onClick={() => setBlockOpen(true)}><Clock3 className="opacity-60" /> Block time</Button>
-            <Button asChild className="h-11"><Link to="/book" search={{ edit: undefined }}><Plus /> New appointment</Link></Button>
+            <Button asChild className="h-11"><Link to="/book" search={{ edit: undefined }}><CalendarPlus /> New appointment</Link></Button>
           </div>
         </div>
 
