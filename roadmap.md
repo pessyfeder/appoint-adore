@@ -36,3 +36,4 @@
 - [x] Password confirms automatically while typing — no Confirm button after entering it
 - [x] Display the client list on Clients & Billing as in the earliest version
 - [x] Show payment status when clicking a completed appointment
+- [x] Remove tap-to-view money owed; billing stays practitioner-only
