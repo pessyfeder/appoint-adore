@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/ConfirmDialog";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { CLIENT_BADGE, CLIENT_LABEL, STATUS_CARD, StartEndControls, StatusBadge } from "@/components/AppointmentControls";
@@ -36,6 +37,8 @@ function clientNames(item: Appointment, clients: { id: string; name: string }[])
 
 function SchedulePage() {
   const { appointments, clients, blockedTimes, addBlockedTime, setClientStatus, highlightId, setHighlightId } = useStore();
+  const { confirm, dialog: confirmDialog } = useConfirm();
+  const cancelClient = async (...args: [string, string]) => { const n = clients.find((c) => c.id === args[1])?.name ?? "this client"; if (await confirm({ title: `Cancel ${n}'s appointment?`, description: "This frees the time slot. It can't be undone.", confirmLabel: "Cancel appointment", cancelLabel: "Keep appointment", destructive: true })) setClientStatus(args[0], args[1], "cancelled"); };
   const { request, prompt } = usePassphraseGate();
   const [view, setView] = useState<"week" | "month">("week");
   const [cursor, setCursor] = useState(() => new Date());
@@ -136,7 +139,7 @@ function SchedulePage() {
         <DialogContent>{current && <>
           <DialogHeader><DialogTitle>{clientNames(current, clients)}</DialogTitle><DialogDescription>{fromDateKey(current.date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} at {formatTime(current.time)} · {formatDuration(current.durationMin)}</DialogDescription></DialogHeader>
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/40 p-3"><StatusBadge item={current} /><StartEndControls item={current} /></div>
-          <div className="space-y-3">{current.clients.map((entry) => <div key={entry.clientId} className="flex flex-wrap items-center justify-between gap-2 border-b pb-3"><span>{clients.find((client) => client.id === entry.clientId)?.name}</span><div className="flex items-center gap-2"><span className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${entry.startedAt && !entry.endedAt ? "border-status-progress bg-status-progress text-foreground" : CLIENT_BADGE[entry.status]}`}>{entry.startedAt && !entry.endedAt ? "In progress" : CLIENT_LABEL[entry.status]}</span>{entry.status === "scheduled" && !entry.startedAt && <Button size="sm" variant="outline" className="h-10" onClick={() => setClientStatus(current.id, entry.clientId, "cancelled")}>Cancel</Button>}</div></div>)}</div>
+          <div className="space-y-3">{current.clients.map((entry) => <div key={entry.clientId} className="flex flex-wrap items-center justify-between gap-2 border-b pb-3"><span>{clients.find((client) => client.id === entry.clientId)?.name}</span><div className="flex items-center gap-2"><span className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${entry.startedAt && !entry.endedAt ? "border-status-progress bg-status-progress text-foreground" : CLIENT_BADGE[entry.status]}`}>{entry.startedAt && !entry.endedAt ? "In progress" : CLIENT_LABEL[entry.status]}</span>{entry.status === "scheduled" && !entry.startedAt && <Button size="sm" variant="outline" className="h-10" onClick={() => cancelClient(current.id, entry.clientId)}>Cancel</Button>}</div></div>)}</div>
           {current.notes && <p className="text-sm text-muted-foreground">{current.notes}</p>}
           {appointmentProgress(current) === "scheduled" && <DialogFooter><Button asChild variant="outline" className="h-11"><Link to="/book" search={{ edit: current.id }}>Reschedule</Link></Button></DialogFooter>}
         </>}</DialogContent>
@@ -150,7 +153,7 @@ function SchedulePage() {
         <DialogFooter><Button onClick={saveBlock}>Save block</Button></DialogFooter>
       </DialogContent></Dialog>
       </div>
-    </main>
+    {confirmDialog}</main>
   );
 }
 
