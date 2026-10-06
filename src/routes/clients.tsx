@@ -38,7 +38,7 @@ function ClientsPage() {
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState({ name: "", phone: "" });
   const [payOpen, setPayOpen] = useState(false);
-  const [billingFor, setBillingFor] = useState<string | null>(null);
+  const [pageUnlocked, setPageUnlocked] = useState(false);
 
   const selected = store.clients.find((client) => client.id === selectedId) ?? null;
   const balance = selected ? clientBalance(selected.id, store.appointments, store.payments) : 0;
@@ -60,16 +60,25 @@ function ClientsPage() {
     setDraft({ name: "", phone: "" });
   }
 
-  async function showBilling() {
-    if (!selected) return;
-    if (await confirmPassphrase("Viewing billing and payments")) setBillingFor(selected.id);
+  async function unlockPage() {
+    if (await confirmPassphrase("Viewing clients and billing")) setPageUnlocked(true);
   }
 
-
+  if (!pageUnlocked) {
+    return <main className="mx-auto max-w-5xl px-4 py-8">
+      <p className="text-xs font-medium uppercase text-muted-foreground">Practitioner only</p>
+      <h1 className="mt-1 font-serif text-3xl">Clients &amp; Billing</h1>
+      <div className="mt-8 flex flex-col items-center gap-4 border border-dashed p-10 text-center">
+        <Lock className="h-8 w-8 text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">Client records and billing are private. Enter your password to open this page.</p>
+        <Button className="h-11" onClick={unlockPage}><Lock /> Unlock Clients &amp; Billing</Button>
+      </div>
+    </main>;
+  }
 
   return <main className="mx-auto max-w-5xl px-4 py-8">
-    <p className="text-xs font-medium uppercase text-muted-foreground">Directory</p>
-    <h1 className="mt-1 font-serif text-3xl">Clients</h1>
+      <p className="text-xs font-medium uppercase text-muted-foreground">Practitioner only</p>
+      <h1 className="mt-1 font-serif text-3xl">Clients &amp; Billing</h1>
     <Tabs value={tab} onValueChange={(v) => navigate({ search: v === "billing" ? { tab: "billing" } : {} })} className="mt-5">
       <TabsList className="h-12"><TabsTrigger className="h-10 px-5" value="directory">Client list</TabsTrigger><TabsTrigger className="h-10 px-5" value="billing">Billing</TabsTrigger></TabsList>
       <TabsContent value="billing"><BillingPanel /></TabsContent>
@@ -82,7 +91,7 @@ function ClientsPage() {
       <ClientCombobox
         clients={store.clients}
         onNewClient={startNew}
-        onSelect={(client) => { setSelectedId(client.id); setCreating(false); setBillingFor(null); }}
+        onSelect={(client) => { setSelectedId(client.id); setCreating(false); }}
       />
       <p className="mt-2 text-xs text-muted-foreground">{store.clients.length} client{store.clients.length === 1 ? "" : "s"} on file</p>
     </div>
@@ -102,12 +111,12 @@ function ClientsPage() {
           <h2 className="font-serif text-2xl">{selected.name}</h2>
           <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground"><Phone className="h-4 w-4" /> {selected.phone}</p>
         </div>
-        {billingFor === selected.id ? <div className="text-right">
+        <div className="text-right">
           <p className={`text-xl font-semibold ${balance > 0 ? "text-destructive" : ""}`}>${balance.toFixed(2)}</p>
           <p className="text-xs text-muted-foreground">balance</p>
-        </div> : <Button variant="outline" className="h-11" onClick={showBilling}><Lock /> Show billing</Button>}
+        </div>
       </div>
-      {billingFor === selected.id && <Button className="mt-4 h-11" variant="outline" onClick={() => setPayOpen(true)}><CreditCard /> Record payment</Button>}
+      <Button className="mt-4 h-11" variant="outline" onClick={() => setPayOpen(true)}><CreditCard /> Record payment</Button>
       <p className="mt-4 text-sm text-muted-foreground">{visits} completed visit{visits === 1 ? "" : "s"}</p>
     </article> : <p className="mt-5 border border-dashed p-6 text-center text-sm text-muted-foreground">Start typing above to pull up a client, or create a new one.</p>}
 

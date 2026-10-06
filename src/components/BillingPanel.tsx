@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { CreditCard, Download, FileText, Lock } from "lucide-react";
+import { CreditCard, Download, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -7,22 +7,12 @@ import { RecordPaymentDialog } from "@/components/RecordPaymentDialog";
 import { ReportDetailDialog } from "@/components/ReportDetailDialog";
 import { buildReport, paymentsCsv, type LedgerRow } from "@/lib/billing";
 import { fromDateKey, toDateKey } from "@/lib/data";
-import { useLock } from "@/lib/lock";
 import { clientBalance } from "@/lib/scheduling";
 import { useStore } from "@/lib/store";
 
 const money = (n: number) => `${n < 0 ? "-" : ""}$${Math.abs(n).toFixed(2)}`;
 
 export function BillingPanel() {
-  const { confirmPassphrase } = useLock();
-  const [open, setOpen] = useState(false);
-  if (!open) return <div>
-    <div className="mt-2 flex flex-col items-center gap-4 rounded-xl border bg-card p-10 text-center">
-      <Lock className="h-8 w-8 text-muted-foreground" />
-      <p className="text-muted-foreground">Balances and payments are hidden. Re-enter your password to view them.</p>
-      <Button className="h-11" onClick={async () => { if (await confirmPassphrase("Viewing billing and payments")) setOpen(true); }}>Show billing info</Button>
-    </div>
-  </div>;
   return <BillingContent />;
 }
 
