@@ -29,6 +29,7 @@ function BookPage() {
   const { edit } = Route.useSearch();
   const store = useStore();
   const existing = edit ? store.appointments.find((item) => item.id === edit) : undefined;
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [step, setStep] = useState(0);
   const [durationMin, setDuration] = useState(existing?.durationMin ?? 30);
   const [date, setDate] = useState(existing?.date ?? toDateKey(new Date()));
@@ -52,13 +53,20 @@ function BookPage() {
     } catch { setError("Enter a name and 10-digit phone number."); }
   }
 
-  function finish() {
+  async function finish() {
     if (!time) return;
     if (existing && appointmentProgress(existing) !== "scheduled") { setError("Only scheduled appointments can be rescheduled."); return; }
     const noteError = notesIssue(notes);
     if (noteError) { setError(noteError); setStep(2); return; }
     const issue = validateAppointment({ date, time, durationMin, ...(edit ? { excludeId: edit } : {}) }, store.appointments, store.blockedTimes);
     if (issue) { setError(issue); setStep(1); return; }
+    if (edit && existing) {
+      const names = clientIds.map((id) => store.clients.find((client) => client.id === id)?.name).filter(Boolean).join(" & ") || "this";
+      const oldWhen = `${fromDateKey(existing.date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} at ${formatTime(existing.time)}`;
+      const newWhen = `${fromDateKey(date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} at ${formatTime(time)}`;
+      const ok = await confirm({ title: `Reschedule ${names}'s appointment?`, description: `From ${oldWhen} to ${newWhen}.`, confirmLabel: "Reschedule appointment", cancelLabel: "Keep original" });
+      if (!ok) return;
+    }
     const input = { date, time, durationMin, clientIds, notes };
     const savedId = edit ? (store.updateAppointment(edit, input), edit) : store.addAppointment(input).id;
     store.setHighlightId(savedId);
