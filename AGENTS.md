@@ -15,4 +15,4 @@
 - Keep scheduling constraints in `src/lib/scheduling.ts` and display/data helpers in `src/lib/data.ts` so every booking entry point applies the same rules.
 - Render protected surfaces only through the practitioner lock in `src/lib/lock.tsx` (password hashing and device storage in `src/lib/privacy.ts`), and extend its step-up list for sensitive actions instead of checking the password inline, so a locked session never puts client or billing records on screen.
 
-- Keep collection-priority ranking in `src/lib/collections.ts` as offline rules (no AI or network calls), so billing data never leaves the device.
+- Render a single shared ClientBalances table on Clients & Billing and initiate client payments from ClientBillingDialog, so the directory and payment entry points are not duplicated.
