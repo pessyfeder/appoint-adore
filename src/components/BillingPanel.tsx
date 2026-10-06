@@ -9,13 +9,6 @@ import { buildReport, paymentsCsv, type LedgerRow } from "@/lib/billing";
 import { fromDateKey, toDateKey } from "@/lib/data";
 import { clientBalance } from "@/lib/scheduling";
 import { useStore } from "@/lib/store";
-import { collectionPriorities, type Priority } from "@/lib/collections";
-
-const PRIORITY_STYLE: Record<Priority, string> = {
-  high: "border-status-noshow/40 bg-status-noshow/15 text-status-noshow",
-  medium: "border-status-progress/40 bg-status-progress/15 text-status-progress",
-  low: "border-border bg-muted text-muted-foreground",
-};
 
 const money = (n: number) => `${n < 0 ? "-" : ""}$${Math.abs(n).toFixed(2)}`;
 
