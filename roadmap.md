@@ -17,3 +17,6 @@
 - [x] Color-coded statuses + No-show
 - [x] Today / Go to date toggle
 - [x] Password for start/end, payments, viewing billing
+- [x] Billing tab: balances, no-show notes, payments, report, CSV (password to view)
+- [x] End popup with duration + amount owed (no password)
+- [x] Automatic no-show when slot passes unstarted
