@@ -42,6 +42,7 @@ export function StartEndControls({ item }: { item: Appointment }) {
   const { confirmPassphrase } = useLock();
   const [summary, setSummary] = useState<EndSummary | null>(null);
   const [paying, setPaying] = useState<EndSummary | null>(null);
+  const [ending, setEnding] = useState(false);
   const name = (id: string) => clients.find((c) => c.id === id)?.name ?? "Client";
   const first = (id: string) => name(id).split(" ")[0];
   const running = item.clients.find(clientInSession);
@@ -49,7 +50,22 @@ export function StartEndControls({ item }: { item: Appointment }) {
   const waiting = waitingAll[0];
   const shared = item.clients.length > 1;
   async function start(clientId: string) { if (await confirmPassphrase(`Starting ${name(clientId)}'s session`)) startClient(item.id, clientId); }
-  function end() { setSummary(endClient(item.id)); }
+  function end() { setEnding(false); setSummary(endClient(item.id)); }
+  const elapsedMin = running?.startedAt ? Math.max(1, Math.round((Date.now() - new Date(running.startedAt).getTime()) / 60000)) : 0;
+  const confirmEnd = <Dialog open={ending} onOpenChange={setEnding}>
+    <DialogContent>
+      <DialogHeader><DialogTitle className="font-serif text-2xl">End {running ? name(running.clientId) : "this"} session?</DialogTitle><DialogDescription>Review the elapsed time before stopping the clock.</DialogDescription></DialogHeader>
+      {running && <div className="divide-y rounded-lg border">
+        <div className="flex justify-between p-4"><span className="text-muted-foreground">Client</span><span className="font-semibold">{name(running.clientId)}</span></div>
+        <div className="flex justify-between p-4"><span className="text-muted-foreground">Started</span><span className="font-semibold">{clock(running.startedAt)}</span></div>
+        <div className="flex justify-between p-4"><span className="text-muted-foreground">Elapsed so far</span><span className="font-semibold">{formatDuration(elapsedMin)}</span></div>
+      </div>}
+      <DialogFooter className="flex-wrap gap-2">
+        <Button className="h-11" variant="outline" onClick={() => setEnding(false)}>Keep running</Button>
+        <Button className="h-11" variant="destructive" onClick={end}><Square /> End session</Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>;
   const popup = <Dialog open={Boolean(summary)} onOpenChange={(open) => !open && setSummary(null)}>
     <DialogContent>{summary && <>
       <DialogHeader><DialogTitle className="font-serif text-2xl">Session complete</DialogTitle><DialogDescription>Billed for actual time worked.</DialogDescription></DialogHeader>
