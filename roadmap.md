@@ -12,3 +12,5 @@
 - [x] Show a confirmation popup before the Lock button locks the screen.
 - [x] De-crowd the Schedule page headers; fix "Calendar Schedule" title positioning.
 - [x] Do not show expected revenue on the dashboard.
+- [x] Start/End appointments with status display
+- [x] "Appointment confirmed" popup + highlight new appointment in calendar
