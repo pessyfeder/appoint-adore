@@ -60,12 +60,21 @@ function ClientsPage() {
     setDraft({ name: "", phone: "" });
   }
 
-  async function showBilling() {
-    if (!selected) return;
-    if (await confirmPassphrase("Viewing billing and payments")) setBillingFor(selected.id);
+  async function unlockPage() {
+    if (await confirmPassphrase("Viewing clients and billing")) setPageUnlocked(true);
   }
 
-
+  if (!pageUnlocked) {
+    return <main className="mx-auto max-w-5xl px-4 py-8">
+      <p className="text-xs font-medium uppercase text-muted-foreground">Practitioner only</p>
+      <h1 className="mt-1 font-serif text-3xl">Clients &amp; Billing</h1>
+      <div className="mt-8 flex flex-col items-center gap-4 border border-dashed p-10 text-center">
+        <Lock className="h-8 w-8 text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">Client records and billing are private. Enter your password to open this page.</p>
+        <Button className="h-11" onClick={unlockPage}><Lock /> Unlock Clients &amp; Billing</Button>
+      </div>
+    </main>;
+  }
 
   return <main className="mx-auto max-w-5xl px-4 py-8">
     <p className="text-xs font-medium uppercase text-muted-foreground">Directory</p>
