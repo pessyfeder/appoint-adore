@@ -1,13 +1,13 @@
 # Build the scheduler around the stated goals
 
 ## Outcome
-Update the current scheduler to meet only the document’s stated goals and respect its non-goals. It will be a focused, offline front-desk tool for one electrolysis practitioner, with the calendar as the main workspace and all data kept on the device.
+Update the current scheduler to meet only the document’s stated goals and respect its non-goals. It will be a focused, offline front-desk tool for one electrolysis practitioner, with Today as the main dashboard and all data kept on the device.
 
 ## What will change
 
-### 1. Make the calendar the main workspace
-- Replace the dashboard-first flow with a practical calendar for one practitioner.
-- Support fast booking, rescheduling, and cancellation directly from the schedule.
+### 1. Keep Today as the main dashboard
+- Preserve Today as the first screen, with the day’s appointments, useful totals, and quick access to schedule a client.
+- Keep the calendar as a dedicated workspace for fast booking, rescheduling, and cancellation.
 - Keep past appointments viewable while preventing accidental bookings in the past.
 - Show appointments and blocked time clearly, including shared slots with more than one client.
 
