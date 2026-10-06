@@ -56,40 +56,42 @@ export function CorrectTimesDialog({ open, onOpenChange, item }: { open: boolean
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="gap-5">
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl">Correct times</DialogTitle>
-          <DialogDescription>Fix a start, an end, or a booked length entered by mistake. Charges follow the corrected times.</DialogDescription>
+          <DialogDescription>{fromDateKey(item.date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} · booked {formatTime(item.time)}</DialogDescription>
         </DialogHeader>
-        <p className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">{fromDateKey(item.date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} · booked at {formatTime(item.time)}</p>
-        <div className="grid gap-2">
-          <label className="text-sm font-medium" htmlFor="correct-duration">Booked length</label>
-          <Select value={String(durationMin)} onValueChange={(value) => setDuration(Number(value))}>
-            <SelectTrigger id="correct-duration" className="h-11 w-full"><SelectValue /></SelectTrigger>
-            <SelectContent>{DURATION_OPTIONS.map((minutes) => <SelectItem key={minutes} value={String(minutes)}>{formatDuration(minutes)}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
-        <div className="max-h-[45vh] space-y-3 overflow-y-auto pr-1">
+        <div className="max-h-[50vh] space-y-5 overflow-y-auto">
           {timed.map((client) => {
             const row = rows[client.clientId] ?? { start: "", end: "" };
             const running = Boolean(client.startedAt && !client.endedAt);
             const shown = preview(client.clientId);
             return (
-              <div key={client.clientId} className="rounded-lg border p-3">
-                <p className="font-medium">{name(client.clientId)}</p>
-                <div className="mt-2 grid grid-cols-2 gap-3">
+              <div key={client.clientId} className="space-y-2">
+                {timed.length > 1 && <p className="text-sm font-medium">{name(client.clientId)}</p>}
+                <div className="grid grid-cols-2 gap-3">
                   <label className="grid gap-1 text-xs text-muted-foreground">Start<Input type="time" step={60} className="h-11" value={row.start} onChange={(event) => setRow(client.clientId, { start: event.target.value })} /></label>
-                  <label className="grid gap-1 text-xs text-muted-foreground">End<Input type="time" step={60} className="h-11" value={row.end} disabled={running} onChange={(event) => setRow(client.clientId, { end: event.target.value })} /></label>
+                  <label className="grid gap-1 text-xs text-muted-foreground">End<Input type="time" step={60} className="h-11" value={row.end} disabled={running} placeholder="Running" onChange={(event) => setRow(client.clientId, { end: event.target.value })} /></label>
                 </div>
-                <p className="mt-2 text-xs text-muted-foreground">{running ? "Still running — end the session to record an end time." : shown ? `${formatDuration(shown.minutes)} · $${shown.amount.toFixed(2)}` : "Add an end time to see the charge."}</p>
+                <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2 text-sm">
+                  <span className="text-muted-foreground">{running ? "Still running" : "Charge"}</span>
+                  {shown && <span className="font-semibold tabular-nums">{formatDuration(shown.minutes)} · ${shown.amount.toFixed(2)}</span>}
+                </div>
               </div>
             );
           })}
         </div>
-        {error && <p className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
-        <DialogFooter className="flex-wrap gap-2">
-          <Button className="h-11" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button className="h-11" onClick={save}>Save corrections</Button>
+        <div className="flex items-center justify-between gap-3 border-t pt-4">
+          <label className="text-sm text-muted-foreground" htmlFor="correct-duration">Booked length</label>
+          <Select value={String(durationMin)} onValueChange={(value) => setDuration(Number(value))}>
+            <SelectTrigger id="correct-duration" className="h-11 w-36"><SelectValue /></SelectTrigger>
+            <SelectContent>{DURATION_OPTIONS.map((minutes) => <SelectItem key={minutes} value={String(minutes)}>{formatDuration(minutes)}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        {error && <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
+        <DialogFooter className="gap-2">
+          <Button className="h-11" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button className="h-11" onClick={save}>Save</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
