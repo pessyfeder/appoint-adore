@@ -7,7 +7,7 @@ Update the current scheduler to meet only the document’s stated goals and resp
 
 ### 1. Keep Today as the main dashboard
 - Preserve Today as the first screen, with the day’s appointments, useful totals, and quick access to schedule a client.
-- Keep the calendar as a dedicated workspace for fast booking, rescheduling, and cancellation.
+- Add clear **Today / Week / Month** view switching in the scheduling workspace for fast booking, rescheduling, and cancellation.
 - Keep past appointments viewable while preventing accidental bookings in the past.
 - Show appointments and blocked time clearly, including shared slots with more than one client.
 
