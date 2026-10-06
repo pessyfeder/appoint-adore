@@ -118,7 +118,7 @@ function ClientsPage() {
           onChange={(event) => typePass(event.target.value)}
         />
         {passError && <p className="mt-2 text-sm text-destructive">{passError}</p>}
-        <p className="mt-3 text-xs text-muted-foreground" role="status">{checking ? "Checking…" : "Unlocks automatically"}</p>
+        {checking && <p className="mt-3 text-xs text-muted-foreground" role="status">Checking…</p>}
       </form>
     </main>;
   }

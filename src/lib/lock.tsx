@@ -302,9 +302,11 @@ export function usePassphraseGate() {
         <Button className="h-11" type="button" variant="ghost" onClick={cancel}>
           Cancel
         </Button>
-        <span className="text-xs text-muted-foreground" role="status">
-          {busy ? "Checking…" : "Confirms automatically"}
-        </span>
+        {busy && (
+          <span className="text-xs text-muted-foreground" role="status">
+            Checking…
+          </span>
+        )}
       </div>
       {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
     </form>
