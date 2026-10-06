@@ -82,6 +82,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setState((current) => ({ ...current, appointments: current.appointments.map((a) => a.id !== appointmentId ? a : { ...a, endedAt: next ? undefined : endedAt, clients: a.clients.map((c) => c.clientId === running.clientId ? { ...c, endedAt, status: "completed", charge: amount } : c) } as typeof a) }));
       return { appointmentId, clientId: running.clientId, minutes, amount, nextClientId: next?.clientId ?? null };
     },
+    correctTimes(appointmentId, input) {
+      const parsed = correctSchema.parse(input);
+      setState((current) => ({
+        ...current,
+        appointments: current.appointments.map((item) => {
+          if (item.id !== appointmentId) return item;
+          const patch = new Map(parsed.clients.map((entry) => [entry.clientId, entry]));
+          const clients = item.clients.map((client) => {
+            const next = patch.get(client.clientId);
+            if (!next) return client;
+            const charge = next.endedAt ? sessionMinutes(next.startedAt, next.endedAt) * RATE_PER_MINUTE : client.charge;
+            return { ...client, startedAt: next.startedAt, endedAt: next.endedAt, charge, status: next.endedAt ? ("completed" as const) : client.status };
+          });
+          const started = clients.map((client) => client.startedAt).filter((value): value is string => Boolean(value));
+          const ended = clients.map((client) => client.endedAt).filter((value): value is string => Boolean(value));
+          const active = clients.filter((client) => client.status !== "cancelled");
+          return {
+            ...item,
+            durationMin: parsed.durationMin,
+            startedAt: started.length ? new Date(Math.min(...started.map((value) => Date.parse(value)))).toISOString() : item.startedAt,
+            endedAt: started.length && active.length && active.every((client) => client.endedAt) ? new Date(Math.max(...ended.map((value) => Date.parse(value)))).toISOString() : undefined,
+            clients,
+          } as typeof item;
+        }),
+      }));
+    },
     addClient(input) {
       const parsed = clientSchema.parse({ ...input, phone: formatPhone(input.phone) });
       const client: Client = { ...parsed, id: nextId("client"), createdAt: new Date().toISOString(), archived: false };
