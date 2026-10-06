@@ -37,3 +37,5 @@
 - [x] Display the client list on Clients & Billing as in the earliest version
 - [x] Show payment status when clicking a completed appointment
 - [x] Remove tap-to-view money owed; billing stays practitioner-only
+- [x] Remove Collection priorities list from Billing
+- [x] "View billing info" button per client: full appointment + payment + balance details
