@@ -1,5 +1,6 @@
 import { useConfirm } from "@/components/ConfirmDialog";
 import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { CreditCard, Pencil, Play, Square } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,7 @@ function clock(iso?: string) {
 
 export function StartEndControls({ item }: { item: Appointment }) {
   const { startClient, endClient, clients, appointments } = useStore();
+  const navigate = useNavigate();
   const busyElsewhere = appointments.some((a) => a.id !== item.id && a.clients.some(clientInSession));
   const { request, prompt } = usePassphraseGate();
   const [summary, setSummary] = useState<EndSummary | null>(null);
