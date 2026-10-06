@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { CreditCard, Lock, Phone, UserPlus } from "lucide-react";
+import { RecordPaymentDialog } from "@/components/RecordPaymentDialog";
 import { ClientCombobox } from "@/components/ClientCombobox";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -31,6 +32,7 @@ function ClientsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState({ name: "", phone: "" });
+  const [payOpen, setPayOpen] = useState(false);
   const [billingFor, setBillingFor] = useState<string | null>(null);
 
   const selected = store.clients.find((client) => client.id === selectedId) ?? null;
@@ -98,8 +100,10 @@ function ClientsPage() {
           <p className="text-xs text-muted-foreground">balance</p>
         </div> : <Button variant="outline" className="h-11" onClick={showBilling}><Lock /> Show billing</Button>}
       </div>
+      {billingFor === selected.id && <Button className="mt-4 h-11" variant="outline" onClick={() => setPayOpen(true)}><CreditCard /> Record payment</Button>}
       <p className="mt-4 text-sm text-muted-foreground">{visits} completed visit{visits === 1 ? "" : "s"}</p>
     </article> : <p className="mt-5 border border-dashed p-6 text-center text-sm text-muted-foreground">Start typing above to pull up a client, or create a new one.</p>}
 
+    {selected && <RecordPaymentDialog open={payOpen} onOpenChange={setPayOpen} clientIds={[selected.id]} />}
   </main>;
 }
