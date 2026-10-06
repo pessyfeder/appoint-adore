@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { CreditCard, Lock, Phone, UserPlus } from "lucide-react";
 import { BillingPanel } from "@/components/BillingPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,7 +33,10 @@ function ClientsPage() {
   const store = useStore();
   const tab = Route.useSearch().tab === "billing" ? "billing" : "directory";
   const navigate = Route.useNavigate();
-  const { confirmPassphrase } = useLock();
+  const { verify } = useLock();
+  const [pass, setPass] = useState("");
+  const [passError, setPassError] = useState("");
+  const [checking, setChecking] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState({ name: "", phone: "" });
@@ -60,19 +63,42 @@ function ClientsPage() {
     setDraft({ name: "", phone: "" });
   }
 
-  async function unlockPage() {
-    if (await confirmPassphrase("Viewing clients and billing")) setPageUnlocked(true);
+  async function unlockPage(event: FormEvent) {
+    event.preventDefault();
+    if (checking) return;
+    setChecking(true);
+    const ok = await verify(pass);
+    setChecking(false);
+    if (ok) {
+      setPageUnlocked(true);
+      return;
+    }
+    setPassError("That password doesn’t match.");
+    setPass("");
   }
 
   if (!pageUnlocked) {
     return <main className="mx-auto max-w-5xl px-4 py-8">
       <p className="text-xs font-medium uppercase text-muted-foreground">Practitioner only</p>
       <h1 className="mt-1 font-serif text-3xl">Clients &amp; Billing</h1>
-      <div className="mt-8 flex flex-col items-center gap-4 border border-dashed p-10 text-center">
-        <Lock className="h-8 w-8 text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Client records and billing are private. Enter your password to open this page.</p>
-        <Button className="h-11" onClick={unlockPage}><Lock /> Unlock Clients &amp; Billing</Button>
-      </div>
+      <form className="mt-8 border border-dashed p-6 sm:p-8" onSubmit={unlockPage}>
+        <div className="flex items-start gap-3">
+          <Lock className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Client records and billing are private. Enter your password to open this page.</p>
+        </div>
+        <label className="mt-5 block text-sm font-medium" htmlFor="clients-password">Password</label>
+        <Input
+          className="mt-1 h-12 max-w-sm"
+          id="clients-password"
+          type="password"
+          autoComplete="current-password"
+          autoFocus
+          value={pass}
+          onChange={(event) => setPass(event.target.value)}
+        />
+        {passError && <p className="mt-2 text-sm text-destructive">{passError}</p>}
+        <Button className="mt-5 h-12" disabled={checking || !pass} type="submit">{checking ? "Checking…" : "Unlock Clients & Billing"}</Button>
+      </form>
     </main>;
   }
 
