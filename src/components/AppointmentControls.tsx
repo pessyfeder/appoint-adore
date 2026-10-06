@@ -93,6 +93,6 @@ export function StartEndControls({ item }: { item: Appointment }) {
   else if (waiting) control = <div className="flex flex-wrap items-center gap-2">{waitingAll.map((c) => <Button key={c.clientId} className="h-11" onClick={() => start(c.clientId)}><Play /> Start{shared ? ` ${first(c.clientId)}` : ""}</Button>)}</div>;
   else if (item.startedAt && item.endedAt) control = <span className="flex flex-col text-right text-xs text-muted-foreground"><span className="font-bold text-foreground">Actual duration:</span><span>{formatDurationLong(sessionMinutes(item.startedAt, item.endedAt))}</span><span>{clock(item.startedAt)} – {clock(item.endedAt)}</span></span>;
   const timed = item.clients.some((c) => c.startedAt);
-  const editBtn = timed && <Button size="icon" variant="ghost" className="h-11 w-11 text-muted-foreground hover:text-foreground" onClick={openCorrect} aria-label="Correct times" title="Correct times"><Pencil /></Button>;
+  const editBtn = timed && <Button size="icon" variant="ghost" className="h-11 w-11 text-muted-foreground" onClick={openCorrect} aria-label="Correct times"><Pencil /></Button>;
   return <><span className="inline-flex items-center gap-1">{control}{editBtn}</span>{prompt}{popup}{payment}{confirmEnd}<CorrectTimesDialog open={correcting} onOpenChange={setCorrecting} item={item} /></>;
 }
