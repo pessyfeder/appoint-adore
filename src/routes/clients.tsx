@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { CreditCard, Lock, Phone, UserPlus } from "lucide-react";
+import { BillingPanel } from "@/components/BillingPanel";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RecordPaymentDialog } from "@/components/RecordPaymentDialog";
 import { ClientCombobox } from "@/components/ClientCombobox";
 import { Button } from "@/components/ui/button";
@@ -16,18 +18,21 @@ const PHONE_PATTERN = /^\(\d{3}\) \d{3}-\d{4}$/;
 
 export const Route = createFileRoute("/clients")({
   head: () => ({ meta: [
-    { title: "Clients | Lumière Electrolysis" },
+    { title: "Clients & Billing | Lumière Electrolysis" },
     { name: "description", content: "Type a name or phone number to pull up a client, review their balance, and record payments." },
-    { property: "og:title", content: "Clients | Lumière Electrolysis" },
+    { property: "og:title", content: "Clients & Billing | Lumière Electrolysis" },
     { property: "og:description", content: "Type a name or phone number to pull up a client, review their balance, and record payments." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
   ] }),
+  validateSearch: (s: Record<string, unknown>): { tab?: "billing" } => (s["tab"] === "billing" ? { tab: "billing" } : {}),
   component: ClientsPage,
 });
 
 function ClientsPage() {
   const store = useStore();
+  const tab = Route.useSearch().tab === "billing" ? "billing" : "directory";
+  const navigate = Route.useNavigate();
   const { confirmPassphrase } = useLock();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -62,12 +67,14 @@ function ClientsPage() {
 
 
 
-  return <main className="mx-auto max-w-3xl px-4 py-8">
-    <div className="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <p className="text-xs font-medium uppercase text-muted-foreground">Directory</p>
-        <h1 className="mt-1 font-serif text-3xl">Clients</h1>
-      </div>
+  return <main className="mx-auto max-w-5xl px-4 py-8">
+    <p className="text-xs font-medium uppercase text-muted-foreground">Directory</p>
+    <h1 className="mt-1 font-serif text-3xl">Clients</h1>
+    <Tabs value={tab} onValueChange={(v) => navigate({ search: v === "billing" ? { tab: "billing" } : {} })} className="mt-5">
+      <TabsList className="h-12"><TabsTrigger className="h-10 px-5" value="directory">Client list</TabsTrigger><TabsTrigger className="h-10 px-5" value="billing">Billing</TabsTrigger></TabsList>
+      <TabsContent value="billing"><BillingPanel /></TabsContent>
+      <TabsContent value="directory" className="max-w-3xl">
+    <div className="mt-2 flex justify-end">
       <Button className="h-11" variant="outline" onClick={() => startNew()}><UserPlus /> New client</Button>
     </div>
 
@@ -105,5 +112,7 @@ function ClientsPage() {
     </article> : <p className="mt-5 border border-dashed p-6 text-center text-sm text-muted-foreground">Start typing above to pull up a client, or create a new one.</p>}
 
     {selected && <RecordPaymentDialog open={payOpen} onOpenChange={setPayOpen} clientIds={[selected.id]} />}
+      </TabsContent>
+    </Tabs>
   </main>;
 }

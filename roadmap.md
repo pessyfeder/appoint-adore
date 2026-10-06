@@ -22,3 +22,6 @@
 - [x] Automatic no-show when slot passes unstarted
 - [x] Shared appointments: time each client separately, bill each on their own duration; Reschedule only for Scheduled.
 - [x] Remove the top "Record payment" button and "Total owed by clients" figure from Billing.
+- [x] Payment report rows open full appointment/payment details.
+- [x] Persistent active-session banner; app usable during a session, no second session start.
+- [x] Merge Clients and Billing into one page.
