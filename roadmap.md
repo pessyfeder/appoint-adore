@@ -29,4 +29,4 @@
 - [x] Show elapsed minutes under "Actual duration:"
 - [x] Correct in-progress appointment start times, end times and booked length
 
-- [ ] Clean up Correct times: subtle pencil trigger, tidier dialog
+- [x] Clean up Correct times: subtle pencil trigger, tidier dialog
