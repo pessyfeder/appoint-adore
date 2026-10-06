@@ -77,7 +77,7 @@ function SchedulePage() {
       </div>
 
       {view === "week" ? (
-        <div className="grid min-w-[760px] grid-cols-7 overflow-hidden border bg-background">
+        <div className="overflow-x-auto"><div className="grid min-w-[760px] grid-cols-7 overflow-hidden border bg-background">
           {weekDays.map((day) => {
             const key = toDateKey(day);
             const dayAppointments = appointments.filter((item) => item.date === key).sort((a, b) => a.time.localeCompare(b.time));
@@ -92,7 +92,7 @@ function SchedulePage() {
               </div>
             </div>;
           })}
-        </div>
+        </div></div>
       ) : <MonthGrid cursor={cursor} appointments={appointments} clients={clients} onSelect={setSelected} />}
 
       <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)}>

@@ -118,10 +118,16 @@ export function makeSeedData() {
     { id: "c3", name: "Sofia Ramirez", phone: "(555) 340-2271", createdAt: offsetDate(-45), archived: false },
     { id: "c4", name: "Ava Chen", phone: "(555) 903-4472", createdAt: offsetDate(-20), archived: false },
   ];
+  const todayBlocks = effectiveHours(offsetDate(0));
+  const tomorrowBlocks = effectiveHours(offsetDate(1));
+  const todayStart = todayBlocks[0]?.start ?? "19:30";
+  const todayStartMinutes = timeToMinutes(todayStart);
+  const secondTodayStart = minutesToTime(todayStartMinutes + 60);
+  const tomorrowStart = tomorrowBlocks[0]?.start ?? "19:30";
   const appointments: Appointment[] = [
-    { id: "a1", date: offsetDate(0), time: "10:30", durationMin: 30, clients: [{ clientId: "c1", status: "scheduled", charge: 0 }], notes: "Chin area" },
-    { id: "a2", date: offsetDate(0), time: "11:30", durationMin: 60, clients: [{ clientId: "c3", status: "scheduled", charge: 0 }], notes: "Jawline" },
-    { id: "a3", date: offsetDate(1), time: "19:30", durationMin: 45, clients: [{ clientId: "c2", status: "scheduled", charge: 0 }, { clientId: "c4", status: "scheduled", charge: 0 }], notes: "Shared family appointment" },
+    { id: "a1", date: offsetDate(0), time: todayStart, durationMin: 30, clients: [{ clientId: "c1", status: "scheduled", charge: 0 }], notes: "Chin area" },
+    { id: "a2", date: offsetDate(0), time: secondTodayStart, durationMin: 60, clients: [{ clientId: "c3", status: "scheduled", charge: 0 }], notes: "Jawline" },
+    { id: "a3", date: offsetDate(1), time: tomorrowStart, durationMin: 45, clients: [{ clientId: "c2", status: "scheduled", charge: 0 }, { clientId: "c4", status: "scheduled", charge: 0 }], notes: "Shared family appointment" },
     { id: "a4", date: offsetDate(-7), time: "10:30", durationMin: 30, clients: [{ clientId: "c1", status: "completed", charge: 75 }], notes: "" },
   ];
   const payments: Payment[] = [
