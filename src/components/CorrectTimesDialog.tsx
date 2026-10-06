@@ -26,7 +26,7 @@ export function CorrectTimesDialog({ open, onOpenChange, item }: { open: boolean
   }, [open]);
 
   const name = (id: string) => clients.find((client) => client.id === id)?.name ?? "Client";
-  const setRow = (clientId: string, patch: Partial<Row>) => setRows((current) => ({ ...current, [clientId]: { ...current[clientId], ...patch } }));
+  const setRow = (clientId: string, patch: Partial<Row>) => setRows((current) => ({ ...current, [clientId]: { ...(current[clientId] ?? { start: "", end: "" }), ...patch } }));
 
   function preview(clientId: string) {
     const row = rows[clientId];
@@ -42,7 +42,9 @@ export function CorrectTimesDialog({ open, onOpenChange, item }: { open: boolean
       if (!row.start) return setError(`${name(client.clientId)} needs a start time.`);
       if (client.endedAt && !row.end) return setError(`${name(client.clientId)} already finished — keep or correct the end time.`);
       if (row.end && row.end <= row.start) return setError(`${name(client.clientId)}: the end time must be after the start time.`);
-      entries.push({ clientId: client.clientId, startedAt: timeToISO(item.date, row.start), endedAt: row.end ? timeToISO(item.date, row.end) : undefined });
+      const entry = { clientId: client.clientId, startedAt: timeToISO(item.date, row.start) };
+      if (row.end) entries.push({ ...entry, endedAt: timeToISO(item.date, row.end) });
+      else entries.push(entry);
     }
     if (durationMin !== item.durationMin) {
       const issue = validateAppointment({ date: item.date, time: item.time, durationMin, excludeId: item.id }, appointments, blockedTimes);
