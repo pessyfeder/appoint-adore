@@ -1,119 +1,137 @@
-export type Service = {
-  id: string;
-  name: string;
-  durationMin: number;
-  price: number;
-  description: string;
-};
-
 export type Client = {
   id: string;
   name: string;
-  email: string;
   phone: string;
-  notes: string;
   createdAt: string;
+  archived: boolean;
 };
 
-export type AppointmentStatus = "confirmed" | "completed" | "cancelled";
+export type AppointmentStatus = "scheduled" | "completed" | "cancelled" | "no_show";
+
+export type AppointmentClient = {
+  clientId: string;
+  status: AppointmentStatus;
+  charge: number;
+};
 
 export type Appointment = {
   id: string;
-  clientId: string;
-  serviceId: string;
-  date: string; // YYYY-MM-DD
-  time: string; // HH:MM (24h)
-  status: AppointmentStatus;
+  date: string;
+  time: string;
+  durationMin: number;
+  clients: AppointmentClient[];
   notes: string;
 };
 
-export const SERVICES: Service[] = [
-  {
-    id: "consult",
-    name: "Consultation & Patch Test",
-    durationMin: 30,
-    price: 25,
-    description: "First visit: skin assessment, treatment plan, and a small patch test.",
-  },
-  {
-    id: "face-15",
-    name: "Facial Electrolysis — 15 min",
-    durationMin: 15,
-    price: 35,
-    description: "Upper lip, chin, or sideburns touch-up session.",
-  },
-  {
-    id: "face-30",
-    name: "Facial Electrolysis — 30 min",
-    durationMin: 30,
-    price: 60,
-    description: "Full chin, jawline, or combined facial areas.",
-  },
-  {
-    id: "face-60",
-    name: "Facial Electrolysis — 60 min",
-    durationMin: 60,
-    price: 110,
-    description: "Extended session for larger or multiple facial areas.",
-  },
-  {
-    id: "body-30",
-    name: "Body Electrolysis — 30 min",
-    durationMin: 30,
-    price: 65,
-    description: "Underarms, abdomen line, or small body areas.",
-  },
-  {
-    id: "body-60",
-    name: "Body Electrolysis — 60 min",
-    durationMin: 60,
-    price: 120,
-    description: "Bikini line, chest, or larger body areas.",
-  },
-];
+export type Payment = {
+  id: string;
+  clientId: string;
+  amount: number;
+  method: "cash" | "card" | "check" | "other";
+  paidAt: string;
+  notes: string;
+};
 
-export const TIME_SLOTS = [
-  "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-  "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
-  "15:00", "15:30", "16:00", "16:30", "17:00", "17:30",
-];
+export type BlockedTime = {
+  id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  reason: string;
+};
 
-export function toDateKey(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+export type BusinessBlock = { start: string; end: string };
+
+export const BUSINESS_HOURS: Record<number, BusinessBlock[]> = {
+  0: [{ start: "11:30", end: "13:30" }, { start: "19:30", end: "22:30" }],
+  1: [{ start: "10:30", end: "13:30" }, { start: "19:30", end: "22:30" }],
+  2: [{ start: "19:30", end: "22:30" }],
+  3: [{ start: "10:30", end: "13:30" }, { start: "19:30", end: "22:30" }],
+  4: [{ start: "10:30", end: "13:30" }, { start: "19:30", end: "22:30" }],
+  5: [],
+  6: [],
+};
+
+export const DURATION_OPTIONS = Array.from({ length: 34 }, (_, i) => 15 + i * 5);
+
+export function toDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
-export function formatTime(t: string): string {
-  const [h = 0, m = 0] = t.split(":").map(Number);
-  const ampm = h >= 12 ? "PM" : "AM";
-  const hr = h % 12 === 0 ? 12 : h % 12;
-  return `${hr}:${String(m).padStart(2, "0")} ${ampm}`;
+export function fromDateKey(key: string): Date {
+  return new Date(`${key}T12:00:00`);
 }
 
-function offsetDate(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return toDateKey(d);
+export function offsetDate(days: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return toDateKey(date);
 }
 
-export const SEED_CLIENTS: Client[] = [
-  { id: "c1", name: "Maya Thompson", email: "maya.t@example.com", phone: "(555) 214-8830", notes: "Sensitive skin — use lower intensity on chin area.", createdAt: offsetDate(-90) },
-  { id: "c2", name: "Jordan Lee", email: "jordan.lee@example.com", phone: "(555) 872-1190", notes: "Prefers morning appointments.", createdAt: offsetDate(-60) },
-  { id: "c3", name: "Sofia Ramirez", email: "sofia.r@example.com", phone: "(555) 340-2271", notes: "Hormonal regrowth — biweekly sessions recommended.", createdAt: offsetDate(-45) },
-  { id: "c4", name: "Ava Chen", email: "ava.chen@example.com", phone: "(555) 903-4472", notes: "", createdAt: offsetDate(-20) },
-  { id: "c5", name: "Priya Nair", email: "priya.n@example.com", phone: "(555) 667-0913", notes: "Allergic to lidocaine cream — do not apply numbing.", createdAt: offsetDate(-10) },
-];
+export function timeToMinutes(time: string): number {
+  const [hours = 0, minutes = 0] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+}
 
-export const SEED_APPOINTMENTS: Appointment[] = [
-  { id: "a1", clientId: "c1", serviceId: "face-30", date: offsetDate(0), time: "09:30", status: "confirmed", notes: "" },
-  { id: "a2", clientId: "c3", serviceId: "face-60", date: offsetDate(0), time: "11:00", status: "confirmed", notes: "Focus on jawline." },
-  { id: "a3", clientId: "c2", serviceId: "body-30", date: offsetDate(0), time: "14:00", status: "confirmed", notes: "" },
-  { id: "a4", clientId: "c5", serviceId: "consult", date: offsetDate(1), time: "10:00", status: "confirmed", notes: "New client consultation." },
-  { id: "a5", clientId: "c4", serviceId: "face-15", date: offsetDate(1), time: "13:30", status: "confirmed", notes: "" },
-  { id: "a6", clientId: "c1", serviceId: "face-30", date: offsetDate(-7), time: "09:30", status: "completed", notes: "" },
-  { id: "a7", clientId: "c2", serviceId: "face-15", date: offsetDate(-3), time: "16:00", status: "completed", notes: "" },
-  { id: "a8", clientId: "c3", serviceId: "face-60", date: offsetDate(3), time: "10:30", status: "confirmed", notes: "" },
-  { id: "a9", clientId: "c4", serviceId: "body-60", date: offsetDate(5), time: "15:00", status: "confirmed", notes: "" },
-];
+export function minutesToTime(total: number): string {
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+
+export function formatTime(time: string): string {
+  const total = timeToMinutes(time);
+  const hours = Math.floor(total / 60);
+  const minutes = total % 60;
+  const suffix = hours >= 12 ? "PM" : "AM";
+  const displayHour = hours % 12 || 12;
+  return `${displayHour}:${String(minutes).padStart(2, "0")} ${suffix}`;
+}
+
+export function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const remainder = minutes % 60;
+  return `${hours} hr${hours === 1 ? "" : "s"}${remainder ? ` ${remainder} min` : ""}`;
+}
+
+export function formatPhone(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 10);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
+export function effectiveHours(dateKey: string): BusinessBlock[] {
+  return BUSINESS_HOURS[fromDateKey(dateKey).getDay()] ?? [];
+}
+
+export function statusLabel(status: AppointmentStatus): string {
+  return status === "no_show" ? "No-show" : status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+export function makeSeedData() {
+  const clients: Client[] = [
+    { id: "c1", name: "Maya Thompson", phone: "(555) 214-8830", createdAt: offsetDate(-90), archived: false },
+    { id: "c2", name: "Jordan Lee", phone: "(555) 872-1190", createdAt: offsetDate(-60), archived: false },
+    { id: "c3", name: "Sofia Ramirez", phone: "(555) 340-2271", createdAt: offsetDate(-45), archived: false },
+    { id: "c4", name: "Ava Chen", phone: "(555) 903-4472", createdAt: offsetDate(-20), archived: false },
+  ];
+  const todayBlocks = effectiveHours(offsetDate(0));
+  const tomorrowBlocks = effectiveHours(offsetDate(1));
+  const todayStart = todayBlocks[0]?.start ?? "19:30";
+  const todayStartMinutes = timeToMinutes(todayStart);
+  const secondTodayStart = minutesToTime(todayStartMinutes + 60);
+  const tomorrowStart = tomorrowBlocks[0]?.start ?? "19:30";
+  const appointments: Appointment[] = [
+    { id: "a1", date: offsetDate(0), time: todayStart, durationMin: 30, clients: [{ clientId: "c1", status: "scheduled", charge: 0 }], notes: "Chin area" },
+    { id: "a2", date: offsetDate(0), time: secondTodayStart, durationMin: 60, clients: [{ clientId: "c3", status: "scheduled", charge: 0 }], notes: "Jawline" },
+    { id: "a3", date: offsetDate(1), time: tomorrowStart, durationMin: 45, clients: [{ clientId: "c2", status: "scheduled", charge: 0 }, { clientId: "c4", status: "scheduled", charge: 0 }], notes: "Shared family appointment" },
+    { id: "a4", date: offsetDate(-7), time: "10:30", durationMin: 30, clients: [{ clientId: "c1", status: "completed", charge: 75 }], notes: "" },
+  ];
+  const payments: Payment[] = [
+    { id: "p1", clientId: "c1", amount: 50, method: "card", paidAt: offsetDate(-7), notes: "Partial payment" },
+  ];
+  return { clients, appointments, payments, blockedTimes: [] as BlockedTime[] };
+}
