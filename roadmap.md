@@ -39,3 +39,4 @@
 - [x] Remove tap-to-view money owed; billing stays practitioner-only
 - [x] Remove Collection priorities list from Billing
 - [x] "View billing info" button per client: full appointment + payment + balance details
+- [x] Merge Client list / Billing tabs into one scrolling page
