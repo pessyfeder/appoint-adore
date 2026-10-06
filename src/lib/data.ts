@@ -135,3 +135,20 @@ export function makeSeedData() {
   ];
   return { clients, appointments, payments, blockedTimes: [] as BlockedTime[] };
 }
+/** Returns an error message when free-text notes look like gibberish; blank notes are allowed. */
+export function notesIssue(raw: string): string | null {
+  const text = raw.trim();
+  if (!text) return null;
+  const message = "Please enter clear notes or leave the field blank.";
+  const visible = text.replace(/\s/g, "");
+  const letters = visible.match(/[a-z]/gi)?.length ?? 0;
+  if (letters < 2 || letters / visible.length < 0.5) return message;
+  if (/(.)\1{3,}/i.test(visible)) return message;
+  const words = text.toLowerCase().match(/[a-z]+/g) ?? [];
+  for (const word of words) {
+    if (word.length > 20) return message;
+    if (/[bcdfghjklmnpqrstvwxz]{5,}/.test(word)) return message;
+    if (word.length >= 4 && !/[aeiouy]/.test(word)) return message;
+  }
+  return null;
+}

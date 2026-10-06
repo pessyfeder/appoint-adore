@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useLock } from "@/lib/lock";
 
 const links = [
-  { to: "/", label: "Today" },
+  { to: "/", label: "Dashboard" },
   { to: "/schedule", label: "Schedule" },
   { to: "/book", label: "Book" },
   { to: "/clients", label: "Clients" },
