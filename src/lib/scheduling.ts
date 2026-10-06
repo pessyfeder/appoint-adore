@@ -48,3 +48,24 @@ export function clientBalance(clientId: string, appointments: Appointment[], pay
   const paid = payments.filter((item) => item.clientId === clientId).reduce((sum, item) => sum + item.amount, 0);
   return charged - paid;
 }
+export const RATE_PER_MINUTE = 2.5;
+
+/** Minutes actually worked between start and end (at least 1). */
+export function sessionMinutes(startedAt: string, endedAt: string) {
+  return Math.max(1, Math.round((new Date(endedAt).getTime() - new Date(startedAt).getTime()) / 60000));
+}
+
+/** Clients still "scheduled" on an appointment whose slot has ended without being started become no-shows, billed for the scheduled length. */
+export function applyNoShows(appointments: Appointment[], now: Date = new Date()): Appointment[] | null {
+  let changed = false;
+  const next = appointments.map((item) => {
+    if (item.startedAt) return item;
+    const [y, m, d] = item.date.split("-").map(Number);
+    const [hh, mm] = item.time.split(":").map(Number);
+    const end = new Date(y!, m! - 1, d!, hh!, mm! + item.durationMin);
+    if (end > now || !item.clients.some((c) => c.status === "scheduled")) return item;
+    changed = true;
+    return { ...item, clients: item.clients.map((c) => c.status === "scheduled" ? { ...c, status: "no_show" as const, charge: item.durationMin * RATE_PER_MINUTE } : c) };
+  });
+  return changed ? next : null;
+}

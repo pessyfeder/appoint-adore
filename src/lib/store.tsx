@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { z } from "zod";
+import { applyNoShows, RATE_PER_MINUTE, sessionMinutes } from "./scheduling";
 import { formatPhone, makeSeedData, type Appointment, type BlockedTime, type Client, type Payment } from "./data";
 
 const STORAGE_KEY = "lumiere-scheduler-v2";
@@ -18,10 +19,12 @@ type Store = StoreState & {
   addPayment: (input: { clientId: string; amount: number; method: Payment["method"]; notes: string }) => void;
   addBlockedTime: (input: Omit<BlockedTime, "id">) => void;
   startAppointment: (id: string) => void;
-  endAppointment: (id: string) => void;
+  endAppointment: (id: string) => EndSummary | null;
   highlightId: string | null;
   setHighlightId: (id: string | null) => void;
 };
+
+export type EndSummary = { appointmentId: string; minutes: number; lines: { clientId: string; amount: number }[] };
 
 const StoreContext = createContext<Store | null>(null);
 
@@ -43,6 +46,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (!ready) return;
+    const sweep = () => setState((current) => { const next = applyNoShows(current.appointments); return next ? { ...current, appointments: next } : current; });
+    sweep();
+    const timer = window.setInterval(sweep, 60000);
+    return () => window.clearInterval(timer);
+  }, [ready]);
+
+  useEffect(() => {
     if (ready) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [ready, state]);
 
@@ -55,8 +66,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setState((current) => ({ ...current, appointments: current.appointments.map((item) => item.id === id && !item.startedAt ? { ...item, startedAt: new Date().toISOString() } : item) }));
     },
     endAppointment(id) {
-      setState((current) => ({ ...current, appointments: current.appointments.map((item) => item.id === id && !item.endedAt ? { ...item, startedAt: item.startedAt ?? new Date().toISOString(), endedAt: new Date().toISOString(), clients: item.clients.map((client) => client.status === "scheduled" ? { ...client, status: "completed", charge: item.durationMin * 2.5 } : client) } : item) }));
+      const item = state.appointments.find((a) => a.id === id);
+      if (!item || item.endedAt) return null;
+      const endedAt = new Date().toISOString();
+      const startedAt = item.startedAt ?? endedAt;
+      const minutes = sessionMinutes(startedAt, endedAt);
+      const amount = minutes * RATE_PER_MINUTE;
+      const lines = item.clients.filter((c) => c.status === "scheduled").map((c) => ({ clientId: c.clientId, amount }));
+      setState((current) => ({ ...current, appointments: current.appointments.map((a) => a.id === id ? { ...a, startedAt, endedAt, clients: a.clients.map((c) => c.status === "scheduled" ? { ...c, status: "completed", charge: amount } : c) } : a) }));
+      return { appointmentId: id, minutes, lines };
     },
+
     addClient(input) {
       const parsed = clientSchema.parse({ ...input, phone: formatPhone(input.phone) });
       const client: Client = { ...parsed, id: nextId("client"), createdAt: new Date().toISOString(), archived: false };
