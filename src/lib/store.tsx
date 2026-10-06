@@ -1,3 +1,4 @@
+import type React from "react";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { z } from "zod";
 import { applyNoShows, RATE_PER_MINUTE, sessionMinutes } from "./scheduling";
@@ -26,7 +27,9 @@ type Store = StoreState & {
 
 export type EndSummary = { appointmentId: string; clientId: string; minutes: number; amount: number; nextClientId: string | null };
 
-const StoreContext = createContext<Store | null>(null);
+// Keep one context instance across live code reloads, so the provider and its users never point at different copies.
+const contextHost = globalThis as unknown as { __lumiereStoreContext?: React.Context<Store | null> };
+const StoreContext = contextHost.__lumiereStoreContext ??= createContext<Store | null>(null);
 
 function nextId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
