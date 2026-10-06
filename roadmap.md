@@ -42,3 +42,4 @@
 - [x] Merge Client list / Billing tabs into one scrolling page
 
 - [x] Replace the upper client list with Client balances; move Record payment into the client billing info window.
+- [x] Add a "Clients" section header on Clients & Billing matching the "Billing" header.
