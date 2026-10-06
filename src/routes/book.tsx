@@ -1,7 +1,8 @@
 import { toast } from "sonner";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, UserPlus } from "lucide-react";
+import { useConfirm } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,6 +30,7 @@ function BookPage() {
   const { edit } = Route.useSearch();
   const store = useStore();
   const existing = edit ? store.appointments.find((item) => item.id === edit) : undefined;
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [step, setStep] = useState(0);
   const [durationMin, setDuration] = useState(existing?.durationMin ?? 30);
   const [date, setDate] = useState(existing?.date ?? toDateKey(new Date()));
@@ -38,6 +40,18 @@ function BookPage() {
   const [newClient, setNewClient] = useState({ name: "", phone: "" });
   const [showNew, setShowNew] = useState(false);
   const [error, setError] = useState("");
+  const seeded = store.ready && Boolean(edit);
+
+  // Saved data loads just after first paint, so re-sync the form once the
+  // store is ready (keeps reschedule prefill correct after a refresh).
+  useEffect(() => {
+    if (!seeded || !existing) return;
+    setDuration(existing.durationMin);
+    setDate(existing.date);
+    setTime(existing.time);
+    setClientIds(existing.clients.map((item) => item.clientId));
+    setNotes(existing.notes);
+  }, [seeded]);
 
   const times = useMemo(() => availableTimes(date, durationMin, store.appointments.filter((item) => item.id !== edit), store.blockedTimes), [date, durationMin, edit, store.appointments, store.blockedTimes]);
   const canContinue = step === 0 || (step === 1 && Boolean(time)) || (step === 2 && clientIds.length > 0);
@@ -52,13 +66,20 @@ function BookPage() {
     } catch { setError("Enter a name and 10-digit phone number."); }
   }
 
-  function finish() {
+  async function finish() {
     if (!time) return;
     if (existing && appointmentProgress(existing) !== "scheduled") { setError("Only scheduled appointments can be rescheduled."); return; }
     const noteError = notesIssue(notes);
     if (noteError) { setError(noteError); setStep(2); return; }
     const issue = validateAppointment({ date, time, durationMin, ...(edit ? { excludeId: edit } : {}) }, store.appointments, store.blockedTimes);
     if (issue) { setError(issue); setStep(1); return; }
+    if (edit && existing) {
+      const names = clientIds.map((id) => store.clients.find((client) => client.id === id)?.name).filter(Boolean).join(" & ") || "this";
+      const oldWhen = `${fromDateKey(existing.date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} at ${formatTime(existing.time)}`;
+      const newWhen = `${fromDateKey(date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} at ${formatTime(time)}`;
+      const ok = await confirm({ title: `Reschedule ${names}'s appointment?`, description: `From ${oldWhen} to ${newWhen}.`, confirmLabel: "Reschedule appointment", cancelLabel: "Keep original" });
+      if (!ok) return;
+    }
     const input = { date, time, durationMin, clientIds, notes };
     const savedId = edit ? (store.updateAppointment(edit, input), edit) : store.addAppointment(input).id;
     store.setHighlightId(savedId);
@@ -79,7 +100,7 @@ function BookPage() {
       {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
     </section>
     <div className="mt-5 flex justify-between"><Button variant="outline" className="h-11" disabled={step === 0} onClick={() => setStep((current) => current - 1)}><ArrowLeft /> Back</Button>{step < 3 ? <Button className="h-11" disabled={!canContinue} onClick={() => { if (step === 2) { const issue = notesIssue(notes); if (issue) { setError(issue); return; } } setError(""); setStep((current) => current + 1); }}>Continue <ArrowRight /></Button> : <Button className="h-11" onClick={finish}><Check /> {edit ? "Save changes" : "Confirm"}</Button>}</div>
-  </main>;
+    {confirmDialog}</main>;
 }
 
 function Summary({ label, value }: { label: string; value: string }) { return <div className="flex justify-between gap-5 py-3"><dt className="text-muted-foreground">{label}</dt><dd className="text-right font-medium">{value}</dd></div>; }
