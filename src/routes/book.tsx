@@ -87,7 +87,7 @@ function BookPage() {
       {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
     </section>
     <div className="mt-5 flex justify-between"><Button variant="outline" className="h-11" disabled={step === 0} onClick={() => setStep((current) => current - 1)}><ArrowLeft /> Back</Button>{step < 3 ? <Button className="h-11" disabled={!canContinue} onClick={() => { if (step === 2) { const issue = notesIssue(notes); if (issue) { setError(issue); return; } } setError(""); setStep((current) => current + 1); }}>Continue <ArrowRight /></Button> : <Button className="h-11" onClick={finish}><Check /> {edit ? "Save changes" : "Confirm"}</Button>}</div>
-  </main>;
+    {confirmDialog}</main>;
 }
 
 function Summary({ label, value }: { label: string; value: string }) { return <div className="flex justify-between gap-5 py-3"><dt className="text-muted-foreground">{label}</dt><dd className="text-right font-medium">{value}</dd></div>; }
