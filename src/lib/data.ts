@@ -86,6 +86,17 @@ export function minutesToTime(total: number): string {
   return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 }
 
+/** Local "HH:MM" for a stored ISO timestamp, ready for a time input. */
+export function isoToTime(iso: string): string {
+  const date = new Date(iso);
+  return minutesToTime(date.getHours() * 60 + date.getMinutes());
+}
+
+/** ISO timestamp for a time typed against an appointment date (local time). */
+export function timeToISO(dateKey: string, time: string): string {
+  return new Date(`${dateKey}T${time}:00`).toISOString();
+}
+
 export function formatTime(time: string): string {
   const total = timeToMinutes(time);
   const hours = Math.floor(total / 60);
