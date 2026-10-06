@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
-import { CreditCard, Download, FileText } from "lucide-react";
+import { Download, FileText, ReceiptText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { RecordPaymentDialog } from "@/components/RecordPaymentDialog";
 import { ReportDetailDialog } from "@/components/ReportDetailDialog";
 import { buildReport, paymentsCsv, type LedgerRow } from "@/lib/billing";
 import { fromDateKey, toDateKey } from "@/lib/data";
@@ -18,7 +17,6 @@ export function BillingPanel() {
 
 function BillingContent() {
   const store = useStore();
-  const [payClient, setPayClient] = useState<string | null>(null);
   const today = toDateKey(new Date());
   const monthStart = today.slice(0, 8) + "01";
   const [from, setFrom] = useState(monthStart);
@@ -54,26 +52,12 @@ function BillingContent() {
       </div>
     </section>
 
-    <section className="mt-7 overflow-hidden rounded-xl border bg-card">
-      <h2 className="border-b p-5 font-serif text-xl">Client balances</h2>
-      <div className="overflow-x-auto"><table className="w-full text-sm">
-        <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground"><tr><th className="p-3">Client</th><th className="p-3">Phone</th><th className="p-3 text-right">Balance</th><th className="p-3">Notes</th><th className="p-3" /></tr></thead>
-        <tbody className="divide-y">{rows.map(({ client, balance, noShows }) => <tr key={client.id}>
-          <td className="p-3 font-medium">{client.name}</td>
-          <td className="p-3 text-muted-foreground">{client.phone}</td>
-          <td className={`p-3 text-right font-semibold ${balance > 0 ? "text-destructive" : balance < 0 ? "text-status-completed" : ""}`}>{balance < 0 ? `${money(-balance)} credit` : money(balance)}</td>
-          <td className="p-3">{noShows > 0 && <span className="rounded-full border border-status-noshow/40 bg-status-noshow/15 px-2 py-0.5 text-[11px] font-medium text-status-noshow">{noShows} no-show{noShows > 1 ? "s" : ""}</span>}</td>
-          <td className="p-3 text-right"><Button variant="outline" className="h-10" onClick={() => setPayClient(client.id)}><CreditCard /> Record payment</Button></td>
-        </tr>)}</tbody>
-      </table></div>
-    </section>
 
     <section className="mt-7 overflow-hidden rounded-xl border bg-card">
       <h2 className="border-b p-5 font-serif text-xl">Recent payments</h2>
       {recent.length === 0 ? <p className="p-6 text-center text-sm text-muted-foreground">No payments recorded yet.</p> : <ul className="divide-y">{recent.map((p) => <li key={p.id} className="flex justify-between gap-4 p-4 text-sm"><span>{store.clients.find((c) => c.id === p.clientId)?.name} <span className="text-muted-foreground">· {new Date(p.paidAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })} · {p.method}</span></span><span className="font-semibold">{money(p.amount)}</span></li>)}</ul>}
     </section>
 
-    <RecordPaymentDialog open={Boolean(payClient)} onOpenChange={(o: boolean) => { if (!o) setPayClient(null); }} clientIds={payClient ? [payClient] : undefined} />
 
     <Dialog open={reportOpen} onOpenChange={setReportOpen}><DialogContent className="max-w-2xl">
       <DialogHeader><DialogTitle>Payment report</DialogTitle><DialogDescription>{fromDateKey(from).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} – {fromDateKey(to).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</DialogDescription></DialogHeader>
@@ -93,4 +77,29 @@ function BillingContent() {
     </DialogContent></Dialog>
     <ReportDetailDialog row={detail} onClose={() => setDetail(null)} />
   </div>;
+}
+
+export function ClientBalances({ onViewBilling }: { onViewBilling: (clientId: string) => void }) {
+  const store = useStore();
+  const rows = useMemo(() => store.clients.filter((c) => !c.archived).map((client) => ({
+    client,
+    balance: clientBalance(client.id, store.appointments, store.payments),
+    noShows: store.appointments.filter((a) => a.clients.some((c) => c.clientId === client.id && c.status === "no_show")).length,
+  })).sort((a, b) => b.balance - a.balance), [store.clients, store.appointments, store.payments]);
+  return (
+    <section className="mt-5 overflow-hidden rounded-xl border bg-card">
+      <h2 className="border-b p-5 font-serif text-xl">Client balances</h2>
+      <div className="overflow-x-auto"><table className="w-full text-sm">
+        <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground"><tr><th className="p-3">Client</th><th className="p-3">Phone</th><th className="p-3 text-right">Balance</th><th className="p-3">Notes</th><th className="p-3" /></tr></thead>
+        <tbody className="divide-y">{rows.map(({ client, balance, noShows }) => <tr key={client.id}>
+          <td className="p-3 font-medium">{client.name}</td>
+          <td className="p-3 text-muted-foreground">{client.phone}</td>
+          <td className={`p-3 text-right font-semibold ${balance > 0 ? "text-destructive" : balance < 0 ? "text-status-completed" : ""}`}>{balance < 0 ? `${money(-balance)} credit` : money(balance)}</td>
+          <td className="p-3">{noShows > 0 && <span className="rounded-full border border-status-noshow/40 bg-status-noshow/15 px-2 py-0.5 text-[11px] font-medium text-status-noshow">{noShows} no-show{noShows > 1 ? "s" : ""}</span>}</td>
+          <td className="p-3 text-right"><Button variant="outline" className="h-11 whitespace-nowrap" aria-label={`View billing info for ${client.name}`} onClick={() => onViewBilling(client.id)}><ReceiptText /> View billing info</Button></td>
+        </tr>)}</tbody>
+      </table></div>
+    </section>
+
+  );
 }

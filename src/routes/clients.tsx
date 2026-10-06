@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { CreditCard, Lock, Phone, ReceiptText, UserPlus } from "lucide-react";
-import { BillingPanel } from "@/components/BillingPanel";
-import { RecordPaymentDialog } from "@/components/RecordPaymentDialog";
+import { Lock, Phone, ReceiptText, UserPlus } from "lucide-react";
+import { BillingPanel, ClientBalances } from "@/components/BillingPanel";
 import { ClientCombobox } from "@/components/ClientCombobox";
 import { ClientBillingDialog } from "@/components/ClientBillingDialog";
 import { Button } from "@/components/ui/button";
@@ -39,7 +38,6 @@ function ClientsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState({ name: "", phone: "" });
-  const [payOpen, setPayOpen] = useState(false);
   const [billingInfoId, setBillingInfoId] = useState<string | null>(null);
   const [pageUnlocked, setPageUnlocked] = useState(false);
 
@@ -124,7 +122,7 @@ function ClientsPage() {
   return <main className="mx-auto max-w-5xl px-4 py-8">
       <p className="text-xs font-medium uppercase text-muted-foreground">Practitioner only</p>
       <h1 className="mt-1 font-serif text-3xl">Clients &amp; Billing</h1>
-    <section className="mt-5 max-w-3xl">
+    <section className="mt-5">
     <div className="mt-2 flex justify-end">
       <Button className="h-11" variant="outline" onClick={() => startNew()}><UserPlus /> New client</Button>
     </div>
@@ -138,33 +136,7 @@ function ClientsPage() {
       <p className="mt-2 text-xs text-muted-foreground">{store.clients.length} client{store.clients.length === 1 ? "" : "s"} on file</p>
     </div>
 
-    <ul className="mt-4 divide-y border bg-card">
-      {store.clients.filter((c) => !c.archived).map((c) => {
-        const owed = clientBalance(c.id, store.appointments, store.payments);
-        return <li key={c.id} className={`flex items-center gap-2 px-4 py-3 ${selectedId === c.id ? "bg-primary/10" : ""}`}>
-          <button
-            type="button"
-            onClick={() => { setSelectedId(c.id); setCreating(false); }}
-            className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
-          >
-            <span>
-              <span className="block font-medium">{c.name}</span>
-              <span className="block text-xs text-muted-foreground">{c.phone}</span>
-            </span>
-            <span className="text-right">
-              <span className={`block text-sm font-semibold ${owed > 0 ? "text-destructive" : ""}`}>${owed.toFixed(2)}</span>
-              <span className="block text-xs text-muted-foreground">balance</span>
-            </span>
-          </button>
-          <Button
-            variant="outline"
-            className="h-11 shrink-0"
-            aria-label={`View billing info for ${c.name}`}
-            onClick={() => setBillingInfoId(c.id)}
-          ><ReceiptText /> <span className="hidden sm:inline">Billing info</span></Button>
-        </li>;
-      })}
-    </ul>
+    <ClientBalances onViewBilling={setBillingInfoId} />
 
     {creating && <div className="mt-4 grid gap-2 border bg-card p-4 sm:grid-cols-[1fr_1fr_auto]">
       <Input className="h-11" placeholder="Full name" value={draft.name} onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))} />
@@ -188,12 +160,10 @@ function ClientsPage() {
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         <Button className="h-11" variant="outline" onClick={() => setBillingInfoId(selected.id)}><ReceiptText /> View billing info</Button>
-        <Button className="h-11" variant="outline" onClick={() => setPayOpen(true)}><CreditCard /> Record payment</Button>
       </div>
       <p className="mt-4 text-sm text-muted-foreground">{visits} completed visit{visits === 1 ? "" : "s"}</p>
     </article> : <p className="mt-5 border border-dashed p-6 text-center text-sm text-muted-foreground">Start typing above to pull up a client, or create a new one.</p>}
 
-    {selected && <RecordPaymentDialog open={payOpen} onOpenChange={setPayOpen} clientIds={[selected.id]} />}
     <ClientBillingDialog client={store.clients.find((c) => c.id === billingInfoId) ?? null} onClose={() => setBillingInfoId(null)} />
     </section>
 

@@ -1,5 +1,8 @@
-import { useMemo } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { CreditCard } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { RecordPaymentDialog } from "@/components/RecordPaymentDialog";
+import { useMemo, useState } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { fromDateKey, formatDurationLong, formatTime, statusLabel, type Client } from "@/lib/data";
 import { clientBalance } from "@/lib/scheduling";
 import { useStore } from "@/lib/store";
@@ -16,6 +19,7 @@ const STATUS_STYLE: Record<string, string> = {
 /** Full billing picture for one client: every appointment charge, every payment, and the running balance. */
 export function ClientBillingDialog({ client, onClose }: { client: Client | null; onClose: () => void }) {
   const store = useStore();
+  const [payOpen, setPayOpen] = useState(false);
 
   const data = useMemo(() => {
     if (!client) return null;
@@ -43,7 +47,8 @@ export function ClientBillingDialog({ client, onClose }: { client: Client | null
 
   if (!client || !data) return null;
 
-  return <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+  return <>
+  <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
     <DialogContent className="max-w-2xl">
       <DialogHeader>
         <DialogTitle>{client.name} — billing info</DialogTitle>
@@ -75,6 +80,11 @@ export function ClientBillingDialog({ client, onClose }: { client: Client | null
           <span className="ml-auto font-medium">{money(p.amount)}</span>
         </li>)}</ul>}
       </div>
+      <DialogFooter>
+        <Button className="h-11" onClick={() => setPayOpen(true)}><CreditCard /> Record payment</Button>
+      </DialogFooter>
     </DialogContent>
-  </Dialog>;
+  </Dialog>
+  <RecordPaymentDialog open={payOpen} onOpenChange={setPayOpen} clientIds={[client.id]} />
+  </>;
 }

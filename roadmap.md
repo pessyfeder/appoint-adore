@@ -40,3 +40,5 @@
 - [x] Remove Collection priorities list from Billing
 - [x] "View billing info" button per client: full appointment + payment + balance details
 - [x] Merge Client list / Billing tabs into one scrolling page
+
+- [x] Replace the upper client list with Client balances; move Record payment into the client billing info window.
