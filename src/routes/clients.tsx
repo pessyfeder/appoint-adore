@@ -168,7 +168,7 @@ function ClientsPage() {
     <ClientBillingDialog client={store.clients.find((c) => c.id === billingInfoId) ?? null} onClose={() => setBillingInfoId(null)} />
     </section>
 
-    <section className="mt-10 border-t pt-8">
+    <section className="mt-8">
       <BillingPanel />
     </section>
   </main>;
