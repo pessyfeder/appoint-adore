@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { CreditCard, Lock, Phone, ReceiptText, UserPlus } from "lucide-react";
 import { BillingPanel } from "@/components/BillingPanel";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RecordPaymentDialog } from "@/components/RecordPaymentDialog";
 import { ClientCombobox } from "@/components/ClientCombobox";
 import { ClientBillingDialog } from "@/components/ClientBillingDialog";
@@ -26,14 +25,11 @@ export const Route = createFileRoute("/clients")({
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
   ] }),
-  validateSearch: (s: Record<string, unknown>): { tab?: "billing" } => (s["tab"] === "billing" ? { tab: "billing" } : {}),
   component: ClientsPage,
 });
 
 function ClientsPage() {
   const store = useStore();
-  const tab = Route.useSearch().tab === "billing" ? "billing" : "directory";
-  const navigate = Route.useNavigate();
   const { verify } = useLock();
   const [pass, setPass] = useState("");
   const [passError, setPassError] = useState("");
@@ -128,10 +124,7 @@ function ClientsPage() {
   return <main className="mx-auto max-w-5xl px-4 py-8">
       <p className="text-xs font-medium uppercase text-muted-foreground">Practitioner only</p>
       <h1 className="mt-1 font-serif text-3xl">Clients &amp; Billing</h1>
-    <Tabs value={tab} onValueChange={(v) => navigate({ search: v === "billing" ? { tab: "billing" } : {} })} className="mt-5">
-      <TabsList className="h-12"><TabsTrigger className="h-10 px-5" value="directory">Client list</TabsTrigger><TabsTrigger className="h-10 px-5" value="billing">Billing</TabsTrigger></TabsList>
-      <TabsContent value="billing"><BillingPanel /></TabsContent>
-      <TabsContent value="directory" className="max-w-3xl">
+    <section className="mt-5 max-w-3xl">
     <div className="mt-2 flex justify-end">
       <Button className="h-11" variant="outline" onClick={() => startNew()}><UserPlus /> New client</Button>
     </div>
@@ -202,7 +195,11 @@ function ClientsPage() {
 
     {selected && <RecordPaymentDialog open={payOpen} onOpenChange={setPayOpen} clientIds={[selected.id]} />}
     <ClientBillingDialog client={store.clients.find((c) => c.id === billingInfoId) ?? null} onClose={() => setBillingInfoId(null)} />
-      </TabsContent>
-    </Tabs>
+    </section>
+
+    <section className="mt-10 border-t pt-8">
+      <h2 className="font-serif text-2xl">Billing</h2>
+      <div className="mt-4"><BillingPanel /></div>
+    </section>
   </main>;
 }
