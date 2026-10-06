@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { STATUS_CARD, StartEndControls, StatusBadge } from "@/components/AppointmentControls";
+import { CLIENT_BADGE, CLIENT_LABEL, STATUS_CARD, StartEndControls, StatusBadge } from "@/components/AppointmentControls";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { ChevronLeft, ChevronRight, Clock3, Plus, UserRound } from "lucide-react";
@@ -132,7 +132,7 @@ function SchedulePage() {
         <DialogContent>{current && <>
           <DialogHeader><DialogTitle>{clientNames(current, clients)}</DialogTitle><DialogDescription>{fromDateKey(current.date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} at {formatTime(current.time)} · {formatDuration(current.durationMin)}</DialogDescription></DialogHeader>
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/40 p-3"><StatusBadge item={current} /><StartEndControls item={current} /></div>
-          <div className="space-y-3">{current.clients.map((entry) => <div key={entry.clientId} className="flex flex-wrap items-center justify-between gap-2 border-b pb-3"><span>{clients.find((client) => client.id === entry.clientId)?.name}</span><div className="flex gap-1">{(["completed", "no_show", "cancelled"] as const).map((status) => <Button key={status} size="sm" variant={entry.status === status ? "secondary" : "outline"} onClick={() => setClientStatus(current.id, entry.clientId, status)}>{status === "no_show" ? "No-show" : status}</Button>)}</div></div>)}</div>
+          <div className="space-y-3">{current.clients.map((entry) => <div key={entry.clientId} className="flex flex-wrap items-center justify-between gap-2 border-b pb-3"><span>{clients.find((client) => client.id === entry.clientId)?.name}</span><div className="flex items-center gap-2"><span className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${CLIENT_BADGE[entry.status]}`}>{CLIENT_LABEL[entry.status]}</span>{entry.status === "scheduled" && !current.startedAt && <Button size="sm" variant="outline" className="h-10" onClick={() => setClientStatus(current.id, entry.clientId, "cancelled")}>Cancel</Button>}</div></div>)}</div>
           {current.notes && <p className="text-sm text-muted-foreground">{current.notes}</p>}
           <DialogFooter><Button asChild variant="outline"><Link to="/book" search={{ edit: current.id }}>Reschedule</Link></Button></DialogFooter>
         </>}</DialogContent>

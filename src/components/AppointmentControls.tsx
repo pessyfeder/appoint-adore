@@ -1,8 +1,10 @@
-import { Play, Square, UserX } from "lucide-react";
+import { useState } from "react";
+import { Play, Square } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { appointmentProgress, PROGRESS_LABEL, type Appointment, type AppointmentProgress } from "@/lib/data";
+import { formatDuration, appointmentProgress, PROGRESS_LABEL, type Appointment, type AppointmentProgress } from "@/lib/data";
 import { useLock } from "@/lib/lock";
-import { useStore } from "@/lib/store";
+import { useStore, type EndSummary } from "@/lib/store";
 
 export const STATUS_BADGE: Record<AppointmentProgress, string> = {
   scheduled: "border-status-scheduled/40 bg-status-scheduled/15 text-status-scheduled",
@@ -11,6 +13,9 @@ export const STATUS_BADGE: Record<AppointmentProgress, string> = {
   cancelled: "border-status-cancelled/40 bg-status-cancelled/15 text-status-cancelled line-through",
   no_show: "border-status-noshow/40 bg-status-noshow/15 text-status-noshow",
 };
+
+export const CLIENT_BADGE = { scheduled: STATUS_BADGE.scheduled, completed: STATUS_BADGE.ended, cancelled: STATUS_BADGE.cancelled, no_show: STATUS_BADGE.no_show } as const;
+export const CLIENT_LABEL = { scheduled: "Scheduled", completed: "Completed", cancelled: "Cancelled", no_show: "No-show" } as const;
 
 /** Left accent + tint for calendar cards. */
 export const STATUS_CARD: Record<AppointmentProgress, string> = {
@@ -31,14 +36,26 @@ function clock(iso?: string) {
 }
 
 export function StartEndControls({ item }: { item: Appointment }) {
-  const { startAppointment, endAppointment, setClientStatus } = useStore();
+  const { startAppointment, endAppointment, clients } = useStore();
   const { confirmPassphrase } = useLock();
+  const [summary, setSummary] = useState<EndSummary | null>(null);
   const progress = appointmentProgress(item);
   async function start() { if (await confirmPassphrase("Starting an appointment")) startAppointment(item.id); }
-  async function end() { if (await confirmPassphrase("Ending an appointment")) endAppointment(item.id); }
-  function noShow() { item.clients.filter((c) => c.status === "scheduled").forEach((c) => setClientStatus(item.id, c.clientId, "no_show")); }
-  if (progress === "scheduled") return <div className="flex gap-2"><Button className="h-11" onClick={start}><Play /> Start</Button><Button className="h-11" variant="outline" onClick={noShow}><UserX /> No-show</Button></div>;
-  if (progress === "in_progress") return <div className="flex items-center gap-2"><span className="text-xs text-muted-foreground">Started {clock(item.startedAt)}</span><Button className="h-11" variant="destructive" onClick={end}><Square /> End</Button></div>;
-  if (item.startedAt && item.endedAt) return <span className="text-xs text-muted-foreground">{clock(item.startedAt)} – {clock(item.endedAt)}</span>;
-  return null;
+  function end() { setSummary(endAppointment(item.id)); }
+  const name = (id: string) => clients.find((c) => c.id === id)?.name ?? "Client";
+  const popup = <Dialog open={Boolean(summary)} onOpenChange={(open) => !open && setSummary(null)}>
+    <DialogContent>{summary && <>
+      <DialogHeader><DialogTitle className="font-serif text-2xl">Session complete</DialogTitle><DialogDescription>Billed for actual time worked.</DialogDescription></DialogHeader>
+      <div className="divide-y rounded-lg border">
+        <div className="flex justify-between p-4"><span className="text-muted-foreground">Duration</span><span className="font-semibold">{formatDuration(summary.minutes)}</span></div>
+        {summary.lines.map((line) => <div key={line.clientId} className="flex justify-between p-4"><span>{name(line.clientId)}</span><span className="text-lg font-semibold">${line.amount.toFixed(2)} owed</span></div>)}
+      </div>
+      <DialogFooter><Button className="h-11" onClick={() => setSummary(null)}>Done</Button></DialogFooter>
+    </>}</DialogContent>
+  </Dialog>;
+  let control = null;
+  if (progress === "scheduled") control = <Button className="h-11" onClick={start}><Play /> Start</Button>;
+  else if (progress === "in_progress") control = <div className="flex items-center gap-2"><span className="text-xs text-muted-foreground">Started {clock(item.startedAt)}</span><Button className="h-11" variant="destructive" onClick={end}><Square /> End</Button></div>;
+  else if (item.startedAt && item.endedAt) control = <span className="text-xs text-muted-foreground">{clock(item.startedAt)} – {clock(item.endedAt)}</span>;
+  return <>{control}{popup}</>;
 }
