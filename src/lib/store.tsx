@@ -18,13 +18,13 @@ type Store = StoreState & {
   setClientStatus: (appointmentId: string, clientId: string, status: Appointment["clients"][number]["status"]) => void;
   addPayment: (input: { clientId: string; amount: number; method: Payment["method"]; notes: string }) => void;
   addBlockedTime: (input: Omit<BlockedTime, "id">) => void;
-  startAppointment: (id: string) => void;
-  endAppointment: (id: string) => EndSummary | null;
+  startClient: (appointmentId: string, clientId: string) => void;
+  endClient: (appointmentId: string) => EndSummary | null;
   highlightId: string | null;
   setHighlightId: (id: string | null) => void;
 };
 
-export type EndSummary = { appointmentId: string; minutes: number; lines: { clientId: string; amount: number }[] };
+export type EndSummary = { appointmentId: string; clientId: string; minutes: number; amount: number; nextClientId: string | null };
 
 const StoreContext = createContext<Store | null>(null);
 
@@ -62,21 +62,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     ready,
     highlightId,
     setHighlightId,
-    startAppointment(id) {
-      setState((current) => ({ ...current, appointments: current.appointments.map((item) => item.id === id && !item.startedAt ? { ...item, startedAt: new Date().toISOString() } : item) }));
+    startClient(appointmentId, clientId) {
+      const now = new Date().toISOString();
+      setState((current) => ({ ...current, appointments: current.appointments.map((a) => a.id !== appointmentId || a.clients.some((c) => c.startedAt && !c.endedAt) ? a : { ...a, startedAt: a.startedAt ?? now, clients: a.clients.map((c) => c.clientId === clientId && c.status === "scheduled" && !c.startedAt ? { ...c, startedAt: now } : c) }) }));
     },
-    endAppointment(id) {
-      const item = state.appointments.find((a) => a.id === id);
-      if (!item || item.endedAt) return null;
+    endClient(appointmentId) {
+      const item = state.appointments.find((a) => a.id === appointmentId);
+      const running = item?.clients.find((c) => c.startedAt && !c.endedAt);
+      if (!item || !running) return null;
       const endedAt = new Date().toISOString();
-      const startedAt = item.startedAt ?? endedAt;
-      const minutes = sessionMinutes(startedAt, endedAt);
+      const minutes = sessionMinutes(running.startedAt!, endedAt);
       const amount = minutes * RATE_PER_MINUTE;
-      const lines = item.clients.filter((c) => c.status === "scheduled").map((c) => ({ clientId: c.clientId, amount }));
-      setState((current) => ({ ...current, appointments: current.appointments.map((a) => a.id === id ? { ...a, startedAt, endedAt, clients: a.clients.map((c) => c.status === "scheduled" ? { ...c, status: "completed", charge: amount } : c) } : a) }));
-      return { appointmentId: id, minutes, lines };
+      const next = item.clients.find((c) => c.status === "scheduled" && !c.startedAt && c.clientId !== running.clientId);
+      setState((current) => ({ ...current, appointments: current.appointments.map((a) => a.id !== appointmentId ? a : { ...a, endedAt: next ? undefined : endedAt, clients: a.clients.map((c) => c.clientId === running.clientId ? { ...c, endedAt, status: "completed", charge: amount } : c) } as typeof a) }));
+      return { appointmentId, clientId: running.clientId, minutes, amount, nextClientId: next?.clientId ?? null };
     },
-
     addClient(input) {
       const parsed = clientSchema.parse({ ...input, phone: formatPhone(input.phone) });
       const client: Client = { ...parsed, id: nextId("client"), createdAt: new Date().toISOString(), archived: false };

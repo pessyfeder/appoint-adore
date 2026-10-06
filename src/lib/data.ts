@@ -12,7 +12,11 @@ export type AppointmentClient = {
   clientId: string;
   status: AppointmentStatus;
   charge: number;
+  startedAt?: string;
+  endedAt?: string;
 };
+
+export const clientInSession = (c: AppointmentClient) => Boolean(c.startedAt && !c.endedAt);
 
 export type Appointment = {
   id: string;
@@ -158,13 +162,13 @@ export function notesIssue(raw: string): string | null {
 export type AppointmentProgress = "scheduled" | "in_progress" | "ended" | "cancelled" | "no_show";
 
 export function appointmentProgress(item: Appointment): AppointmentProgress {
-  if (item.endedAt) return "ended";
-  if (item.startedAt) return "in_progress";
+  if (item.clients.some(clientInSession)) return "in_progress";
+  const waiting = item.clients.some((c) => c.status === "scheduled");
+  if (waiting) return item.startedAt ? "in_progress" : "scheduled";
   if (item.clients.every((client) => client.status === "cancelled")) return "cancelled";
   const active = item.clients.filter((client) => client.status !== "cancelled");
   if (active.every((client) => client.status === "no_show")) return "no_show";
-  if (item.clients.every((client) => client.status !== "scheduled")) return "ended";
-  return "scheduled";
+  return "ended";
 }
 
 export const PROGRESS_LABEL: Record<AppointmentProgress, string> = { scheduled: "Scheduled", in_progress: "In progress", ended: "Completed", cancelled: "Cancelled", no_show: "No-show" };
