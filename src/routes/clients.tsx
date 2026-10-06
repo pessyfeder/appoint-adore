@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { CreditCard, Lock, Phone, UserPlus } from "lucide-react";
+import { CreditCard, Lock, Phone, ReceiptText, UserPlus } from "lucide-react";
 import { BillingPanel } from "@/components/BillingPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RecordPaymentDialog } from "@/components/RecordPaymentDialog";
 import { ClientCombobox } from "@/components/ClientCombobox";
+import { ClientBillingDialog } from "@/components/ClientBillingDialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,7 @@ function ClientsPage() {
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState({ name: "", phone: "" });
   const [payOpen, setPayOpen] = useState(false);
+  const [billingInfoId, setBillingInfoId] = useState<string | null>(null);
   const [pageUnlocked, setPageUnlocked] = useState(false);
 
   const selected = store.clients.find((client) => client.id === selectedId) ?? null;
