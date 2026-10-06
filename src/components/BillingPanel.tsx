@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { CreditCard, Download, FileText, Lock } from "lucide-react";
+import { CreditCard, Download, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,6 @@ import { RecordPaymentDialog } from "@/components/RecordPaymentDialog";
 import { ReportDetailDialog } from "@/components/ReportDetailDialog";
 import { buildReport, paymentsCsv, type LedgerRow } from "@/lib/billing";
 import { fromDateKey, toDateKey } from "@/lib/data";
-import { useLock } from "@/lib/lock";
 import { clientBalance } from "@/lib/scheduling";
 import { useStore } from "@/lib/store";
 
