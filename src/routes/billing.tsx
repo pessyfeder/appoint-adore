@@ -42,7 +42,6 @@ function BillingPage() {
 
 function BillingContent() {
   const store = useStore();
-  const [payOpen, setPayOpen] = useState(false);
   const [payClient, setPayClient] = useState<string | null>(null);
   const today = toDateKey(new Date());
   const monthStart = today.slice(0, 8) + "01";
@@ -55,7 +54,6 @@ function BillingContent() {
     balance: clientBalance(client.id, store.appointments, store.payments),
     noShows: store.appointments.filter((a) => a.clients.some((c) => c.clientId === client.id && c.status === "no_show")).length,
   })).sort((a, b) => b.balance - a.balance), [store.clients, store.appointments, store.payments]);
-  const totalOwed = rows.reduce((s, r) => s + Math.max(0, r.balance), 0);
   const report = useMemo(() => buildReport(from, to, store.appointments, store.payments, store.clients), [from, to, store.appointments, store.payments, store.clients]);
   const recent = [...store.payments].sort((a, b) => b.paidAt.localeCompare(a.paidAt)).slice(0, 8);
 
@@ -69,10 +67,11 @@ function BillingContent() {
   }
 
   return <main className="mx-auto max-w-5xl px-4 py-8">
-    <div className="flex flex-wrap items-end justify-between gap-4">
-      <div><p className="text-xs font-medium uppercase text-muted-foreground">Practitioner only</p><h1 className="mt-1 font-serif text-3xl">Billing</h1></div>
-      <div className="flex flex-wrap items-center gap-3"><Button className="h-11" onClick={() => setPayOpen(true)}><CreditCard /> Record payment</Button><div className="rounded-xl border bg-card px-5 py-3 text-right"><p className="text-xs text-muted-foreground">Total owed by clients</p><p className="text-2xl font-semibold text-destructive">{money(totalOwed)}</p></div></div>
+    <div>
+      <p className="text-xs font-medium uppercase text-muted-foreground">Practitioner only</p>
+      <h1 className="mt-1 font-serif text-3xl">Billing</h1>
     </div>
+
 
     <section className="mt-7 rounded-xl border bg-card p-5">
       <h2 className="font-serif text-xl">Payment report</h2>
@@ -103,7 +102,6 @@ function BillingContent() {
       {recent.length === 0 ? <p className="p-6 text-center text-sm text-muted-foreground">No payments recorded yet.</p> : <ul className="divide-y">{recent.map((p) => <li key={p.id} className="flex justify-between gap-4 p-4 text-sm"><span>{store.clients.find((c) => c.id === p.clientId)?.name} <span className="text-muted-foreground">· {new Date(p.paidAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })} · {p.method}</span></span><span className="font-semibold">{money(p.amount)}</span></li>)}</ul>}
     </section>
 
-    <RecordPaymentDialog open={payOpen} onOpenChange={setPayOpen} />
     <RecordPaymentDialog open={Boolean(payClient)} onOpenChange={(o: boolean) => { if (!o) setPayClient(null); }} clientIds={payClient ? [payClient] : undefined} />
 
     <Dialog open={reportOpen} onOpenChange={setReportOpen}><DialogContent className="max-w-2xl">

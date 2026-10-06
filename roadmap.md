@@ -20,3 +20,5 @@
 - [x] Billing tab: balances, no-show notes, payments, report, CSV (password to view)
 - [x] End popup with duration + amount owed (no password)
 - [x] Automatic no-show when slot passes unstarted
+- [x] Shared appointments: time each client separately, bill each on their own duration; Reschedule only for Scheduled.
+- [x] Remove the top "Record payment" button and "Total owed by clients" figure from Billing.
