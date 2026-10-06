@@ -16,6 +16,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { LockProvider } from "../lib/lock";
 import { StoreProvider } from "../lib/store";
 import { Nav } from "../components/Nav";
+import { ActiveSessionBanner } from "../components/ActiveSessionBanner";
 
 function NotFoundComponent() {
   return (
@@ -126,6 +127,7 @@ function RootComponent() {
       <LockProvider>
         <StoreProvider>
           <Nav />
+          <ActiveSessionBanner />
           <Outlet />
           <Toaster position="top-center" richColors />
         </StoreProvider>

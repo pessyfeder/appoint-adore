@@ -9,8 +9,7 @@ const links = [
   { to: "/", label: "Dashboard" },
   { to: "/schedule", label: "Schedule" },
   { to: "/book", label: "Book" },
-  { to: "/clients", label: "Clients" },
-  { to: "/billing", label: "Billing" },
+  { to: "/clients", label: "Clients & Billing" },
 ] as const;
 
 export function Nav() {

@@ -37,7 +37,8 @@ function clock(iso?: string) {
 }
 
 export function StartEndControls({ item }: { item: Appointment }) {
-  const { startClient, endClient, clients } = useStore();
+  const { startClient, endClient, clients, appointments } = useStore();
+  const busyElsewhere = appointments.some((a) => a.id !== item.id && a.clients.some(clientInSession));
   const { confirmPassphrase } = useLock();
   const [summary, setSummary] = useState<EndSummary | null>(null);
   const [paying, setPaying] = useState<EndSummary | null>(null);
@@ -67,6 +68,7 @@ export function StartEndControls({ item }: { item: Appointment }) {
   const payment = <RecordPaymentDialog open={Boolean(paying)} onOpenChange={(o: boolean) => { if (!o) setPaying(null); }} clientIds={paying ? [paying.clientId] : undefined} defaultAmount={paying?.amount} />;
   let control = null;
   if (running) control = <div className="flex items-center gap-2"><span className="text-xs text-muted-foreground">{shared ? `${first(running.clientId)} · ` : ""}started {clock(running.startedAt)}</span><Button className="h-11" variant="destructive" onClick={end}><Square /> End{shared ? ` ${first(running.clientId)}` : ""}</Button></div>;
+  else if (waiting && busyElsewhere) control = <span className="text-xs text-muted-foreground">Another session is running</span>;
   else if (waiting) control = <Button className="h-11" onClick={() => start(waiting.clientId)}><Play /> Start{shared ? ` ${first(waiting.clientId)}` : ""}</Button>;
   else if (item.startedAt && item.endedAt) control = <span className="text-xs text-muted-foreground">{clock(item.startedAt)} – {clock(item.endedAt)}</span>;
   return <>{control}{popup}{payment}</>;
