@@ -30,6 +30,11 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-status-scheduled: var(--status-scheduled);
+  --color-status-progress: var(--status-progress);
+  --color-status-completed: var(--status-completed);
+  --color-status-cancelled: var(--status-cancelled);
+  --color-status-noshow: var(--status-noshow);
   --color-sage: var(--sage);
   --color-sage-foreground: var(--sage-foreground);
   --color-blush: var(--blush);
@@ -47,6 +52,11 @@
   --popover: oklch(0.995 0.006 90);
   --popover-foreground: oklch(0.27 0.03 55);
   --primary: oklch(0.5 0.09 155);
+  --status-scheduled: oklch(0.55 0.12 250);
+  --status-progress: oklch(0.7 0.15 70);
+  --status-completed: oklch(0.55 0.12 150);
+  --status-cancelled: oklch(0.6 0.01 260);
+  --status-noshow: oklch(0.56 0.19 25);
   --primary-foreground: oklch(0.98 0.01 120);
   --secondary: oklch(0.93 0.02 90);
   --secondary-foreground: oklch(0.35 0.04 60);

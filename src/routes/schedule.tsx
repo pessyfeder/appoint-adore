@@ -1,11 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { StartEndControls, StatusBadge } from "@/components/AppointmentControls";
+import { STATUS_CARD, StartEndControls, StatusBadge } from "@/components/AppointmentControls";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { ChevronLeft, ChevronRight, Clock3, Plus, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { formatDuration, formatTime, fromDateKey, timeToMinutes, toDateKey, type Appointment } from "@/lib/data";
+import { appointmentProgress, formatDuration, formatTime, fromDateKey, timeToMinutes, toDateKey, type Appointment } from "@/lib/data";
 import { useLock } from "@/lib/lock";
 import { useStore } from "@/lib/store";
 
@@ -39,6 +41,7 @@ function SchedulePage() {
   const [cursor, setCursor] = useState(() => new Date());
   const [selected, setSelected] = useState<Appointment | null>(null);
   const [blockOpen, setBlockOpen] = useState(false);
+  const [goOpen, setGoOpen] = useState(false);
   useEffect(() => {
     if (!highlightId) return;
     const target = appointments.find((item) => item.id === highlightId);
@@ -90,7 +93,13 @@ function SchedulePage() {
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-2 shadow-sm">
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-11 w-11 rounded-lg" onClick={() => move(-1)} aria-label={`Previous ${view}`}><ChevronLeft /></Button>
-            <Button variant="outline" className="h-11 rounded-lg px-5" onClick={() => setCursor(new Date())}>Today</Button>
+            <div className="flex rounded-lg bg-muted p-1">
+              <Button variant={toDateKey(cursor) === toDateKey(new Date()) ? "secondary" : "ghost"} className="h-10 rounded-md px-4 shadow-sm" onClick={() => setCursor(new Date())}>Today</Button>
+              <Popover open={goOpen} onOpenChange={setGoOpen}>
+                <PopoverTrigger asChild><Button variant={toDateKey(cursor) !== toDateKey(new Date()) ? "secondary" : "ghost"} className="h-10 rounded-md px-4 shadow-sm">Go to date</Button></PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={cursor} defaultMonth={cursor} onSelect={(day) => { if (day) { const next = new Date(day); next.setHours(12, 0, 0, 0); setCursor(next); setGoOpen(false); } }} className="pointer-events-auto p-3" /></PopoverContent>
+              </Popover>
+            </div>
             <Button variant="ghost" size="icon" className="h-11 w-11 rounded-lg" onClick={() => move(1)} aria-label={`Next ${view}`}><ChevronRight /></Button>
           </div>
           <h2 className="order-last w-full text-center font-serif text-xl leading-none sm:order-none sm:w-auto">{title}</h2>
@@ -110,7 +119,7 @@ function SchedulePage() {
             return <div key={key} className="min-h-[460px] border-r last:border-r-0">
               <div className={`border-b p-3 text-center ${today ? "bg-primary text-primary-foreground" : "bg-muted/40"}`}><p className="text-xs uppercase">{day.toLocaleDateString("en-US", { weekday: "short" })}</p><p className="mt-1 text-xl font-semibold">{day.getDate()}</p></div>
               <div className="space-y-2 p-2">
-                {dayAppointments.map((item) => <Button key={item.id} data-appointment={item.id} variant="outline" className={`h-auto w-full items-start justify-start whitespace-normal p-3 text-left transition-shadow ${item.id === highlightId ? "border-primary bg-primary/10 ring-2 ring-primary ring-offset-2" : ""}`} onClick={() => setSelected(item)}><span className="w-full"><span className="block font-semibold">{formatTime(item.time)}</span><span className="mb-1 block"><StatusBadge item={item} /></span><span className="block text-xs text-muted-foreground">{clientNames(item, clients)}</span><span className="block text-xs text-muted-foreground">{formatDuration(item.durationMin)}</span></span></Button>)}
+                {dayAppointments.map((item) => <Button key={item.id} data-appointment={item.id} variant="outline" className={`h-auto w-full items-start justify-start whitespace-normal p-3 text-left transition-shadow ${STATUS_CARD[appointmentProgress(item)]} ${item.id === highlightId ? "border-primary bg-primary/10 ring-2 ring-primary ring-offset-2" : ""}`} onClick={() => setSelected(item)}><span className="w-full"><span className="block font-semibold">{formatTime(item.time)}</span><span className="mb-1 block"><StatusBadge item={item} /></span><span className="block text-xs text-muted-foreground">{clientNames(item, clients)}</span><span className="block text-xs text-muted-foreground">{formatDuration(item.durationMin)}</span></span></Button>)}
                 {dayBlocks.map((item) => <div key={item.id} className="border border-dashed bg-muted/50 p-2 text-xs text-muted-foreground">{formatTime(item.startTime)}–{formatTime(item.endTime)}<br />{item.reason}</div>)}
                 {!dayAppointments.length && !dayBlocks.length && <p className="pt-5 text-center text-xs text-muted-foreground">No entries</p>}
               </div>
@@ -145,6 +154,6 @@ function MonthGrid({ cursor, appointments, clients, onSelect, highlightId }: { c
   const days = Array.from({ length: 42 }, (_, index) => { const day = new Date(gridStart); day.setDate(gridStart.getDate() + index); return day; });
   return <div className="grid grid-cols-7 overflow-hidden border">
     {days.slice(0, 7).map((day) => <div key={day.getDay()} className="border-b border-r bg-muted/40 p-2 text-center text-xs uppercase last:border-r-0">{day.toLocaleDateString("en-US", { weekday: "short" })}</div>)}
-    {days.map((day) => { const key = toDateKey(day); const entries = appointments.filter((item) => item.date === key); const muted = day.getMonth() !== cursor.getMonth(); return <div key={key} className={`min-h-[112px] border-b border-r p-1 last:border-r-0 ${muted ? "bg-muted/30 text-muted-foreground" : ""}`}><div className="p-1 text-sm font-medium">{day.getDate()}</div>{entries.slice(0, 3).map((item) => <Button key={item.id} data-appointment={item.id} variant="ghost" className={`h-auto w-full justify-start overflow-hidden px-1 py-1 text-xs ${item.id === highlightId ? "bg-primary/15 ring-2 ring-primary" : ""}`} onClick={() => onSelect(item)}><UserRound className="shrink-0" /> <span className="truncate">{formatTime(item.time)} {clientNames(item, clients)}</span></Button>)}{entries.length > 3 && <p className="px-1 text-xs text-muted-foreground">+{entries.length - 3} more</p>}</div>; })}
+    {days.map((day) => { const key = toDateKey(day); const entries = appointments.filter((item) => item.date === key); const muted = day.getMonth() !== cursor.getMonth(); return <div key={key} className={`min-h-[112px] border-b border-r p-1 last:border-r-0 ${muted ? "bg-muted/30 text-muted-foreground" : ""}`}><div className="p-1 text-sm font-medium">{day.getDate()}</div>{entries.slice(0, 3).map((item) => <Button key={item.id} data-appointment={item.id} variant="ghost" className={`h-auto w-full justify-start overflow-hidden rounded-sm px-1 py-1 text-xs ${STATUS_CARD[appointmentProgress(item)]} ${item.id === highlightId ? "bg-primary/15 ring-2 ring-primary" : ""}`} onClick={() => onSelect(item)}><UserRound className="shrink-0" /> <span className="truncate">{formatTime(item.time)} {clientNames(item, clients)}</span></Button>)}{entries.length > 3 && <p className="px-1 text-xs text-muted-foreground">+{entries.length - 3} more</p>}</div>; })}
   </div>;
 }
