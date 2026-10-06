@@ -34,5 +34,5 @@
 - [x] Make the "Actual duration:" label bold
 - [x] Ask for the password inline on the page instead of a separate popup
 - [x] Password confirms automatically while typing — no Confirm button after entering it
-- [ ] Display the client list on Clients & Billing as in the earliest version
-- [ ] Show payment status when clicking a completed appointment
+- [x] Display the client list on Clients & Billing as in the earliest version
+- [x] Show payment status when clicking a completed appointment
