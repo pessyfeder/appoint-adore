@@ -67,7 +67,6 @@ export function Nav() {
               <Lock /> Lock
             </Button>
           </DialogFooter>
-        </DialogHeader>
         </DialogContent>
       </Dialog>
     </header>
