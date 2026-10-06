@@ -40,6 +40,18 @@ function BookPage() {
   const [newClient, setNewClient] = useState({ name: "", phone: "" });
   const [showNew, setShowNew] = useState(false);
   const [error, setError] = useState("");
+  const seeded = store.ready && Boolean(edit);
+
+  // Saved data loads just after first paint, so re-sync the form once the
+  // store is ready (keeps reschedule prefill correct after a refresh).
+  useEffect(() => {
+    if (!seeded || !existing) return;
+    setDuration(existing.durationMin);
+    setDate(existing.date);
+    setTime(existing.time);
+    setClientIds(existing.clients.map((item) => item.clientId));
+    setNotes(existing.notes);
+  }, [seeded]);
 
   const times = useMemo(() => availableTimes(date, durationMin, store.appointments.filter((item) => item.id !== edit), store.blockedTimes), [date, durationMin, edit, store.appointments, store.blockedTimes]);
   const canContinue = step === 0 || (step === 1 && Boolean(time)) || (step === 2 && clientIds.length > 0);
