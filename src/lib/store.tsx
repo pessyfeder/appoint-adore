@@ -37,6 +37,26 @@ function nextId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
+/** Older sessions stored start/end on the appointment only; copy them onto the clients so per-client tools (Correct times) see them. Charges are kept as recorded. */
+export function migrateLegacyTimes(state: StoreState): StoreState {
+  let changed = false;
+  const appointments = state.appointments.map((item) => {
+    if (!item.startedAt || item.clients.some((c) => c.startedAt)) return item;
+    const startedAt = item.startedAt;
+    const endedAt = item.endedAt;
+    let clients = item.clients.map((c) => c.status === "completed" ? { ...c, startedAt, endedAt: endedAt ?? startedAt } : c);
+    if (!clients.some((c) => c.startedAt) && !endedAt) {
+      // Legacy session still running: attach it to the first waiting client.
+      const first = clients.find((c) => c.status === "scheduled");
+      if (first) clients = clients.map((c) => c === first ? { ...c, startedAt } : c);
+    }
+    if (!clients.some((c) => c.startedAt)) return item;
+    changed = true;
+    return { ...item, clients };
+  });
+  return changed ? { ...state, appointments } : state;
+}
+
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<StoreState>(() => makeSeedData());
   const [ready, setReady] = useState(false);
@@ -45,7 +65,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const saved = window.localStorage.getItem(STORAGE_KEY);
     if (saved) {
-      try { setState(JSON.parse(saved) as StoreState); } catch { window.localStorage.removeItem(STORAGE_KEY); }
+      try { setState(migrateLegacyTimes(JSON.parse(saved) as StoreState)); } catch { window.localStorage.removeItem(STORAGE_KEY); }
     }
     setReady(true);
   }, []);
