@@ -7,7 +7,7 @@ import { usePassphraseGate } from "@/lib/lock";
 import { useStore } from "@/lib/store";
 
 /** Shared, password-gated payment form. `clientIds` limits the client choice (e.g. the clients of a just-ended session). */
-export function RecordPaymentDialog({ open, onOpenChange, clientIds, defaultAmount }: { open: boolean; onOpenChange: (open: boolean) => void; clientIds?: string[] | undefined; defaultAmount?: number | undefined }) {
+export function RecordPaymentDialog({ open, onOpenChange, clientIds, defaultAmount, onSaved }: { open: boolean; onOpenChange: (open: boolean) => void; clientIds?: string[] | undefined; defaultAmount?: number | undefined; onSaved?: (() => void) | undefined }) {
   const store = useStore();
   const { request, prompt } = usePassphraseGate();
   const options = store.clients.filter((c) => !c.archived && (!clientIds || clientIds.includes(c.id)));
@@ -28,6 +28,7 @@ export function RecordPaymentDialog({ open, onOpenChange, clientIds, defaultAmou
     if (!(await request("Recording a payment"))) return;
     store.addPayment({ clientId, amount: Number(amount), method, notes });
     onOpenChange(false);
+    onSaved?.();
   }
 
   return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent>
