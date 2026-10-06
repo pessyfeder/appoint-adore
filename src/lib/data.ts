@@ -48,15 +48,7 @@ export type BlockedTime = {
 
 export type BusinessBlock = { start: string; end: string };
 
-export const BUSINESS_HOURS: Record<number, BusinessBlock[]> = {
-  0: [{ start: "11:30", end: "13:30" }, { start: "19:30", end: "22:30" }],
-  1: [{ start: "10:30", end: "13:30" }, { start: "19:30", end: "22:30" }],
-  2: [{ start: "19:30", end: "22:30" }],
-  3: [{ start: "10:30", end: "13:30" }, { start: "19:30", end: "22:30" }],
-  4: [{ start: "10:30", end: "13:30" }, { start: "19:30", end: "22:30" }],
-  5: [],
-  6: [],
-};
+export const BUSINESS_HOURS = DEFAULT_WEEKLY;
 
 export const DURATION_OPTIONS = Array.from({ length: 34 }, (_, i) => 15 + i * 5);
 
@@ -130,7 +122,9 @@ export function formatPhone(value: string): string {
 }
 
 export function effectiveHours(dateKey: string): BusinessBlock[] {
-  return BUSINESS_HOURS[fromDateKey(dateKey).getDay()] ?? [];
+  const { weekly, overrides } = getAvailability();
+  if (overrides[dateKey]) return overrides[dateKey]!;
+  return weekly[fromDateKey(dateKey).getDay()] ?? [];
 }
 
 export function statusLabel(status: AppointmentStatus): string {
