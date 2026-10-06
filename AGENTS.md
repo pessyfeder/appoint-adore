@@ -16,3 +16,4 @@
 - Render protected surfaces only through the practitioner lock in `src/lib/lock.tsx` (password hashing and device storage in `src/lib/privacy.ts`), and extend its step-up list for sensitive actions instead of checking the password inline, so a locked session never puts client or billing records on screen.
 
 - Render a single shared ClientBalances table on Clients & Billing and initiate client payments from ClientBillingDialog, so the directory and payment entry points are not duplicated.
+- Read working hours only through `effectiveHours` (backed by `src/lib/availability.ts`, device-local) so weekly hours and per-date changes apply to every booking path.
