@@ -63,24 +63,25 @@ function SchedulePage() {
     : cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
   return (
-    <div className="flex flex-col gap-6">
+    <main className="mx-auto max-w-6xl px-4 py-8">
+      <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-6">
-        <div className="flex flex-col justify-between gap-4 px-2 sm:flex-row sm:items-end">
-          <div className="space-y-1">
-            <span className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-primary/70">Calendar</span>
-            <h1 className="font-serif text-4xl leading-tight">Schedule</h1>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Calendar</p>
+            <h1 className="mt-1 font-serif text-3xl">Schedule</h1>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <Button variant="outline" className="h-12 rounded-lg px-5" onClick={() => setBlockOpen(true)}><Clock3 className="opacity-60" /> Block time</Button>
-            <Button asChild className="h-12 rounded-lg px-6 shadow-sm"><Link to="/book" search={{ edit: undefined }}><Plus /> New appointment</Link></Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" className="h-11" onClick={() => setBlockOpen(true)}><Clock3 className="opacity-60" /> Block time</Button>
+            <Button asChild className="h-11"><Link to="/book" search={{ edit: undefined }}><Plus /> New appointment</Link></Button>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-2 shadow-sm">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-12 w-12 rounded-lg" onClick={() => move(-1)} aria-label={`Previous ${view}`}><ChevronLeft /></Button>
-            <Button variant="outline" className="h-12 rounded-lg px-5" onClick={() => setCursor(new Date())}>Today</Button>
-            <Button variant="ghost" size="icon" className="h-12 w-12 rounded-lg" onClick={() => move(1)} aria-label={`Next ${view}`}><ChevronRight /></Button>
+            <Button variant="ghost" size="icon" className="h-11 w-11 rounded-lg" onClick={() => move(-1)} aria-label={`Previous ${view}`}><ChevronLeft /></Button>
+            <Button variant="outline" className="h-11 rounded-lg px-5" onClick={() => setCursor(new Date())}>Today</Button>
+            <Button variant="ghost" size="icon" className="h-11 w-11 rounded-lg" onClick={() => move(1)} aria-label={`Next ${view}`}><ChevronRight /></Button>
           </div>
           <h2 className="order-last w-full text-center font-serif text-xl leading-none sm:order-none sm:w-auto">{title}</h2>
           <div className="flex rounded-lg bg-muted p-1">
