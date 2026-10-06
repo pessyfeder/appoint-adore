@@ -67,7 +67,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setHighlightId,
     startClient(appointmentId, clientId) {
       const now = new Date().toISOString();
-      setState((current) => ({ ...current, appointments: current.appointments.map((a) => a.id !== appointmentId || a.clients.some((c) => c.startedAt && !c.endedAt) ? a : { ...a, startedAt: a.startedAt ?? now, clients: a.clients.map((c) => c.clientId === clientId && c.status === "scheduled" && !c.startedAt ? { ...c, startedAt: now } : c) }) }));
+      setState((current) => current.appointments.some((a) => a.clients.some((c) => c.startedAt && !c.endedAt)) ? current : ({ ...current, appointments: current.appointments.map((a) => a.id !== appointmentId ? a : { ...a, startedAt: a.startedAt ?? now, clients: a.clients.map((c) => c.clientId === clientId && c.status === "scheduled" && !c.startedAt ? { ...c, startedAt: now } : c) }) }));
     },
     endClient(appointmentId) {
       const item = state.appointments.find((a) => a.id === appointmentId);

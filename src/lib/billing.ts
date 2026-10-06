@@ -19,17 +19,17 @@ export function chargesWithUnpaid(appointments: Appointment[], payments: Payment
   return charges;
 }
 
-export type LedgerRow = { date: string; clientName: string; label: string; amount: number; unpaid: boolean };
+export type LedgerRow = { date: string; clientName: string; label: string; amount: number; unpaid: boolean; paymentId?: string; appointmentId?: string; clientId: string };
 
 export function buildReport(from: string, to: string, appointments: Appointment[], payments: Payment[], clients: Client[]) {
   const name = (id: string) => clients.find((c) => c.id === id)?.name ?? "Unknown";
   const rows: LedgerRow[] = [];
   for (const p of payments) {
     const date = p.paidAt.slice(0, 10);
-    if (date >= from && date <= to) rows.push({ date, clientName: name(p.clientId), label: `Payment (${p.method})`, amount: p.amount, unpaid: false });
+    if (date >= from && date <= to) rows.push({ date, clientName: name(p.clientId), label: `Payment (${p.method})`, amount: p.amount, unpaid: false, paymentId: p.id, clientId: p.clientId });
   }
   for (const c of chargesWithUnpaid(appointments, payments)) {
-    if (c.unpaid > 0.004 && c.date <= to) rows.push({ date: c.date, clientName: name(c.clientId), label: c.kind === "no_show" ? "No Show" : "Unpaid", amount: -c.unpaid, unpaid: true });
+    if (c.unpaid > 0.004 && c.date <= to) rows.push({ date: c.date, clientName: name(c.clientId), label: c.kind === "no_show" ? "No Show" : "Unpaid", amount: -c.unpaid, unpaid: true, appointmentId: c.appointmentId, clientId: c.clientId });
   }
   rows.sort((a, b) => a.date.localeCompare(b.date));
   const collected = rows.filter((r) => !r.unpaid).reduce((s, r) => s + r.amount, 0);
