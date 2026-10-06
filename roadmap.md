@@ -28,3 +28,5 @@
 - [x] Sentence-case "Actual duration:" label + end-session confirmation dialog with elapsed time
 - [x] Show elapsed minutes under "Actual duration:"
 - [x] Correct in-progress appointment start times, end times and booked length
+
+- [x] Clean up Correct times: subtle pencil trigger, tidier dialog
