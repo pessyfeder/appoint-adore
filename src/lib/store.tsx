@@ -9,6 +9,7 @@ const clientSchema = z.object({ name: z.string().trim().min(1).max(100), phone: 
 const appointmentSchema = z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), time: z.string().regex(/^\d{2}:\d{2}$/), durationMin: z.number().int().min(15).max(180), clientIds: z.array(z.string()).min(1).max(6), notes: z.string().trim().max(500) });
 const paymentSchema = z.object({ clientId: z.string().min(1), amount: z.number().positive().max(100000), method: z.enum(["cash", "card", "check", "other"]), notes: z.string().trim().max(300) });
 const blockedSchema = z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), startTime: z.string().regex(/^\d{2}:\d{2}$/), endTime: z.string().regex(/^\d{2}:\d{2}$/), reason: z.string().trim().min(1).max(200) });
+const correctSchema = z.object({ durationMin: z.number().int().min(15).max(180), clients: z.array(z.object({ clientId: z.string().min(1), startedAt: z.string().min(1), endedAt: z.string().optional() })).min(1) });
 
 type StoreState = ReturnType<typeof makeSeedData>;
 type Store = StoreState & {
@@ -21,6 +22,7 @@ type Store = StoreState & {
   addBlockedTime: (input: Omit<BlockedTime, "id">) => void;
   startClient: (appointmentId: string, clientId: string) => void;
   endClient: (appointmentId: string) => EndSummary | null;
+  correctTimes: (appointmentId: string, input: { durationMin: number; clients: { clientId: string; startedAt: string; endedAt?: string }[] }) => void;
   highlightId: string | null;
   setHighlightId: (id: string | null) => void;
 };
