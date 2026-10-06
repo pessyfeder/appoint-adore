@@ -64,25 +64,30 @@ function SchedulePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-        <h1 className="font-serif text-3xl leading-none">Schedule</h1>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" className="h-11" onClick={() => setBlockOpen(true)}><Clock3 /> Block time</Button>
-          <Button asChild className="h-11"><Link to="/book" search={{ edit: undefined }}><Plus /> New appointment</Link></Button>
+      <header className="flex flex-col gap-6">
+        <div className="flex flex-col justify-between gap-4 px-2 sm:flex-row sm:items-end">
+          <div className="space-y-1">
+            <span className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-primary/70">Calendar</span>
+            <h1 className="font-serif text-4xl leading-tight">Schedule</h1>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button variant="outline" className="h-12 rounded-lg px-5" onClick={() => setBlockOpen(true)}><Clock3 className="opacity-60" /> Block time</Button>
+            <Button asChild className="h-12 rounded-lg px-6 shadow-sm"><Link to="/book" search={{ edit: undefined }}><Plus /> New appointment</Link></Button>
+          </div>
         </div>
-      </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card px-4 py-3">
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => move(-1)} aria-label={`Previous ${view}`}><ChevronLeft /></Button>
-          <Button variant="outline" className="h-11" onClick={() => setCursor(new Date())}>Today</Button>
-          <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => move(1)} aria-label={`Next ${view}`}><ChevronRight /></Button>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-2 shadow-sm">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-12 w-12 rounded-lg" onClick={() => move(-1)} aria-label={`Previous ${view}`}><ChevronLeft /></Button>
+            <Button variant="outline" className="h-12 rounded-lg px-5" onClick={() => setCursor(new Date())}>Today</Button>
+            <Button variant="ghost" size="icon" className="h-12 w-12 rounded-lg" onClick={() => move(1)} aria-label={`Next ${view}`}><ChevronRight /></Button>
+          </div>
+          <h2 className="order-last w-full text-center font-serif text-xl leading-none sm:order-none sm:w-auto">{title}</h2>
+          <div className="flex rounded-lg bg-muted p-1">
+            {(["week", "month"] as const).map((mode) => <Button key={mode} variant={view === mode ? "secondary" : "ghost"} className="h-10 rounded-md capitalize shadow-sm" onClick={() => setView(mode)}>{mode}</Button>)}
+          </div>
         </div>
-        <h2 className="order-last w-full text-center font-serif text-xl leading-none sm:order-none sm:w-auto">{title}</h2>
-        <div className="flex rounded-md border p-1">
-          {(["week", "month"] as const).map((mode) => <Button key={mode} variant={view === mode ? "secondary" : "ghost"} className="h-9 capitalize" onClick={() => setView(mode)}>{mode}</Button>)}
-        </div>
-      </div>
+      </header>
 
       {view === "week" ? (
         <div className="overflow-x-auto"><div className="grid min-w-[760px] grid-cols-7 overflow-hidden border bg-background">
