@@ -31,10 +31,7 @@ function ClientsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState({ name: "", phone: "" });
-  const [paymentOpen, setPaymentOpen] = useState(false);
   const [billingFor, setBillingFor] = useState<string | null>(null);
-  const [amount, setAmount] = useState("");
-  const [method, setMethod] = useState<"cash" | "card" | "check" | "other">("card");
 
   const selected = store.clients.find((client) => client.id === selectedId) ?? null;
   const balance = selected ? clientBalance(selected.id, store.appointments, store.payments) : 0;
@@ -61,13 +58,7 @@ function ClientsPage() {
     if (await confirmPassphrase("Viewing billing and payments")) setBillingFor(selected.id);
   }
 
-  async function savePayment() {
-    if (!selected || Number(amount) <= 0) return;
-    if (!(await confirmPassphrase("Recording a payment"))) return;
-    store.addPayment({ clientId: selected.id, amount: Number(amount), method, notes: "" });
-    setPaymentOpen(false);
-    setAmount("");
-  }
+
 
   return <main className="mx-auto max-w-3xl px-4 py-8">
     <div className="flex flex-wrap items-end justify-between gap-4">

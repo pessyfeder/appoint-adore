@@ -7,7 +7,7 @@ import { useLock } from "@/lib/lock";
 import { useStore } from "@/lib/store";
 
 /** Shared, password-gated payment form. `clientIds` limits the client choice (e.g. the clients of a just-ended session). */
-export function RecordPaymentDialog({ open, onOpenChange, clientIds, defaultAmount }: { open: boolean; onOpenChange: (open: boolean) => void; clientIds?: string[]; defaultAmount?: number }) {
+export function RecordPaymentDialog({ open, onOpenChange, clientIds, defaultAmount }: { open: boolean; onOpenChange: (open: boolean) => void; clientIds?: string[] | undefined; defaultAmount?: number | undefined }) {
   const store = useStore();
   const { confirmPassphrase } = useLock();
   const options = store.clients.filter((c) => !c.archived && (!clientIds || clientIds.includes(c.id)));
