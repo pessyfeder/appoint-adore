@@ -105,3 +105,7 @@
     transform: translateY(0);
   }
 }
+
+/* Touch tablet: no double-tap zoom delay, no grey tap flash, no accidental text selection on controls */
+html { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+button, [role="button"], [role="tab"], [role="option"], a { user-select: none; -webkit-user-select: none; }
