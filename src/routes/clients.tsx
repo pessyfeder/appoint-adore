@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CreditCard, Lock, Phone, UserPlus } from "lucide-react";
 import { BillingPanel } from "@/components/BillingPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
