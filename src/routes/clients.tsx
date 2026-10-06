@@ -108,26 +108,7 @@ function ClientsPage() {
         </div> : <Button variant="outline" className="h-11" onClick={showBilling}><Lock /> Show billing</Button>}
       </div>
       <p className="mt-4 text-sm text-muted-foreground">{visits} completed visit{visits === 1 ? "" : "s"}</p>
-      {billingFor === selected.id && <Button className="mt-5 h-11 w-full sm:w-auto" onClick={() => setPaymentOpen(true)}><CreditCard /> Record payment</Button>}
     </article> : <p className="mt-5 border border-dashed p-6 text-center text-sm text-muted-foreground">Start typing above to pull up a client, or create a new one.</p>}
 
-    <Dialog open={paymentOpen && Boolean(selected)} onOpenChange={(open) => !open && setPaymentOpen(false)}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Record payment</DialogTitle>
-          <DialogDescription>Apply a payment to {selected?.name}’s balance.</DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-3">
-          <Input className="h-11" type="number" min="0.01" step="0.01" placeholder="Amount" value={amount} onChange={(event) => setAmount(event.target.value)} />
-          <Select value={method} onValueChange={(value) => setMethod(value as typeof method)}>
-            <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
-            <SelectContent>{["card", "cash", "check", "other"].map((item) => <SelectItem className="h-10 capitalize" key={item} value={item}>{item}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
-        <DialogFooter>
-          <Button onClick={savePayment}>Save payment</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   </main>;
 }
