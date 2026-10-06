@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CalendarClock, CreditCard, Play, Square } from "lucide-react";
+import { CreditCard, Pencil, Play, Square } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { clientInSession, formatDuration, appointmentProgress, PROGRESS_LABEL, type Appointment, type AppointmentProgress } from "@/lib/data";
@@ -93,5 +93,6 @@ export function StartEndControls({ item }: { item: Appointment }) {
   else if (waiting) control = <div className="flex flex-wrap items-center gap-2">{waitingAll.map((c) => <Button key={c.clientId} className="h-11" onClick={() => start(c.clientId)}><Play /> Start{shared ? ` ${first(c.clientId)}` : ""}</Button>)}</div>;
   else if (item.startedAt && item.endedAt) control = <span className="flex flex-col text-right text-xs text-muted-foreground"><span className="font-medium">Actual duration:</span><span>{clock(item.startedAt)} – {clock(item.endedAt)}</span><span>{formatDuration(sessionMinutes(item.startedAt, item.endedAt))} elapsed</span></span>;
   const timed = item.clients.some((c) => c.startedAt);
-  return <>{control}{timed && <Button size="sm" variant="ghost" className="h-11 px-3 text-xs" onClick={openCorrect}><CalendarClock /> Correct times</Button>}{popup}{payment}{confirmEnd}<CorrectTimesDialog open={correcting} onOpenChange={setCorrecting} item={item} /></>;
+  const editBtn = timed && <Button size="icon" variant="ghost" className="h-11 w-11 text-muted-foreground hover:text-foreground" onClick={openCorrect} aria-label="Correct times" title="Correct times"><Pencil /></Button>;
+  return <><span className="inline-flex items-center gap-1">{control}{editBtn}</span>{popup}{payment}{confirmEnd}<CorrectTimesDialog open={correcting} onOpenChange={setCorrecting} item={item} /></>;
 }
