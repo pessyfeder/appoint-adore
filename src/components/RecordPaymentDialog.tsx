@@ -3,13 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useLock } from "@/lib/lock";
+import { usePassphraseGate } from "@/lib/lock";
 import { useStore } from "@/lib/store";
 
 /** Shared, password-gated payment form. `clientIds` limits the client choice (e.g. the clients of a just-ended session). */
 export function RecordPaymentDialog({ open, onOpenChange, clientIds, defaultAmount }: { open: boolean; onOpenChange: (open: boolean) => void; clientIds?: string[] | undefined; defaultAmount?: number | undefined }) {
   const store = useStore();
-  const { confirmPassphrase } = useLock();
+  const { request, prompt } = usePassphraseGate();
   const options = store.clients.filter((c) => !c.archived && (!clientIds || clientIds.includes(c.id)));
   const [clientId, setClientId] = useState("");
   const [amount, setAmount] = useState("");
@@ -25,7 +25,7 @@ export function RecordPaymentDialog({ open, onOpenChange, clientIds, defaultAmou
 
   async function save() {
     if (!clientId || !(Number(amount) > 0)) return;
-    if (!(await confirmPassphrase("Recording a payment"))) return;
+    if (!(await request("Recording a payment"))) return;
     store.addPayment({ clientId, amount: Number(amount), method, notes });
     onOpenChange(false);
   }
@@ -38,6 +38,7 @@ export function RecordPaymentDialog({ open, onOpenChange, clientIds, defaultAmou
       <Select value={method} onValueChange={(v) => setMethod(v as typeof method)}><SelectTrigger className="h-11"><SelectValue /></SelectTrigger><SelectContent>{["cash", "card", "check", "other"].map((m) => <SelectItem className="h-10 capitalize" key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select>
       <Input className="h-11" placeholder="Notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
     </div>
+    {prompt}
     <DialogFooter><Button className="h-11" disabled={!clientId || !(Number(amount) > 0)} onClick={save}>Save payment</Button></DialogFooter>
   </DialogContent></Dialog>;
 }

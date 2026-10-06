@@ -113,6 +113,15 @@ export function formatDuration(minutes: number): string {
   return `${hours} hr${hours === 1 ? "" : "s"}${remainder ? ` ${remainder} min` : ""}`;
 }
 
+/** Spelled-out duration for the "Actual duration" readout, e.g. "1 minute", "1 hour 10 minutes". */
+export function formatDurationLong(minutes: number): string {
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"}`;
+  const hours = Math.floor(minutes / 60);
+  const remainder = minutes % 60;
+  const h = `${hours} hour${hours === 1 ? "" : "s"}`;
+  return remainder ? `${h} ${formatDurationLong(remainder)}` : h;
+}
+
 export function formatPhone(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 10);
   if (digits.length <= 3) return digits;

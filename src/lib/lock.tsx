@@ -2,7 +2,6 @@ import type React from "react";
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   clearSessionUnlock,
@@ -23,7 +22,7 @@ type Lock = {
   setup: (passphrase: string) => Promise<void>;
   unlock: (passphrase: string) => Promise<boolean>;
   lock: () => void;
-  confirmPassphrase: (action: string) => Promise<boolean>;
+  verify: (passphrase: string) => Promise<boolean>;
 };
 
 // Keep one context instance across live code reloads, so the provider and its users never point at different copies.
@@ -38,19 +37,10 @@ export function useLock() {
 
 export function LockProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<Status>("checking");
-  const [promptAction, setPromptAction] = useState<string | null>(null);
-  const resolveRef = useRef<((ok: boolean) => void) | null>(null);
 
   useEffect(() => {
     setStatus(readLockRecord() ? (isSessionUnlocked() ? "unlocked" : "locked") : "setup");
   }, []);
-
-  function finishPrompt(ok: boolean) {
-    const resolve = resolveRef.current;
-    resolveRef.current = null;
-    setPromptAction(null);
-    resolve?.(ok);
-  }
 
   const value = useMemo<Lock>(
     () => ({
@@ -71,22 +61,15 @@ export function LockProvider({ children }: { children: ReactNode }) {
         clearSessionUnlock();
         setStatus("locked");
       },
-      confirmPassphrase(action) {
-        return new Promise<boolean>((resolve) => {
-          resolveRef.current = resolve;
-          setPromptAction(action);
-        });
+      async verify(passphrase) {
+        const record = readLockRecord();
+        return record ? await verifyPassphrase(passphrase, record) : false;
       },
     }),
     [status],
   );
 
-  return (
-    <LockContext.Provider value={value}>
-      {status === "unlocked" ? children : <LockScreen status={status} />}
-      {promptAction && <StepUpDialog action={promptAction} onCancel={() => finishPrompt(false)} onVerified={finishPrompt} />}
-    </LockContext.Provider>
-  );
+  return <LockContext.Provider value={value}>{status === "unlocked" ? children : <LockScreen status={status} />}</LockContext.Provider>;
 }
 
 function LockScreen({ status }: { status: Status }) {
@@ -231,53 +214,73 @@ function LockScreen({ status }: { status: Status }) {
   );
 }
 
-function StepUpDialog({ action, onCancel, onVerified }: { action: string; onCancel: () => void; onVerified: (ok: boolean) => void }) {
+/**
+ * Password prompt that renders inline, in the same surface the action came from,
+ * instead of opening a separate popup. Call `request(action)` from a handler and
+ * render `prompt` where the field should appear.
+ */
+export function usePassphraseGate() {
+  const { verify } = useLock();
+  const [action, setAction] = useState<string | null>(null);
   const [passphrase, setPassphrase] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const resolveRef = useRef<((ok: boolean) => void) | null>(null);
+
+  function request(next: string) {
+    return new Promise<boolean>((resolve) => {
+      resolveRef.current = resolve;
+      setError("");
+      setPassphrase("");
+      setAction(next);
+    });
+  }
+
+  function settle(ok: boolean) {
+    const resolve = resolveRef.current;
+    resolveRef.current = null;
+    setAction(null);
+    setPassphrase("");
+    setError("");
+    resolve?.(ok);
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (busy) return;
     setBusy(true);
-    const record = readLockRecord();
-    const ok = record ? await verifyPassphrase(passphrase, record) : false;
+    const ok = await verify(passphrase);
     setBusy(false);
-    if (ok) onVerified(true);
+    if (ok) settle(true);
     else {
       setError("That password doesn’t match.");
       setPassphrase("");
     }
   }
 
-  return (
-    <Dialog onOpenChange={(open) => !open && onCancel()} open>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Confirm your password</DialogTitle>
-          <DialogDescription>{action} needs your practitioner password again.</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={submit}>
-          <Input
-            aria-label="Practitioner password"
-            className="h-11"
-            type="password"
-            autoComplete="current-password"
-            autoFocus
-            value={passphrase}
-            onChange={(event) => setPassphrase(event.target.value)}
-          />
-          {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
-          <DialogFooter className="mt-4">
-            <Button className="h-11" type="button" variant="ghost" onClick={onCancel}>
-              Cancel
-            </Button>
-            <Button className="h-11" disabled={busy} type="submit">
-              {busy ? "Checking…" : "Confirm"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
+  const prompt = action ? (
+    <form className="w-full rounded-lg border border-primary/40 bg-primary/5 p-3" onSubmit={submit}>
+      <p className="text-sm font-medium">{action} needs your practitioner password.</p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <Input
+          aria-label="Practitioner password"
+          className="h-11 max-w-xs flex-1"
+          type="password"
+          autoComplete="current-password"
+          autoFocus
+          value={passphrase}
+          onChange={(event) => setPassphrase(event.target.value)}
+        />
+        <Button className="h-11" disabled={busy || !passphrase} type="submit">
+          {busy ? "Checking…" : "Confirm"}
+        </Button>
+        <Button className="h-11" type="button" variant="ghost" onClick={() => settle(false)}>
+          Cancel
+        </Button>
+      </div>
+      {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+    </form>
+  ) : null;
+
+  return { request, prompt };
 }
