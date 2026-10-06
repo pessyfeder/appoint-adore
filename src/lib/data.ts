@@ -1,3 +1,5 @@
+import { DEFAULT_WEEKLY, getAvailability } from "./availability";
+
 export type Client = {
   id: string;
   name: string;
