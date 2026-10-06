@@ -2,7 +2,7 @@ import { useState } from "react";
 import { CreditCard, Pencil, Play, Square } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { clientInSession, formatDuration, appointmentProgress, PROGRESS_LABEL, type Appointment, type AppointmentProgress } from "@/lib/data";
+import { clientInSession, formatDuration, formatDurationLong, appointmentProgress, PROGRESS_LABEL, type Appointment, type AppointmentProgress } from "@/lib/data";
 import { sessionMinutes } from "@/lib/scheduling";
 import { useLock } from "@/lib/lock";
 import { RecordPaymentDialog } from "@/components/RecordPaymentDialog";
