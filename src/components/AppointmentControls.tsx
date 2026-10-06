@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/ConfirmDialog";
 import { useState } from "react";
 import { CreditCard, Pencil, Play, Square } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -52,7 +53,8 @@ export function StartEndControls({ item }: { item: Appointment }) {
   const waitingAll = item.clients.filter((c) => c.status === "scheduled" && !c.startedAt);
   const waiting = waitingAll[0];
   const shared = item.clients.length > 1;
-  async function start(clientId: string) { if (await request(`Starting ${name(clientId)}'s session`)) startClient(item.id, clientId); }
+  const { confirm, dialog: confirmDialog } = useConfirm();
+  async function start(clientId: string) { if (!(await confirm({ title: `Start ${name(clientId)}'s session?`, description: "The clock starts now and billing is based on the time recorded.", confirmLabel: "Start session" }))) return; if (await request(`Starting ${name(clientId)}'s session`)) startClient(item.id, clientId); }
   function end() { setEnding(false); setSummary(endClient(item.id)); }
   async function openCorrect() { if (await request("Correcting appointment times")) setCorrecting(true); }
   const elapsedMin = running?.startedAt ? Math.max(1, Math.round((Date.now() - new Date(running.startedAt).getTime()) / 60000)) : 0;
@@ -94,5 +96,5 @@ export function StartEndControls({ item }: { item: Appointment }) {
   else if (item.startedAt && item.endedAt) control = <span className="flex flex-col text-right text-xs text-muted-foreground"><span className="font-bold text-foreground">Actual duration:</span><span>{formatDurationLong(sessionMinutes(item.startedAt, item.endedAt))}</span><span>{clock(item.startedAt)} – {clock(item.endedAt)}</span></span>;
   const timed = item.clients.some((c) => c.startedAt);
   const editBtn = timed && <Button size="icon" variant="ghost" className="h-11 w-11 text-muted-foreground" onClick={openCorrect} aria-label="Correct times"><Pencil /></Button>;
-  return <><span className="inline-flex items-center gap-1">{control}{editBtn}</span>{prompt}{popup}{payment}{confirmEnd}<CorrectTimesDialog open={correcting} onOpenChange={setCorrecting} item={item} /></>;
+  return <><span className="inline-flex items-center gap-1">{control}{editBtn}</span>{prompt}{confirmDialog}{popup}{payment}{confirmEnd}<CorrectTimesDialog open={correcting} onOpenChange={setCorrecting} item={item} /></>;
 }
