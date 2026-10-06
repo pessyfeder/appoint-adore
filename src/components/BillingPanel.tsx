@@ -14,15 +14,6 @@ import { useStore } from "@/lib/store";
 const money = (n: number) => `${n < 0 ? "-" : ""}$${Math.abs(n).toFixed(2)}`;
 
 export function BillingPanel() {
-  const { confirmPassphrase } = useLock();
-  const [open, setOpen] = useState(false);
-  if (!open) return <div>
-    <div className="mt-2 flex flex-col items-center gap-4 rounded-xl border bg-card p-10 text-center">
-      <Lock className="h-8 w-8 text-muted-foreground" />
-      <p className="text-muted-foreground">Balances and payments are hidden. Re-enter your password to view them.</p>
-      <Button className="h-11" onClick={async () => { if (await confirmPassphrase("Viewing billing and payments")) setOpen(true); }}>Show billing info</Button>
-    </div>
-  </div>;
   return <BillingContent />;
 }
 
