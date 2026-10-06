@@ -31,10 +31,7 @@ function ClientsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState({ name: "", phone: "" });
-  const [paymentOpen, setPaymentOpen] = useState(false);
   const [billingFor, setBillingFor] = useState<string | null>(null);
-  const [amount, setAmount] = useState("");
-  const [method, setMethod] = useState<"cash" | "card" | "check" | "other">("card");
 
   const selected = store.clients.find((client) => client.id === selectedId) ?? null;
   const balance = selected ? clientBalance(selected.id, store.appointments, store.payments) : 0;
@@ -61,13 +58,7 @@ function ClientsPage() {
     if (await confirmPassphrase("Viewing billing and payments")) setBillingFor(selected.id);
   }
 
-  async function savePayment() {
-    if (!selected || Number(amount) <= 0) return;
-    if (!(await confirmPassphrase("Recording a payment"))) return;
-    store.addPayment({ clientId: selected.id, amount: Number(amount), method, notes: "" });
-    setPaymentOpen(false);
-    setAmount("");
-  }
+
 
   return <main className="mx-auto max-w-3xl px-4 py-8">
     <div className="flex flex-wrap items-end justify-between gap-4">
@@ -108,26 +99,7 @@ function ClientsPage() {
         </div> : <Button variant="outline" className="h-11" onClick={showBilling}><Lock /> Show billing</Button>}
       </div>
       <p className="mt-4 text-sm text-muted-foreground">{visits} completed visit{visits === 1 ? "" : "s"}</p>
-      {billingFor === selected.id && <Button className="mt-5 h-11 w-full sm:w-auto" onClick={() => setPaymentOpen(true)}><CreditCard /> Record payment</Button>}
     </article> : <p className="mt-5 border border-dashed p-6 text-center text-sm text-muted-foreground">Start typing above to pull up a client, or create a new one.</p>}
 
-    <Dialog open={paymentOpen && Boolean(selected)} onOpenChange={(open) => !open && setPaymentOpen(false)}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Record payment</DialogTitle>
-          <DialogDescription>Apply a payment to {selected?.name}’s balance.</DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-3">
-          <Input className="h-11" type="number" min="0.01" step="0.01" placeholder="Amount" value={amount} onChange={(event) => setAmount(event.target.value)} />
-          <Select value={method} onValueChange={(value) => setMethod(value as typeof method)}>
-            <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
-            <SelectContent>{["card", "cash", "check", "other"].map((item) => <SelectItem className="h-10 capitalize" key={item} value={item}>{item}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
-        <DialogFooter>
-          <Button onClick={savePayment}>Save payment</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   </main>;
 }
