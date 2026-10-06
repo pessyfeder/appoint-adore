@@ -63,22 +63,22 @@ function SchedulePage() {
     : cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div><p className="text-xs font-medium uppercase text-muted-foreground">Calendar</p><h1 className="mt-1 font-serif text-3xl">Schedule</h1></div>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+        <h1 className="font-serif text-3xl leading-none">Schedule</h1>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" className="h-11" onClick={() => setBlockOpen(true)}><Clock3 /> Block time</Button>
           <Button asChild className="h-11"><Link to="/book" search={{ edit: undefined }}><Plus /> New appointment</Link></Button>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-y py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card px-4 py-3">
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => move(-1)} aria-label={`Previous ${view}`}><ChevronLeft /></Button>
           <Button variant="outline" className="h-11" onClick={() => setCursor(new Date())}>Today</Button>
           <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => move(1)} aria-label={`Next ${view}`}><ChevronRight /></Button>
         </div>
-        <h2 className="font-serif text-xl">{title}</h2>
+        <h2 className="order-last w-full text-center font-serif text-xl leading-none sm:order-none sm:w-auto">{title}</h2>
         <div className="flex rounded-md border p-1">
           {(["week", "month"] as const).map((mode) => <Button key={mode} variant={view === mode ? "secondary" : "ghost"} className="h-9 capitalize" onClick={() => setView(mode)}>{mode}</Button>)}
         </div>

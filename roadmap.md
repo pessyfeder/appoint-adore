@@ -8,3 +8,5 @@
 - [x] Exclude online self-booking, messaging, cloud sync, multi-practitioner/location, insurance, EMR charting, and native mobile work.
 - [x] Keep client payment and billing info private, visible only to the practitioner.- [x] Rename the Today tab to Dashboard; make booking Notes clearly optional with a helpful placeholder.
 - [x] Reject unintelligible booking notes (keyboard mashing, repeated characters, symbol strings).
+- [x] Show a confirmation popup before the Lock button locks the screen.
+- [x] De-crowd the Schedule page headers; fix "Calendar Schedule" title positioning.

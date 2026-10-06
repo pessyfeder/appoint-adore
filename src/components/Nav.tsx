@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Lock, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLock } from "@/lib/lock";
 
 const links = [
@@ -12,6 +14,7 @@ const links = [
 
 export function Nav() {
   const { lock } = useLock();
+  const [confirming, setConfirming] = useState(false);
 
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur">
@@ -36,11 +39,36 @@ export function Nav() {
               {l.label}
             </Link>
           ))}
-          <Button className="h-11 shrink-0" variant="ghost" onClick={lock}>
+          <Button className="h-11 shrink-0" variant="ghost" onClick={() => setConfirming(true)}>
             <Lock /> Lock
           </Button>
         </nav>
       </div>
+
+      <Dialog open={confirming} onOpenChange={setConfirming}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Lock the screen?</DialogTitle>
+            <DialogDescription>
+              Clients, payments and the calendar will be hidden until you re-enter your password.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button className="h-11" variant="ghost" onClick={() => setConfirming(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="h-11"
+              onClick={() => {
+                setConfirming(false);
+                lock();
+              }}
+            >
+              <Lock /> Lock
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 }
