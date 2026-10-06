@@ -148,31 +148,27 @@ function ClientsPage() {
     <ul className="mt-4 divide-y border bg-card">
       {store.clients.filter((c) => !c.archived).map((c) => {
         const owed = clientBalance(c.id, store.appointments, store.payments);
-        return <li key={c.id}>
+        return <li key={c.id} className={`flex items-center gap-2 px-4 py-3 ${selectedId === c.id ? "bg-primary/10" : ""}`}>
           <button
             type="button"
             onClick={() => { setSelectedId(c.id); setCreating(false); }}
-            className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left ${selectedId === c.id ? "bg-primary/10" : ""}`}
+            className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
           >
             <span>
               <span className="block font-medium">{c.name}</span>
               <span className="block text-xs text-muted-foreground">{c.phone}</span>
             </span>
-            <span className="flex items-center gap-3">
-              <span className="text-right">
-                <span className={`block text-sm font-semibold ${owed > 0 ? "text-destructive" : ""}`}>${owed.toFixed(2)}</span>
-                <span className="block text-xs text-muted-foreground">balance</span>
-              </span>
-              <span
-                role="button"
-                tabIndex={0}
-                aria-label={`View billing info for ${c.name}`}
-                onClick={(event) => { event.stopPropagation(); setBillingInfoId(c.id); }}
-                onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); event.stopPropagation(); setBillingInfoId(c.id); } }}
-                className="flex h-11 w-11 items-center justify-center rounded-md border text-muted-foreground"
-              ><ReceiptText className="h-4 w-4" /></span>
+            <span className="text-right">
+              <span className={`block text-sm font-semibold ${owed > 0 ? "text-destructive" : ""}`}>${owed.toFixed(2)}</span>
+              <span className="block text-xs text-muted-foreground">balance</span>
             </span>
           </button>
+          <Button
+            variant="outline"
+            className="h-11 shrink-0"
+            aria-label={`View billing info for ${c.name}`}
+            onClick={() => setBillingInfoId(c.id)}
+          ><ReceiptText /> <span className="hidden sm:inline">Billing info</span></Button>
         </li>;
       })}
     </ul>
