@@ -25,3 +25,4 @@
 - [x] Payment report rows open full appointment/payment details.
 - [x] Persistent active-session banner; app usable during a session, no second session start.
 - [x] Merge Clients and Billing into one page.
+- [x] Sentence-case "Actual duration:" label + end-session confirmation dialog with elapsed time
