@@ -123,7 +123,8 @@ function SchedulePage() {
         <div className="grid gap-3"><Input className="h-11" type="date" value={block.date} onChange={(event) => setBlock({ ...block, date: event.target.value })} /><div className="grid grid-cols-2 gap-3"><Input className="h-11" type="time" value={block.startTime} onChange={(event) => setBlock({ ...block, startTime: event.target.value })} /><Input className="h-11" type="time" value={block.endTime} onChange={(event) => setBlock({ ...block, endTime: event.target.value })} /></div><Input className="h-11" value={block.reason} onChange={(event) => setBlock({ ...block, reason: event.target.value })} /></div>
         <DialogFooter><Button onClick={saveBlock}>Save block</Button></DialogFooter>
       </DialogContent></Dialog>
-    </div>
+      </div>
+    </main>
   );
 }
 
