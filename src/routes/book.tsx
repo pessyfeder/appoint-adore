@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { availableTimes, validateAppointment } from "@/lib/scheduling";
-import { DURATION_OPTIONS, formatDuration, formatPhone, formatTime, fromDateKey, toDateKey } from "@/lib/data";
+import { DURATION_OPTIONS, notesIssue, formatDuration, formatPhone, formatTime, fromDateKey, toDateKey } from "@/lib/data";
 import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/book")({
@@ -53,6 +53,8 @@ function BookPage() {
 
   function finish() {
     if (!time) return;
+    const noteError = notesIssue(notes);
+    if (noteError) { setError(noteError); setStep(2); return; }
     const issue = validateAppointment({ date, time, durationMin, ...(edit ? { excludeId: edit } : {}) }, store.appointments, store.blockedTimes);
     if (issue) { setError(issue); setStep(1); return; }
     const input = { date, time, durationMin, clientIds, notes };
