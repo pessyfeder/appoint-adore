@@ -77,8 +77,8 @@ function ClientsPage() {
   }
 
   return <main className="mx-auto max-w-5xl px-4 py-8">
-    <p className="text-xs font-medium uppercase text-muted-foreground">Directory</p>
-    <h1 className="mt-1 font-serif text-3xl">Clients</h1>
+      <p className="text-xs font-medium uppercase text-muted-foreground">Practitioner only</p>
+      <h1 className="mt-1 font-serif text-3xl">Clients &amp; Billing</h1>
     <Tabs value={tab} onValueChange={(v) => navigate({ search: v === "billing" ? { tab: "billing" } : {} })} className="mt-5">
       <TabsList className="h-12"><TabsTrigger className="h-10 px-5" value="directory">Client list</TabsTrigger><TabsTrigger className="h-10 px-5" value="billing">Billing</TabsTrigger></TabsList>
       <TabsContent value="billing"><BillingPanel /></TabsContent>
