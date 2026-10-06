@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { LockProvider } from "../lib/lock";
 import { StoreProvider } from "../lib/store";
 import { Nav } from "../components/Nav";
 
@@ -121,10 +122,12 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <StoreProvider>
-        <Nav />
-        <Outlet />
-      </StoreProvider>
+      <LockProvider>
+        <StoreProvider>
+          <Nav />
+          <Outlet />
+        </StoreProvider>
+      </LockProvider>
     </QueryClientProvider>
   );
 }

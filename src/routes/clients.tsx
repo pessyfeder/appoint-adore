@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatPhone } from "@/lib/data";
+import { useLock } from "@/lib/lock";
 import { clientBalance } from "@/lib/scheduling";
 import { useStore } from "@/lib/store";
 
@@ -26,6 +27,7 @@ export const Route = createFileRoute("/clients")({
 
 function ClientsPage() {
   const store = useStore();
+  const { confirmPassphrase } = useLock();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState({ name: "", phone: "" });
@@ -51,6 +53,14 @@ function ClientsPage() {
     setSelectedId(client.id);
     setCreating(false);
     setDraft({ name: "", phone: "" });
+  }
+
+  async function savePayment() {
+    if (!selected || Number(amount) <= 0) return;
+    if (!(await confirmPassphrase("Recording a payment"))) return;
+    store.addPayment({ clientId: selected.id, amount: Number(amount), method, notes: "" });
+    setPaymentOpen(false);
+    setAmount("");
   }
 
   return <main className="mx-auto max-w-3xl px-4 py-8">
@@ -109,7 +119,7 @@ function ClientsPage() {
           </Select>
         </div>
         <DialogFooter>
-          <Button onClick={() => { if (selected && Number(amount) > 0) { store.addPayment({ clientId: selected.id, amount: Number(amount), method, notes: "" }); setPaymentOpen(false); setAmount(""); } }}>Save payment</Button>
+          <Button onClick={savePayment}>Save payment</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

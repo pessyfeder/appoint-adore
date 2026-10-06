@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { formatDuration, formatTime, fromDateKey, timeToMinutes, toDateKey, type Appointment } from "@/lib/data";
+import { useLock } from "@/lib/lock";
 import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/schedule")({
@@ -32,6 +33,7 @@ function clientNames(item: Appointment, clients: { id: string; name: string }[])
 
 function SchedulePage() {
   const { appointments, clients, blockedTimes, addBlockedTime, setClientStatus } = useStore();
+  const { confirmPassphrase } = useLock();
   const [view, setView] = useState<"week" | "month">("week");
   const [cursor, setCursor] = useState(() => new Date());
   const [selected, setSelected] = useState<Appointment | null>(null);
@@ -48,6 +50,12 @@ function SchedulePage() {
     if (view === "week") next.setDate(next.getDate() + direction * 7);
     else next.setMonth(next.getMonth() + direction);
     setCursor(next);
+  }
+
+  async function saveBlock() {
+    if (!(await confirmPassphrase("Blocking out time"))) return;
+    addBlockedTime(block);
+    setBlockOpen(false);
   }
 
   const title = view === "week"
@@ -107,7 +115,7 @@ function SchedulePage() {
       <Dialog open={blockOpen} onOpenChange={setBlockOpen}><DialogContent>
         <DialogHeader><DialogTitle>Block time</DialogTitle><DialogDescription>Keep appointments from being booked during this period.</DialogDescription></DialogHeader>
         <div className="grid gap-3"><Input className="h-11" type="date" value={block.date} onChange={(event) => setBlock({ ...block, date: event.target.value })} /><div className="grid grid-cols-2 gap-3"><Input className="h-11" type="time" value={block.startTime} onChange={(event) => setBlock({ ...block, startTime: event.target.value })} /><Input className="h-11" type="time" value={block.endTime} onChange={(event) => setBlock({ ...block, endTime: event.target.value })} /></div><Input className="h-11" value={block.reason} onChange={(event) => setBlock({ ...block, reason: event.target.value })} /></div>
-        <DialogFooter><Button onClick={() => { addBlockedTime(block); setBlockOpen(false); }}>Save block</Button></DialogFooter>
+        <DialogFooter><Button onClick={saveBlock}>Save block</Button></DialogFooter>
       </DialogContent></Dialog>
     </div>
   );

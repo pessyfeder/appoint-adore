@@ -13,3 +13,4 @@
 
 - Keep this scheduler offline-only: persist operational records in device-local browser storage because the single practitioner must not depend on a network service.
 - Keep scheduling constraints in `src/lib/scheduling.ts` and display/data helpers in `src/lib/data.ts` so every booking entry point applies the same rules.
+- Render protected surfaces only through the practitioner lock in `src/lib/lock.tsx` (password hashing and device storage in `src/lib/privacy.ts`), and extend its step-up list for sensitive actions instead of checking the password inline, so a locked session never puts client or billing records on screen.

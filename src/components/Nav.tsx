@@ -1,5 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { Sparkles } from "lucide-react";
+import { Lock, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useLock } from "@/lib/lock";
 
 const links = [
   { to: "/", label: "Today" },
@@ -9,9 +11,11 @@ const links = [
 ] as const;
 
 export function Nav() {
+  const { lock } = useLock();
+
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4">
         <Link to="/" className="flex items-center gap-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <Sparkles className="h-4 w-4" />
@@ -20,7 +24,7 @@ export function Nav() {
             Lumière Electrolysis
           </span>
         </Link>
-        <nav className="flex items-center gap-1">
+        <nav className="flex flex-wrap items-center justify-end gap-1">
           {links.map((l) => (
             <Link
               key={l.to}
@@ -32,6 +36,9 @@ export function Nav() {
               {l.label}
             </Link>
           ))}
+          <Button className="h-11 shrink-0" variant="ghost" onClick={lock}>
+            <Lock /> Lock
+          </Button>
         </nav>
       </div>
     </header>
