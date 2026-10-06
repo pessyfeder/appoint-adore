@@ -30,3 +30,5 @@
 - [x] Correct in-progress appointment start times, end times and booked length
 
 - [x] Clean up Correct times: subtle pencil trigger, tidier dialog
+- [x] Show "Actual duration:" as duration first, then the start–end times
+- [ ] Ask for the password inline on the page instead of a separate popup
