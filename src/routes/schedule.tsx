@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { appointmentProgress, formatDuration, formatTime, fromDateKey, timeToMinutes, toDateKey, type Appointment } from "@/lib/data";
-import { clientBalance, RATE_PER_MINUTE, sessionMinutes } from "@/lib/scheduling";
+import { applyNoShows } from "@/lib/scheduling";
 import { usePassphraseGate } from "@/lib/lock";
 import { useStore } from "@/lib/store";
 
@@ -37,7 +37,7 @@ function clientNames(item: Appointment, clients: { id: string; name: string }[])
 }
 
 function SchedulePage() {
-  const { appointments, clients, payments, blockedTimes, addBlockedTime, setClientStatus, highlightId, setHighlightId } = useStore();
+  const { appointments, clients, blockedTimes, addBlockedTime, setClientStatus, highlightId, setHighlightId } = useStore();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const cancelClient = async (...args: [string, string]) => { const n = clients.find((c) => c.id === args[1])?.name ?? "this client"; if (await confirm({ title: `Cancel ${n}'s appointment?`, description: "This frees the time slot. It can't be undone.", confirmLabel: "Cancel appointment", cancelLabel: "Keep appointment", destructive: true })) setClientStatus(args[0], args[1], "cancelled"); };
   const { request, prompt } = usePassphraseGate();
@@ -141,12 +141,8 @@ function SchedulePage() {
           <DialogHeader><DialogTitle>{clientNames(current, clients)}</DialogTitle><DialogDescription>{fromDateKey(current.date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} at {formatTime(current.time)} · {formatDuration(current.durationMin)}</DialogDescription></DialogHeader>
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/40 p-3"><StatusBadge item={current} /><StartEndControls item={current} /></div>
           <div className="space-y-3">{current.clients.map((entry) => {
-            const done = entry.status === "completed" && entry.startedAt && entry.endedAt;
-            const charge = done ? sessionMinutes(entry.startedAt!, entry.endedAt!) * RATE_PER_MINUTE : 0;
-            const owed = clientBalance(entry.clientId, appointments, payments);
             return <div key={entry.clientId} className="border-b pb-3">
               <div className="flex flex-wrap items-center justify-between gap-2"><span>{clients.find((client) => client.id === entry.clientId)?.name}</span><div className="flex items-center gap-2"><span className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${entry.startedAt && !entry.endedAt ? "border-status-progress bg-status-progress text-foreground" : CLIENT_BADGE[entry.status]}`}>{entry.startedAt && !entry.endedAt ? "In progress" : CLIENT_LABEL[entry.status]}</span>{entry.status === "scheduled" && !entry.startedAt && <Button size="sm" variant="outline" className="h-10" onClick={() => cancelClient(current.id, entry.clientId)}>Cancel</Button>}</div></div>
-              {done && <p className="mt-1 text-xs text-muted-foreground">Charged ${charge.toFixed(2)} · {owed > 0 ? <>owes <span className="font-semibold text-destructive">${owed.toFixed(2)}</span> on account</> : owed < 0 ? <>paid in full, <span className="font-semibold">${Math.abs(owed).toFixed(2)}</span> credit</> : "paid in full"}</p>}
             </div>;
           })}</div>
           {current.notes && <p className="text-sm text-muted-foreground">{current.notes}</p>}
