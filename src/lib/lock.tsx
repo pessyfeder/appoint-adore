@@ -226,40 +226,68 @@ export function usePassphraseGate() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const resolveRef = useRef<((ok: boolean) => void) | null>(null);
+  const timerRef = useRef<number | null>(null);
+  const attemptRef = useRef(0);
 
   function request(next: string) {
     return new Promise<boolean>((resolve) => {
       resolveRef.current = resolve;
+      if (timerRef.current) window.clearTimeout(timerRef.current);
+      attemptRef.current += 1;
       setError("");
       setPassphrase("");
+      setBusy(false);
       setAction(next);
     });
   }
 
   function settle(ok: boolean) {
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    timerRef.current = null;
+    attemptRef.current += 1;
     const resolve = resolveRef.current;
     resolveRef.current = null;
     setAction(null);
     setPassphrase("");
     setError("");
+    setBusy(false);
     resolve?.(ok);
   }
 
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    if (busy) return;
+  /** Verify without waiting for a button press; a match confirms the action on its own. */
+  function check(value: string) {
+    const attempt = ++attemptRef.current;
     setBusy(true);
-    const ok = await verify(passphrase);
-    setBusy(false);
-    if (ok) settle(true);
-    else {
-      setError("That password doesn’t match.");
-      setPassphrase("");
-    }
+    void verify(value).then((ok) => {
+      if (attempt !== attemptRef.current) return;
+      setBusy(false);
+      if (ok) settle(true);
+      else setError("That password doesn’t match.");
+    });
+  }
+
+  function type(value: string) {
+    setPassphrase(value);
+    setError("");
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    if (!value) return;
+    timerRef.current = window.setTimeout(() => check(value), 400);
+  }
+
+  function cancel() {
+    settle(false);
   }
 
   const prompt = action ? (
-    <form className="w-full rounded-lg border border-primary/40 bg-primary/5 p-3" onSubmit={submit}>
+    <form
+      className="w-full rounded-lg border border-primary/40 bg-primary/5 p-3"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (busy || !passphrase) return;
+        if (timerRef.current) window.clearTimeout(timerRef.current);
+        check(passphrase);
+      }}
+    >
       <p className="text-sm font-medium">{action} needs your practitioner password.</p>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <Input
@@ -269,14 +297,14 @@ export function usePassphraseGate() {
           autoComplete="current-password"
           autoFocus
           value={passphrase}
-          onChange={(event) => setPassphrase(event.target.value)}
+          onChange={(event) => type(event.target.value)}
         />
-        <Button className="h-11" disabled={busy || !passphrase} type="submit">
-          {busy ? "Checking…" : "Confirm"}
-        </Button>
-        <Button className="h-11" type="button" variant="ghost" onClick={() => settle(false)}>
+        <Button className="h-11" type="button" variant="ghost" onClick={cancel}>
           Cancel
         </Button>
+        <span className="text-xs text-muted-foreground" role="status">
+          {busy ? "Checking…" : "Confirms automatically"}
+        </span>
       </div>
       {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
     </form>

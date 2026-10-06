@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CreditCard, Lock, Phone, UserPlus } from "lucide-react";
 import { BillingPanel } from "@/components/BillingPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,6 +37,8 @@ function ClientsPage() {
   const [pass, setPass] = useState("");
   const [passError, setPassError] = useState("");
   const [checking, setChecking] = useState(false);
+  const timerRef = useRef<number | null>(null);
+  const attemptRef = useRef(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState({ name: "", phone: "" });
@@ -63,25 +65,44 @@ function ClientsPage() {
     setDraft({ name: "", phone: "" });
   }
 
-  async function unlockPage(event: FormEvent) {
-    event.preventDefault();
-    if (checking) return;
+  /** Verify without waiting for a button press; a match opens the page on its own. */
+  function check(value: string) {
+    const attempt = ++attemptRef.current;
     setChecking(true);
-    const ok = await verify(pass);
-    setChecking(false);
-    if (ok) {
-      setPageUnlocked(true);
-      return;
-    }
-    setPassError("That password doesn’t match.");
-    setPass("");
+    void verify(value).then((ok) => {
+      if (attempt !== attemptRef.current) return;
+      setChecking(false);
+      if (ok) {
+        setPageUnlocked(true);
+        return;
+      }
+      setPassError("That password doesn’t match.");
+    });
   }
+
+  function typePass(value: string) {
+    setPass(value);
+    setPassError("");
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    if (!value) return;
+    timerRef.current = window.setTimeout(() => check(value), 400);
+  }
+
+  useEffect(() => () => { if (timerRef.current) window.clearTimeout(timerRef.current); }, []);
 
   if (!pageUnlocked) {
     return <main className="mx-auto max-w-5xl px-4 py-8">
       <p className="text-xs font-medium uppercase text-muted-foreground">Practitioner only</p>
       <h1 className="mt-1 font-serif text-3xl">Clients &amp; Billing</h1>
-      <form className="mt-8 border border-dashed p-6 sm:p-8" onSubmit={unlockPage}>
+      <form
+        className="mt-8 border border-dashed p-6 sm:p-8"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (checking || !pass) return;
+          if (timerRef.current) window.clearTimeout(timerRef.current);
+          check(pass);
+        }}
+      >
         <div className="flex items-start gap-3">
           <Lock className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">Client records and billing are private. Enter your password to open this page.</p>
@@ -94,10 +115,10 @@ function ClientsPage() {
           autoComplete="current-password"
           autoFocus
           value={pass}
-          onChange={(event) => setPass(event.target.value)}
+          onChange={(event) => typePass(event.target.value)}
         />
         {passError && <p className="mt-2 text-sm text-destructive">{passError}</p>}
-        <Button className="mt-5 h-12" disabled={checking || !pass} type="submit">{checking ? "Checking…" : "Unlock Clients & Billing"}</Button>
+        <p className="mt-3 text-xs text-muted-foreground" role="status">{checking ? "Checking…" : "Unlocks automatically"}</p>
       </form>
     </main>;
   }
@@ -121,6 +142,28 @@ function ClientsPage() {
       />
       <p className="mt-2 text-xs text-muted-foreground">{store.clients.length} client{store.clients.length === 1 ? "" : "s"} on file</p>
     </div>
+
+    <ul className="mt-4 divide-y border bg-card">
+      {store.clients.filter((c) => !c.archived).map((c) => {
+        const owed = clientBalance(c.id, store.appointments, store.payments);
+        return <li key={c.id}>
+          <button
+            type="button"
+            onClick={() => { setSelectedId(c.id); setCreating(false); }}
+            className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left ${selectedId === c.id ? "bg-primary/10" : ""}`}
+          >
+            <span>
+              <span className="block font-medium">{c.name}</span>
+              <span className="block text-xs text-muted-foreground">{c.phone}</span>
+            </span>
+            <span className="text-right">
+              <span className={`block text-sm font-semibold ${owed > 0 ? "text-destructive" : ""}`}>${owed.toFixed(2)}</span>
+              <span className="block text-xs text-muted-foreground">balance</span>
+            </span>
+          </button>
+        </li>;
+      })}
+    </ul>
 
     {creating && <div className="mt-4 grid gap-2 border bg-card p-4 sm:grid-cols-[1fr_1fr_auto]">
       <Input className="h-11" placeholder="Full name" value={draft.name} onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))} />
