@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CreditCard, Play, Square } from "lucide-react";
+import { CalendarClock, CreditCard, Play, Square } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { clientInSession, formatDuration, appointmentProgress, PROGRESS_LABEL, type Appointment, type AppointmentProgress } from "@/lib/data";
@@ -7,6 +7,7 @@ import { sessionMinutes } from "@/lib/scheduling";
 import { useLock } from "@/lib/lock";
 import { RecordPaymentDialog } from "@/components/RecordPaymentDialog";
 import { useStore, type EndSummary } from "@/lib/store";
+import { CorrectTimesDialog } from "@/components/CorrectTimesDialog";
 
 export const STATUS_BADGE: Record<AppointmentProgress, string> = {
   scheduled: "border-status-scheduled/40 bg-status-scheduled/15 text-status-scheduled",
@@ -44,6 +45,7 @@ export function StartEndControls({ item }: { item: Appointment }) {
   const [summary, setSummary] = useState<EndSummary | null>(null);
   const [paying, setPaying] = useState<EndSummary | null>(null);
   const [ending, setEnding] = useState(false);
+  const [correcting, setCorrecting] = useState(false);
   const name = (id: string) => clients.find((c) => c.id === id)?.name ?? "Client";
   const first = (id: string) => name(id).split(" ")[0];
   const running = item.clients.find(clientInSession);
@@ -52,6 +54,7 @@ export function StartEndControls({ item }: { item: Appointment }) {
   const shared = item.clients.length > 1;
   async function start(clientId: string) { if (await confirmPassphrase(`Starting ${name(clientId)}'s session`)) startClient(item.id, clientId); }
   function end() { setEnding(false); setSummary(endClient(item.id)); }
+  async function openCorrect() { if (await confirmPassphrase("Correcting appointment times")) setCorrecting(true); }
   const elapsedMin = running?.startedAt ? Math.max(1, Math.round((Date.now() - new Date(running.startedAt).getTime()) / 60000)) : 0;
   const confirmEnd = <Dialog open={ending} onOpenChange={setEnding}>
     <DialogContent>
@@ -89,5 +92,6 @@ export function StartEndControls({ item }: { item: Appointment }) {
   else if (waiting && busyElsewhere) control = <span className="text-xs text-muted-foreground">Another session is running</span>;
   else if (waiting) control = <div className="flex flex-wrap items-center gap-2">{waitingAll.map((c) => <Button key={c.clientId} className="h-11" onClick={() => start(c.clientId)}><Play /> Start{shared ? ` ${first(c.clientId)}` : ""}</Button>)}</div>;
   else if (item.startedAt && item.endedAt) control = <span className="flex flex-col text-right text-xs text-muted-foreground"><span className="font-medium">Actual duration:</span><span>{clock(item.startedAt)} – {clock(item.endedAt)}</span><span>{formatDuration(sessionMinutes(item.startedAt, item.endedAt))} elapsed</span></span>;
-  return <>{control}{popup}{payment}{confirmEnd}</>;
+  const timed = item.clients.some((c) => c.startedAt);
+  return <>{control}{timed && <Button size="sm" variant="ghost" className="h-11 px-3 text-xs" onClick={openCorrect}><CalendarClock /> Correct times</Button>}{popup}{payment}{confirmEnd}<CorrectTimesDialog open={correcting} onOpenChange={setCorrecting} item={item} /></>;
 }
