@@ -155,14 +155,16 @@ export function notesIssue(raw: string): string | null {
   return null;
 }
 
-export type AppointmentProgress = "scheduled" | "in_progress" | "ended" | "cancelled";
+export type AppointmentProgress = "scheduled" | "in_progress" | "ended" | "cancelled" | "no_show";
 
 export function appointmentProgress(item: Appointment): AppointmentProgress {
   if (item.endedAt) return "ended";
   if (item.startedAt) return "in_progress";
   if (item.clients.every((client) => client.status === "cancelled")) return "cancelled";
+  const active = item.clients.filter((client) => client.status !== "cancelled");
+  if (active.every((client) => client.status === "no_show")) return "no_show";
   if (item.clients.every((client) => client.status !== "scheduled")) return "ended";
   return "scheduled";
 }
 
-export const PROGRESS_LABEL: Record<AppointmentProgress, string> = { scheduled: "Scheduled", in_progress: "In progress", ended: "Ended", cancelled: "Cancelled" };
+export const PROGRESS_LABEL: Record<AppointmentProgress, string> = { scheduled: "Scheduled", in_progress: "In progress", ended: "Completed", cancelled: "Cancelled", no_show: "No-show" };

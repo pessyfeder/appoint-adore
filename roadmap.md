@@ -14,3 +14,6 @@
 - [x] Do not show expected revenue on the dashboard.
 - [x] Start/End appointments with status display
 - [x] "Appointment confirmed" popup + highlight new appointment in calendar
+- [x] Color-coded statuses + No-show
+- [x] Today / Go to date toggle
+- [x] Password for start/end, payments, viewing billing
