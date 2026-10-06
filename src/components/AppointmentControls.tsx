@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Play, Square } from "lucide-react";
+import { CreditCard, Play, Square } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { formatDuration, appointmentProgress, PROGRESS_LABEL, type Appointment, type AppointmentProgress } from "@/lib/data";
 import { useLock } from "@/lib/lock";
+import { RecordPaymentDialog } from "@/components/RecordPaymentDialog";
 import { useStore, type EndSummary } from "@/lib/store";
 
 export const STATUS_BADGE: Record<AppointmentProgress, string> = {
@@ -39,6 +40,7 @@ export function StartEndControls({ item }: { item: Appointment }) {
   const { startAppointment, endAppointment, clients } = useStore();
   const { confirmPassphrase } = useLock();
   const [summary, setSummary] = useState<EndSummary | null>(null);
+  const [paying, setPaying] = useState<EndSummary | null>(null);
   const progress = appointmentProgress(item);
   async function start() { if (await confirmPassphrase("Starting an appointment")) startAppointment(item.id); }
   function end() { setSummary(endAppointment(item.id)); }
@@ -50,12 +52,13 @@ export function StartEndControls({ item }: { item: Appointment }) {
         <div className="flex justify-between p-4"><span className="text-muted-foreground">Duration</span><span className="font-semibold">{formatDuration(summary.minutes)}</span></div>
         {summary.lines.map((line) => <div key={line.clientId} className="flex justify-between p-4"><span>{name(line.clientId)}</span><span className="text-lg font-semibold">${line.amount.toFixed(2)} owed</span></div>)}
       </div>
-      <DialogFooter><Button className="h-11" onClick={() => setSummary(null)}>Done</Button></DialogFooter>
+      <DialogFooter className="gap-2"><Button className="h-11" variant="outline" onClick={() => setSummary(null)}>Done</Button><Button className="h-11" onClick={() => { setPaying(summary); setSummary(null); }}><CreditCard /> Record payment</Button></DialogFooter>
     </>}</DialogContent>
   </Dialog>;
+  const payment = <RecordPaymentDialog open={Boolean(paying)} onOpenChange={(o) => !o && setPaying(null)} clientIds={paying?.lines.map((l) => l.clientId)} defaultAmount={paying?.lines.length === 1 ? paying.lines[0]!.amount : undefined} />;
   let control = null;
   if (progress === "scheduled") control = <Button className="h-11" onClick={start}><Play /> Start</Button>;
   else if (progress === "in_progress") control = <div className="flex items-center gap-2"><span className="text-xs text-muted-foreground">Started {clock(item.startedAt)}</span><Button className="h-11" variant="destructive" onClick={end}><Square /> End</Button></div>;
   else if (item.startedAt && item.endedAt) control = <span className="text-xs text-muted-foreground">{clock(item.startedAt)} – {clock(item.endedAt)}</span>;
-  return <>{control}{popup}</>;
+  return <>{control}{popup}{payment}</>;
 }
