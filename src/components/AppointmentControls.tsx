@@ -71,6 +71,6 @@ export function StartEndControls({ item }: { item: Appointment }) {
   if (running) control = <div className="flex items-center gap-2"><span className="text-xs text-muted-foreground">{shared ? `${first(running.clientId)} · ` : ""}started {clock(running.startedAt)}</span><Button className="h-11" variant="destructive" onClick={end}><Square /> End{shared ? ` ${first(running.clientId)}` : ""}</Button></div>;
   else if (waiting && busyElsewhere) control = <span className="text-xs text-muted-foreground">Another session is running</span>;
   else if (waiting) control = <div className="flex flex-wrap items-center gap-2">{waitingAll.map((c) => <Button key={c.clientId} className="h-11" onClick={() => start(c.clientId)}><Play /> Start{shared ? ` ${first(c.clientId)}` : ""}</Button>)}</div>;
-  else if (item.startedAt && item.endedAt) control = <span className="text-xs text-muted-foreground">{clock(item.startedAt)} – {clock(item.endedAt)}</span>;
+  else if (item.startedAt && item.endedAt) control = <span className="flex flex-col text-right text-xs text-muted-foreground"><span className="font-medium uppercase tracking-wide">Actual duration</span><span>{clock(item.startedAt)} – {clock(item.endedAt)}</span></span>;
   return <>{control}{popup}{payment}</>;
 }
