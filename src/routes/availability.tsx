@@ -4,10 +4,10 @@ import { CalendarOff, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { blocksIssue, setAvailability, sortBlocks, useAvailability } from "@/lib/availability";
+import { blocksIssue, setAvailability, sortBlocks, useAvailability, type Availability } from "@/lib/availability";
 import { formatTime, fromDateKey, toDateKey, type BusinessBlock } from "@/lib/data";
 import { useConfirm } from "@/components/ConfirmDialog";
-import { blockedTimeIssue } from "@/lib/scheduling";
+import { appointmentsOutsideHours, blockedTimeIssue } from "@/lib/scheduling";
 import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/availability")({
@@ -43,7 +43,7 @@ function RangeEditor({ blocks, onChange }: { blocks: BusinessBlock[]; onChange: 
 
 function AvailabilityPage() {
   const availability = useAvailability();
-  const { appointments, blockedTimes, addBlockedTime, removeBlockedTime } = useStore();
+  const { appointments, clients, blockedTimes, addBlockedTime, removeBlockedTime } = useStore();
   const { confirm, dialog } = useConfirm();
   const [weekly, setWeekly] = useState(availability.weekly);
   const [weeklyMsg, setWeeklyMsg] = useState<{ error?: string; ok?: string }>({});
@@ -65,31 +65,55 @@ function AvailabilityPage() {
     return confirm({ title: "Are you sure?", description, confirmLabel, cancelLabel: "Go back" });
   }
 
+  /** Hours as they would be after a change, so bookings that no longer fit can be listed before saving. */
+  function hoursWith(weeklyNext: Availability["weekly"], overridesNext: Availability["overrides"]) {
+    return (key: string) => overridesNext[key] ?? weeklyNext[fromDateKey(key).getDay()] ?? [];
+  }
+
+  /** Warning sentence naming the upcoming bookings that fall outside the proposed hours (empty when none). */
+  function outsideWarning(hoursFor: (key: string) => BusinessBlock[]) {
+    const list = appointmentsOutsideHours(appointments, hoursFor);
+    if (!list.length) return { text: "", count: 0 };
+    const shown = list.slice(0, 5).map((item) => {
+      const names = item.clients.filter((c) => c.status === "scheduled").map((c) => clients.find((client) => client.id === c.clientId)?.name ?? "Client").join(" & ");
+      return `${fromDateKey(item.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })} ${formatTime(item.time)} (${names})`;
+    }).join("; ");
+    const more = list.length > 5 ? `; and ${list.length - 5} more` : "";
+    const many = list.length === 1 ? "1 booked appointment falls" : `${list.length} booked appointments fall`;
+    return { text: ` Warning: ${many} outside these hours: ${shown}${more}. They stay booked — reschedule or cancel them if needed.`, count: list.length };
+  }
+
+  const keptNote = (count: number) => count ? ` ${count} booked appointment${count === 1 ? " is" : "s are"} now outside your hours — check the Schedule.` : "";
+
   async function saveWeekly() {
     for (let d = 0; d < 7; d++) {
       const issue = blocksIssue(weekly[d] ?? []);
       if (issue) return setWeeklyMsg({ error: `${DAYS[d]}: ${issue}` });
     }
-    if (!(await sure("Save the new weekly hours? Booking will only offer times inside them. Existing appointments are not moved.", "Save weekly hours"))) return;
     const sorted = Object.fromEntries(Object.entries(weekly).map(([d, b]) => [d, sortBlocks(b)]));
+    const warning = outsideWarning(hoursWith(sorted, availability.overrides));
+    if (!(await sure(`Save the new weekly hours? Booking will only offer times inside them.${warning.text}`, warning.count ? "Save anyway" : "Save weekly hours"))) return;
     setAvailability({ ...availability, weekly: sorted });
-    setWeeklyMsg({ ok: "Weekly hours saved." });
+    setWeeklyMsg({ ok: `Weekly hours saved.${keptNote(warning.count)}` });
   }
 
   async function saveDate(closed: boolean) {
     const blocks = closed ? [] : dateBlocks;
     const issue = blocksIssue(blocks);
     if (issue) return setDateMsg({ error: issue });
-    if (!(await sure(closed ? `Mark ${longDate(date)} as closed?` : `Save these hours for ${longDate(date)} only?`, closed ? "Mark closed" : "Save hours"))) return;
-    setAvailability({ ...availability, overrides: { ...availability.overrides, [date]: sortBlocks(blocks) } });
-    setDateMsg({ ok: closed ? "Marked closed." : "Hours saved for this date." });
+    const overrides = { ...availability.overrides, [date]: sortBlocks(blocks) };
+    const warning = outsideWarning(hoursWith(availability.weekly, overrides));
+    if (!(await sure(`${closed ? `Mark ${longDate(date)} as closed?` : `Save these hours for ${longDate(date)} only?`}${warning.text}`, warning.count ? "Save anyway" : closed ? "Mark closed" : "Save hours"))) return;
+    setAvailability({ ...availability, overrides });
+    setDateMsg({ ok: `${closed ? "Marked closed." : "Hours saved for this date."}${keptNote(warning.count)}` });
   }
 
   async function clearDate(key: string) {
-    if (!(await sure(`Use the regular weekly hours again on ${longDate(key)}?`, "Use weekly hours"))) return;
     const { [key]: _removed, ...rest } = availability.overrides;
+    const warning = outsideWarning(hoursWith(availability.weekly, rest));
+    if (!(await sure(`Use the regular weekly hours again on ${longDate(key)}?${warning.text}`, warning.count ? "Save anyway" : "Use weekly hours"))) return;
     setAvailability({ ...availability, overrides: rest });
-    setDateMsg({ ok: "Weekly hours restored for that date." });
+    setDateMsg({ ok: `Weekly hours restored for that date.${keptNote(warning.count)}` });
   }
 
   async function removeBlock(id: string) {

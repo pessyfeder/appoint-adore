@@ -7,12 +7,16 @@ import { useConfirm } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { availableTimes, pastStartIssue, validateAppointment } from "@/lib/scheduling";
 import { appointmentProgress, DURATION_OPTIONS, notesIssue, formatDuration, formatPhone, formatTime, fromDateKey, toDateKey } from "@/lib/data";
 import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/book")({
-  validateSearch: (search: Record<string, unknown>) => ({ edit: typeof search["edit"] === "string" ? search["edit"] : undefined }),
+  validateSearch: (search: Record<string, unknown>): { edit?: string | undefined; date?: string | undefined } => ({
+    edit: typeof search["edit"] === "string" ? search["edit"] : undefined,
+    date: typeof search["date"] === "string" && /^\d{4}-\d{2}-\d{2}$/.test(search["date"]) ? search["date"] : undefined,
+  }),
   head: () => ({ meta: [
     { title: "New Appointment | Lumière Electrolysis" },
     { name: "description", content: "Schedule an electrolysis appointment safely within business hours." },
@@ -25,6 +29,19 @@ export const Route = createFileRoute("/book")({
 });
 
 const STEPS = ["Duration", "Date & time", "Clients", "Confirm"];
+/** Lengths offered as big buttons; every other length is in the "Other length" list. */
+const COMMON_DURATIONS = [15, 30, 45, 60, 90, 120];
+
+/** First day after `from` (within ~3 months) that has an open time for this length. */
+function nextOpenDate(from: string, durationMin: number, appointments: Parameters<typeof availableTimes>[2], blocks: Parameters<typeof availableTimes>[3]) {
+  const day = fromDateKey(from);
+  for (let i = 1; i <= 92; i++) {
+    day.setDate(day.getDate() + 1);
+    const key = toDateKey(day);
+    if (availableTimes(key, durationMin, appointments, blocks).length) return key;
+  }
+  return null;
+}
 
 function BookPage() {
   const navigate = useNavigate();
@@ -38,7 +55,8 @@ function BookPage() {
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [step, setStep] = useState(0);
   const [durationMin, setDuration] = useState(existing?.durationMin ?? 30);
-  const [date, setDate] = useState(existing?.date ?? toDateKey(new Date()));
+  const today = toDateKey(new Date());
+  const [date, setDate] = useState(existing?.date ?? (search.date && search.date >= today ? search.date : today));
   const [time, setTime] = useState<string | null>(existing?.time ?? null);
   const [clientIds, setClientIds] = useState<string[]>(existing?.clients.map((item) => item.clientId) ?? []);
   const [notes, setNotes] = useState(existing?.notes ?? "");
@@ -61,6 +79,7 @@ function BookPage() {
   }, [seeded]);
 
   const times = useMemo(() => availableTimes(date, durationMin, store.appointments.filter((item) => item.id !== edit), store.blockedTimes), [date, durationMin, edit, store.appointments, store.blockedTimes]);
+  const nextOpen = useMemo(() => (step === 1 && times.length === 0 ? nextOpenDate(date, durationMin, store.appointments.filter((item) => item.id !== edit), store.blockedTimes) : null), [step, times.length, date, durationMin, edit, store.appointments, store.blockedTimes]);
   const guestValid = guest.name.trim().length > 0 && guest.phone.replace(/\D/g, "").length === 10;
   const canContinue = step === 0 || (step === 1 && Boolean(time)) || (step === 2 && (isPublic ? guestValid : clientIds.length > 0));
 
@@ -127,8 +146,8 @@ function BookPage() {
     <ol className="mt-6 grid grid-cols-4 gap-1">{STEPS.map((label, index) => <li key={label} className="min-w-0 text-center"><span className={`mx-auto flex h-8 w-8 items-center justify-center rounded-full text-sm ${index <= step ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}>{index < step ? <Check /> : index + 1}</span><span className="mt-1 block truncate text-xs text-muted-foreground">{isPublic && label === "Clients" ? "Your details" : label}</span></li>)}</ol>
 
     <section className="mt-7 border-y py-6">
-      {step === 0 && <div><h2 className="font-serif text-xl">How long?</h2><div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-5">{DURATION_OPTIONS.map((duration) => <Button key={duration} variant={durationMin === duration ? "default" : "outline"} className="h-12" onClick={() => { setDuration(duration); setTime(null); }}>{formatDuration(duration)}</Button>)}</div></div>}
-      {step === 1 && <div><h2 className="font-serif text-xl">Choose date and time</h2><Input type="date" className="mt-4 h-12 max-w-xs" min={toDateKey(new Date())} value={date} onChange={(event) => { setDate(event.target.value); setTime(null); setError(""); }} /><div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">{times.map((slot) => <Button key={slot} variant={time === slot ? "default" : "outline"} className="h-12" onClick={() => setTime(slot)}>{formatTime(slot)}</Button>)}</div>{times.length === 0 && <p className="mt-5 border border-dashed p-5 text-center text-muted-foreground">No available times for this duration.</p>}</div>}
+      {step === 0 && <div><h2 className="font-serif text-xl">How long?</h2><div className="mt-4 grid grid-cols-3 gap-2">{COMMON_DURATIONS.map((duration) => <Button key={duration} variant={durationMin === duration ? "default" : "outline"} className="h-14 text-base" onClick={() => { setDuration(duration); setTime(null); }}>{formatDuration(duration)}</Button>)}</div><div className="mt-4 flex flex-wrap items-center gap-3"><label className="text-sm text-muted-foreground" htmlFor="other-length">Other length</label><Select value={String(durationMin)} onValueChange={(value) => { setDuration(Number(value)); setTime(null); }}><SelectTrigger id="other-length" className={`h-12 w-44 ${COMMON_DURATIONS.includes(durationMin) ? "" : "border-primary ring-2 ring-primary/30"}`}><SelectValue /></SelectTrigger><SelectContent>{DURATION_OPTIONS.map((duration) => <SelectItem className="h-10" key={duration} value={String(duration)}>{formatDuration(duration)}</SelectItem>)}</SelectContent></Select></div></div>}
+      {step === 1 && <div><h2 className="font-serif text-xl">Choose date and time</h2><Input type="date" className="mt-4 h-12 max-w-xs" min={today} value={date} onChange={(event) => { setDate(event.target.value); setTime(null); setError(""); }} /><div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">{times.map((slot) => <Button key={slot} variant={time === slot ? "default" : "outline"} className="h-12" onClick={() => setTime(slot)}>{formatTime(slot)}</Button>)}</div>{times.length === 0 && <div className="mt-5 border border-dashed p-5 text-center text-muted-foreground"><p>No available times on this day for {formatDuration(durationMin)}.</p>{nextOpen ? <Button className="mt-3 h-12" variant="outline" onClick={() => { setDate(nextOpen); setTime(null); setError(""); }}>Next available: {fromDateKey(nextOpen).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })} <ArrowRight /></Button> : <p className="mt-2 text-sm">Nothing open in the next 3 months.</p>}</div>}</div>}
       {step === 2 && isPublic && <div><h2 className="font-serif text-xl">Your details</h2><div className="mt-4 grid gap-3 sm:grid-cols-2"><div><label className="block text-sm font-medium" htmlFor="guest-name">Full name</label><Input id="guest-name" className="mt-1 h-12" autoComplete="off" value={guest.name} onChange={(event) => { setGuest({ ...guest, name: event.target.value }); setError(""); }} /></div><div><label className="block text-sm font-medium" htmlFor="guest-phone">Phone</label><Input id="guest-phone" className="mt-1 h-12" inputMode="tel" autoComplete="off" placeholder="(555) 555-5555" value={guest.phone} onChange={(event) => { setGuest({ ...guest, phone: formatPhone(event.target.value) }); setError(""); }} /></div></div><label className="mt-5 block text-sm font-medium" htmlFor="notes">Notes <span className="font-normal text-muted-foreground">(optional)</span></label><Textarea id="notes" className="mt-1" maxLength={500} placeholder="e.g. treatment area, special instructions" value={notes} onChange={(event) => { setNotes(event.target.value); setError(""); }} /></div>}
       {step === 2 && !isPublic && <div><div className="flex items-center justify-between gap-3"><h2 className="font-serif text-xl">Who is coming?</h2><Button variant="outline" className="h-11" onClick={() => setShowNew((value) => !value)}><UserPlus /> New client</Button></div>{showNew && <div className="mt-4 grid gap-2 border-b pb-4 sm:grid-cols-[1fr_1fr_auto]"><Input className="h-11" placeholder="Full name" value={newClient.name} onChange={(event) => setNewClient({ ...newClient, name: event.target.value })} /><Input className="h-11" inputMode="tel" placeholder="Phone" value={newClient.phone} onChange={(event) => setNewClient({ ...newClient, phone: formatPhone(event.target.value) })} /><Button className="h-11" onClick={addNewClient}>Save</Button></div>}<div className="mt-4 grid gap-2 sm:grid-cols-2">{store.clients.filter((client) => !client.archived).map((client) => { const selected = clientIds.includes(client.id); return <Button key={client.id} variant={selected ? "secondary" : "outline"} className="h-auto min-h-14 justify-between whitespace-normal p-3 text-left" onClick={() => setClientIds((current) => selected ? current.filter((id) => id !== client.id) : [...current, client.id])}><span><span className="block font-medium">{client.name}</span><span className="block text-xs text-muted-foreground">{client.phone}</span></span>{selected && <Check />}</Button>; })}</div><label className="mt-5 block text-sm font-medium" htmlFor="notes">Notes <span className="font-normal text-muted-foreground">(optional)</span></label><Textarea id="notes" className="mt-1" maxLength={500} placeholder="e.g. treatment area, special instructions" value={notes} onChange={(event) => { setNotes(event.target.value); setError(""); }} /></div>}
       {step === 3 && <div><h2 className="font-serif text-xl">Ready to schedule</h2><dl className="mt-4 divide-y border-y"><Summary label="When" value={`${fromDateKey(date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} at ${time ? formatTime(time) : ""}`} /><Summary label="Duration" value={formatDuration(durationMin)} /><Summary label={isPublic ? "Name" : "Clients"} value={isPublic ? guest.name : clientIds.map((id) => store.clients.find((client) => client.id === id)?.name).filter(Boolean).join(", ")} /></dl><p className="mt-5 text-sm text-muted-foreground">Appointments cancelled with less than 24 hours’ notice may still be charged.</p></div>}

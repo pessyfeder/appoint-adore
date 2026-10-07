@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { emptyData, isoToTime, movePaidAt, paymentDateKey, toDateKey, type Appointment } from "../lib/data";
-import { availableTimes, blockedTimeIssue, canMarkNoShow, noShowCharge, pastStartIssue } from "../lib/scheduling";
+import { appointmentsOutsideHours, availableTimes, blockedTimeIssue, canMarkNoShow, noShowCharge, pastStartIssue } from "../lib/scheduling";
 
 // 2030-01-07 is a Monday: default hours 10:30–1:30 and 7:30–10:30.
 const MONDAY = "2030-01-07";
@@ -104,5 +104,20 @@ describe("editing a payment's date", () => {
     expect(isoToTime(moved)).toBe("21:45");
     expect(movePaidAt(evening, "2030-01-07")).toBe(evening);
     expect(paymentDateKey(movePaidAt("2030-01-07", "2030-01-04"))).toBe("2030-01-04");
+  });
+});
+
+describe("changing hours", () => {
+  it("lists upcoming bookings that would fall outside the new hours", () => {
+    const morning = booked("10:30");
+    const evening = booked("19:30");
+    const cancelled = booked("11:30", "cancelled");
+    const done = booked("12:30", "completed");
+    const eveningsOnly = () => [{ start: "19:30", end: "22:30" }];
+    const ids = (list: Appointment[]) => list.map((item) => item.id);
+    expect(ids(appointmentsOutsideHours([morning, evening, cancelled, done], eveningsOnly, at("09:00")))).toEqual(["a-10:30"]);
+    expect(ids(appointmentsOutsideHours([morning, evening], () => [], at("09:00")))).toEqual(["a-10:30", "a-19:30"]);
+    // Bookings that already started (or whose time has passed) aren't flagged.
+    expect(ids(appointmentsOutsideHours([morning], eveningsOnly, at("11:00")))).toEqual([]);
   });
 });

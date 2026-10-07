@@ -57,3 +57,7 @@
 - [x] Edit a client's name and phone; archive a client (only with a zero balance and no scheduled appointments) and restore them from search.
 - [x] Appointment clients stay Scheduled until the practitioner marks them No-show — including the waiting client on a shared appointment.
 - [x] The only password prompt is entering Admin; every other action asks "Are you sure?".
+- [x] Changing weekly hours or a date's hours lists upcoming bookings that would fall outside them before saving (they are never moved).
+- [x] Week view shows each day's hours, hatches closed days, grays past days, fits a tablet, and has a Book button per open day (opens booking on that date).
+- [x] Month view grays past days, marks closed days and today.
+- [x] Booking: six common lengths plus an "Other length" list; a day with no times offers "Next available".

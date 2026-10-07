@@ -1,4 +1,4 @@
-import { appointmentStart, clientInSession, effectiveHours, formatTime, minutesToTime, timeToMinutes, type Appointment, type AppointmentClient, type BlockedTime } from "./data";
+import { appointmentStart, clientInSession, effectiveHours, formatTime, minutesToTime, timeToMinutes, type Appointment, type AppointmentClient, type BlockedTime, type BusinessBlock } from "./data";
 
 type Candidate = { date: string; time: string; durationMin: number; excludeId?: string };
 
@@ -46,6 +46,21 @@ export function availableTimes(date: string, durationMin: number, appointments: 
     }
   }
   return results;
+}
+
+/**
+ * Upcoming appointments (still waiting to start) that would no longer fit inside the working hours
+ * returned by `hoursFor`. Used to warn before hours are changed; the appointments themselves are never moved.
+ */
+export function appointmentsOutsideHours(appointments: Appointment[], hoursFor: (date: string) => BusinessBlock[], now: Date = new Date()): Appointment[] {
+  return appointments
+    .filter((item) => item.clients.some((client) => client.status === "scheduled" && !client.startedAt) && appointmentStart(item) > now)
+    .filter((item) => {
+      const start = timeToMinutes(item.time);
+      const end = start + item.durationMin;
+      return !hoursFor(item.date).some((block) => start >= timeToMinutes(block.start) && end <= timeToMinutes(block.end));
+    })
+    .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
 }
 
 /** Blocked time may not sit on top of a booked appointment; returns the reason it can't be saved. */
