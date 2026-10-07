@@ -33,11 +33,6 @@ function startOfWeek(date: Date) {
   return next;
 }
 
-/** Compact time for narrow calendar headers, e.g. "10:30a", "1p". */
-function shortTime(time: string) {
-  return formatTime(time).replace(":00", "").replace(" AM", "a").replace(" PM", "p");
-}
-
 function clientNames(item: Appointment, clients: { id: string; name: string }[]) {
   return item.clients.map((entry) => clients.find((client) => client.id === entry.clientId)?.name).filter(Boolean).join(" & ");
 }
@@ -133,16 +128,14 @@ function SchedulePage() {
             const dayBlocks = blockedTimes.filter((item) => item.date === key);
             const today = key === todayKey;
             const past = key < todayKey;
-            const hours = hoursOn(key);
-            const closed = hours.length === 0;
+            const closed = hoursOn(key).length === 0;
             return <div key={key} className={`flex min-h-[460px] flex-col border-r last:border-r-0 ${past ? "bg-muted/40" : closed ? "bg-[repeating-linear-gradient(135deg,transparent_0,transparent_8px,var(--color-muted)_8px,var(--color-muted)_10px)]" : ""}`}>
-              <div className={`border-b px-1 py-1.5 text-center ${today ? "bg-primary text-primary-foreground" : past ? "bg-muted text-muted-foreground" : "bg-muted/40"}`}><p className="text-[11px] font-medium uppercase leading-none tracking-tight">{day.toLocaleDateString("en-US", { weekday: "short" })}</p><p className="mt-1 text-base font-semibold leading-none">{day.getDate()}</p><p className={`mt-1 text-[10px] leading-tight ${today ? "" : "text-muted-foreground"}`}>{closed ? "Closed" : hours.map((block) => <span key={block.start} className="block">{shortTime(block.start)}–{shortTime(block.end)}</span>)}</p></div>
+              <div className={`border-b px-1 py-1.5 text-center ${today ? "bg-primary text-primary-foreground" : past ? "bg-muted text-muted-foreground" : "bg-muted/40"}`}><p className="text-[11px] font-medium uppercase leading-none tracking-tight">{day.toLocaleDateString("en-US", { weekday: "short" })}</p><p className="mt-1 text-base font-semibold leading-none">{day.getDate()}</p></div>
               <div className={`space-y-2 p-2 ${past ? "opacity-75" : ""}`}>
                 {dayAppointments.map((item) => <Button key={item.id} data-appointment={item.id} variant="outline" className={`h-auto w-full items-start justify-start whitespace-normal p-3 text-left transition-shadow ${STATUS_CARD[appointmentProgress(item)]} ${item.id === highlightId ? "border-primary bg-primary/10 ring-2 ring-primary ring-offset-2" : ""}`} onClick={() => setSelected(item)}><span className="w-full"><span className="block font-semibold">{formatTime(item.time)}</span><span className="mb-1 block"><StatusBadge item={item} /></span><span className="block text-xs text-muted-foreground">{clientNames(item, clients)}</span><span className="block text-xs text-muted-foreground">{formatDuration(item.durationMin)}</span></span></Button>)}
                 {dayBlocks.map((item) => <div key={item.id} className="border border-dashed bg-muted/50 p-2 text-xs text-muted-foreground">{formatTime(item.startTime)}–{formatTime(item.endTime)}<br />{item.reason}</div>)}
-                {!dayAppointments.length && !dayBlocks.length && (past || closed) && <p className="pt-5 text-center text-xs text-muted-foreground">{closed ? "Closed" : "No appointments"}</p>}
+                {!dayAppointments.length && !dayBlocks.length && <p className="pt-5 text-center text-xs text-muted-foreground">{closed ? "Closed" : "No appointments"}</p>}
               </div>
-              {!past && !closed && <div className="p-2 pt-0"><Button asChild variant="ghost" className="h-11 w-full border border-dashed text-muted-foreground"><Link to="/book" search={{ edit: undefined, date: key }} aria-label={`Book on ${day.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}`}><Plus /> Book</Link></Button></div>}
             </div>;
           })}
         </div></div>

@@ -13,10 +13,7 @@ import { appointmentProgress, DURATION_OPTIONS, notesIssue, formatDuration, form
 import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/book")({
-  validateSearch: (search: Record<string, unknown>): { edit?: string | undefined; date?: string | undefined } => ({
-    edit: typeof search["edit"] === "string" ? search["edit"] : undefined,
-    date: typeof search["date"] === "string" && /^\d{4}-\d{2}-\d{2}$/.test(search["date"]) ? search["date"] : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>) => ({ edit: typeof search["edit"] === "string" ? search["edit"] : undefined }),
   head: () => ({ meta: [
     { title: "New Appointment | Lumière Electrolysis" },
     { name: "description", content: "Schedule an electrolysis appointment safely within business hours." },
@@ -56,7 +53,7 @@ function BookPage() {
   const [step, setStep] = useState(0);
   const [durationMin, setDuration] = useState(existing?.durationMin ?? 30);
   const today = toDateKey(new Date());
-  const [date, setDate] = useState(existing?.date ?? (search.date && search.date >= today ? search.date : today));
+  const [date, setDate] = useState(existing?.date ?? today);
   const [time, setTime] = useState<string | null>(existing?.time ?? null);
   const [clientIds, setClientIds] = useState<string[]>(existing?.clients.map((item) => item.clientId) ?? []);
   const [notes, setNotes] = useState(existing?.notes ?? "");
