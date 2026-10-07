@@ -23,14 +23,14 @@ export function Nav() {
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4">
-        <Link to="/book" className="flex items-center gap-2">
+        <Link to="/book" search={{ edit: undefined }} className="flex items-center gap-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <Sparkles className="h-4 w-4" />
           </span>
           <span className="font-display text-xl font-semibold tracking-tight">Lumière Electrolysis</span>
         </Link>
         <nav className="flex items-center gap-1">
-          <Link to="/book" className={`${tab} ${onBook ? activeTab : ""}`}>
+          <Link to="/book" search={{ edit: undefined }} className={`${tab} ${onBook ? activeTab : ""}`}>
             <CalendarPlus className="h-4 w-4" /> Book Appointment
           </Link>
           <Link to="/" className={`${tab} ${!onBook ? activeTab : ""}`}>
@@ -59,7 +59,7 @@ export function Nav() {
               variant="ghost"
               onClick={() => {
                 lock();
-                void navigate({ to: "/book" });
+                void navigate({ to: "/book", search: { edit: undefined } });
               }}
             >
               <LogOut /> Exit Admin
