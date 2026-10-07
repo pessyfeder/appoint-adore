@@ -4,7 +4,7 @@ import { CLIENT_BADGE, CLIENT_LABEL, STATUS_CARD, StartEndControls, StatusBadge 
 import { ClientStatusActions } from "@/components/ClientStatusActions";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { ChevronLeft, ChevronRight, CalendarPlus, Clock3, Plus, UserRound } from "lucide-react";
+import { AlertTriangle, ChevronLeft, ChevronRight, CalendarPlus, Clock3, Plus, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { appointmentProgress, formatDuration, formatTime, fromDateKey, timeToMin
 import { useConfirm } from "@/components/ConfirmDialog";
 import { blockedTimeIssue } from "@/lib/scheduling";
 import { useAvailability } from "@/lib/availability";
+import { OUTSIDE_HOURS_CARD, useOutsideHours } from "@/lib/outside-hours";
 import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/schedule")({
@@ -41,6 +42,7 @@ function SchedulePage() {
   const { appointments, clients, blockedTimes, addBlockedTime, highlightId, setHighlightId } = useStore();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const availability = useAvailability();
+  const outside = useOutsideHours();
   const hoursOn = (key: string) => availability.overrides[key] ?? availability.weekly[fromDateKey(key).getDay()] ?? [];
   const todayKey = toDateKey(new Date());
   const [view, setView] = useState<"week" | "month">("week");
@@ -121,7 +123,7 @@ function SchedulePage() {
       </header>
 
       {view === "week" ? (
-        <div className="overflow-x-auto"><div className="grid min-w-[660px] grid-cols-7 overflow-hidden border bg-background">
+        <div className="overflow-x-auto"><div className="grid min-w-[620px] grid-cols-7 overflow-hidden border bg-background">
           {weekDays.map((day) => {
             const key = toDateKey(day);
             const dayAppointments = appointments.filter((item) => item.date === key).sort((a, b) => a.time.localeCompare(b.time));
@@ -132,18 +134,19 @@ function SchedulePage() {
             return <div key={key} className={`flex min-h-[460px] flex-col border-r last:border-r-0 ${past ? "bg-muted/40" : closed ? "bg-[repeating-linear-gradient(135deg,transparent_0,transparent_8px,var(--color-muted)_8px,var(--color-muted)_10px)]" : ""}`}>
               <div className={`border-b px-1 py-1.5 text-center ${today ? "bg-primary text-primary-foreground" : past ? "bg-muted text-muted-foreground" : "bg-muted/40"}`}><p className="text-[11px] font-medium uppercase leading-none tracking-tight">{day.toLocaleDateString("en-US", { weekday: "short" })}</p><p className="mt-1 text-base font-semibold leading-none">{day.getDate()}</p></div>
               <div className={`space-y-2 p-2 ${past ? "opacity-75" : ""}`}>
-                {dayAppointments.map((item) => <Button key={item.id} data-appointment={item.id} variant="outline" className={`h-auto w-full items-start justify-start whitespace-normal p-3 text-left transition-shadow ${STATUS_CARD[appointmentProgress(item)]} ${item.id === highlightId ? "border-primary bg-primary/10 ring-2 ring-primary ring-offset-2" : ""}`} onClick={() => setSelected(item)}><span className="w-full"><span className="block font-semibold">{formatTime(item.time)}</span><span className="mb-1 block"><StatusBadge item={item} /></span><span className="block text-xs text-muted-foreground">{clientNames(item, clients)}</span><span className="block text-xs text-muted-foreground">{formatDuration(item.durationMin)}</span></span></Button>)}
+                {dayAppointments.map((item) => <Button key={item.id} data-appointment={item.id} variant="outline" className={`h-auto w-full items-start justify-start whitespace-normal p-2 text-left transition-shadow ${STATUS_CARD[appointmentProgress(item)]} ${outside.ids.has(item.id) ? OUTSIDE_HOURS_CARD : ""} ${item.id === highlightId ? "border-primary bg-primary/10 ring-2 ring-primary ring-offset-2" : ""}`} onClick={() => setSelected(item)}><span className="w-full"><span className="block font-semibold">{formatTime(item.time)}</span><span className="mb-1 block"><StatusBadge item={item} /></span>{outside.ids.has(item.id) && <span className="mb-1 flex items-start gap-0.5 text-[10px] font-semibold leading-tight text-amber-900"><AlertTriangle className="h-3 w-3 shrink-0" />Reschedule</span>}<span className="block text-xs text-muted-foreground">{clientNames(item, clients)}</span><span className="block text-xs text-muted-foreground">{formatDuration(item.durationMin)}</span></span></Button>)}
                 {dayBlocks.map((item) => <div key={item.id} className="border border-dashed bg-muted/50 p-2 text-xs text-muted-foreground">{formatTime(item.startTime)}–{formatTime(item.endTime)}<br />{item.reason}</div>)}
                 {!dayAppointments.length && !dayBlocks.length && <p className="pt-5 text-center text-xs text-muted-foreground">{closed ? "Closed" : "No appointments"}</p>}
               </div>
             </div>;
           })}
         </div></div>
-      ) : <MonthGrid cursor={cursor} appointments={appointments} clients={clients} onSelect={setSelected} highlightId={highlightId} todayKey={todayKey} hoursOn={hoursOn} />}
+      ) : <MonthGrid cursor={cursor} appointments={appointments} clients={clients} onSelect={setSelected} highlightId={highlightId} todayKey={todayKey} hoursOn={hoursOn} outsideIds={outside.ids} />}
 
       <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)}>
         <DialogContent>{current && <>
           <DialogHeader><DialogTitle>{clientNames(current, clients)}</DialogTitle><DialogDescription>{fromDateKey(current.date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} at {formatTime(current.time)} · {formatDuration(current.durationMin)}</DialogDescription></DialogHeader>
+          {outside.ids.has(current.id) && <p className="flex items-start gap-2 rounded-lg border border-amber-500 bg-amber-50 p-3 text-sm text-amber-900"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /><span><span className="font-semibold">Needs rescheduling.</span> Your hours changed and this booking is now outside them. Reschedule it or cancel it.</span></p>}
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/40 p-3"><StatusBadge item={current} /><StartEndControls item={current} /></div>
           <div className="space-y-3">{current.clients.map((entry) => {
             return <div key={entry.clientId} className="border-b pb-3">
@@ -151,7 +154,7 @@ function SchedulePage() {
             </div>;
           })}</div>
           {current.notes && <p className="text-sm text-muted-foreground">{current.notes}</p>}
-          {appointmentProgress(current) === "scheduled" && <DialogFooter><Button asChild variant="outline" className="h-11"><Link to="/book" search={{ edit: current.id }}>Reschedule</Link></Button></DialogFooter>}
+          {appointmentProgress(current) === "scheduled" && <DialogFooter><Button asChild variant={outside.ids.has(current.id) ? "default" : "outline"} className="h-11"><Link to="/book" search={{ edit: current.id }}>Reschedule</Link></Button></DialogFooter>}
         </>}</DialogContent>
       </Dialog>
 
@@ -166,12 +169,12 @@ function SchedulePage() {
   );
 }
 
-function MonthGrid({ cursor, appointments, clients, onSelect, highlightId, todayKey, hoursOn }: { cursor: Date; appointments: Appointment[]; clients: { id: string; name: string }[]; onSelect: (item: Appointment) => void; highlightId: string | null; todayKey: string; hoursOn: (key: string) => { start: string; end: string }[] }) {
+function MonthGrid({ cursor, appointments, clients, onSelect, highlightId, todayKey, hoursOn, outsideIds }: { cursor: Date; appointments: Appointment[]; clients: { id: string; name: string }[]; onSelect: (item: Appointment) => void; highlightId: string | null; todayKey: string; hoursOn: (key: string) => { start: string; end: string }[]; outsideIds: Set<string> }) {
   const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1, 12);
   const gridStart = startOfWeek(first);
   const days = Array.from({ length: 42 }, (_, index) => { const day = new Date(gridStart); day.setDate(gridStart.getDate() + index); return day; });
   return <div className="grid grid-cols-7 overflow-hidden border">
     {days.slice(0, 7).map((day) => <div key={day.getDay()} className="border-b border-r bg-muted/40 px-1 py-1 text-center text-[11px] font-medium uppercase leading-none tracking-tight last:border-r-0">{day.toLocaleDateString("en-US", { weekday: "short" })}</div>)}
-    {days.map((day) => { const key = toDateKey(day); const entries = appointments.filter((item) => item.date === key); const muted = day.getMonth() !== cursor.getMonth() || key < todayKey; const closed = hoursOn(key).length === 0; return <div key={key} className={`min-h-[112px] border-b border-r p-1 last:border-r-0 ${muted ? "bg-muted/30 text-muted-foreground" : ""} ${key === todayKey ? "ring-2 ring-inset ring-primary" : ""}`}><div className="flex items-baseline justify-between p-1 text-sm font-medium">{day.getDate()}{closed && <span className="text-[10px] font-normal text-muted-foreground">Closed</span>}</div>{entries.slice(0, 3).map((item) => <Button key={item.id} data-appointment={item.id} variant="ghost" className={`h-auto w-full justify-start overflow-hidden rounded-sm px-1 py-1 text-xs ${STATUS_CARD[appointmentProgress(item)]} ${item.id === highlightId ? "bg-primary/15 ring-2 ring-primary" : ""}`} onClick={() => onSelect(item)}><UserRound className="shrink-0" /> <span className="truncate">{formatTime(item.time)} {clientNames(item, clients)}</span></Button>)}{entries.length > 3 && <p className="px-1 text-xs text-muted-foreground">+{entries.length - 3} more</p>}</div>; })}
+    {days.map((day) => { const key = toDateKey(day); const entries = appointments.filter((item) => item.date === key); const muted = day.getMonth() !== cursor.getMonth() || key < todayKey; const closed = hoursOn(key).length === 0; return <div key={key} className={`min-h-[112px] border-b border-r p-1 last:border-r-0 ${muted ? "bg-muted/30 text-muted-foreground" : ""} ${key === todayKey ? "ring-2 ring-inset ring-primary" : ""}`}><div className="flex items-baseline justify-between p-1 text-sm font-medium">{day.getDate()}{closed && <span className="text-[10px] font-normal text-muted-foreground">Closed</span>}</div>{entries.slice(0, 3).map((item) => <Button key={item.id} data-appointment={item.id} variant="ghost" className={`h-auto w-full justify-start overflow-hidden rounded-sm px-1 py-1 text-xs ${STATUS_CARD[appointmentProgress(item)]} ${outsideIds.has(item.id) ? OUTSIDE_HOURS_CARD : ""} ${item.id === highlightId ? "bg-primary/15 ring-2 ring-primary" : ""}`} onClick={() => onSelect(item)} title={outsideIds.has(item.id) ? "Outside business hours — needs rescheduling" : undefined}>{outsideIds.has(item.id) ? <AlertTriangle className="shrink-0 text-amber-700" /> : <UserRound className="shrink-0" />} <span className="truncate">{formatTime(item.time)} {clientNames(item, clients)}</span></Button>)}{entries.length > 3 && <p className="px-1 text-xs text-muted-foreground">+{entries.length - 3} more</p>}</div>; })}
   </div>;
 }
