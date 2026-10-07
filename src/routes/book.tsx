@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { availableTimes, pastStartIssue, validateAppointment } from "@/lib/scheduling";
-import { appointmentProgress, DURATION_OPTIONS, notesIssue, formatDuration, formatPhone, formatTime, fromDateKey, toDateKey } from "@/lib/data";
+import { appointmentProgress, DURATION_OPTIONS, notesIssue, formatDuration, formatPhone, formatTime, fromDateKey, toDateKey, type Client } from "@/lib/data";
 import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/book")({
@@ -92,7 +92,7 @@ function BookPage() {
   const pickable = useMemo(() => {
     const needle = clientQuery.trim().toLowerCase();
     const digits = needle.replace(/\D/g, "");
-    const matches = (client: (typeof store.clients)[number]) => !needle || client.name.toLowerCase().includes(needle) || (digits.length > 0 && client.phone.replace(/\D/g, "").includes(digits));
+    const matches = (client: Client) => !needle || client.name.toLowerCase().includes(needle) || (digits.length > 0 && client.phone.replace(/\D/g, "").includes(digits));
     const active = store.clients.filter((client) => !client.archived);
     return [...active.filter((client) => clientIds.includes(client.id)), ...active.filter((client) => !clientIds.includes(client.id) && matches(client)).sort((a, b) => a.name.localeCompare(b.name))];
   }, [store.clients, clientIds, clientQuery]);
