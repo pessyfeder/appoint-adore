@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { appointmentProgress, formatDuration, formatTime, fromDateKey, timeToMinutes, toDateKey, type Appointment } from "@/lib/data";
-import { usePassphraseGate } from "@/lib/lock";
+import { useConfirm } from "@/components/ConfirmDialog";
 import { blockedTimeIssue } from "@/lib/scheduling";
 import { useStore } from "@/lib/store";
 
@@ -38,7 +38,7 @@ function clientNames(item: Appointment, clients: { id: string; name: string }[])
 
 function SchedulePage() {
   const { appointments, clients, blockedTimes, addBlockedTime, highlightId, setHighlightId } = useStore();
-  const { request, prompt } = usePassphraseGate();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [view, setView] = useState<"week" | "month">("week");
   const [cursor, setCursor] = useState(() => new Date());
   const [selected, setSelected] = useState<Appointment | null>(null);
@@ -72,7 +72,7 @@ function SchedulePage() {
   async function saveBlock() {
     const issue = blockedTimeIssue(block, appointments);
     if (issue) return setBlockError(issue);
-    if (!(await request("Blocking out time"))) return;
+    if (!(await confirm({ title: "Are you sure?", description: `Block ${fromDateKey(block.date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}, ${formatTime(block.startTime)}–${formatTime(block.endTime)}? No appointments can be booked then.`, confirmLabel: "Block time", cancelLabel: "Go back" }))) return;
     addBlockedTime({ ...block, reason: block.reason.trim() });
     setBlockError(null);
     setBlockOpen(false);
@@ -153,11 +153,10 @@ function SchedulePage() {
         <DialogHeader><DialogTitle>Block time</DialogTitle><DialogDescription>Keep appointments from being booked during this period.</DialogDescription></DialogHeader>
         <div className="grid gap-3"><Input className="h-11" type="date" value={block.date} onChange={(event) => setBlock({ ...block, date: event.target.value })} /><div className="grid grid-cols-2 gap-3"><Input className="h-11" type="time" value={block.startTime} onChange={(event) => setBlock({ ...block, startTime: event.target.value })} /><Input className="h-11" type="time" value={block.endTime} onChange={(event) => setBlock({ ...block, endTime: event.target.value })} /></div><Input className="h-11" aria-label="Reason" placeholder="Reason (e.g. Doctor appointment)" maxLength={200} value={block.reason} onChange={(event) => setBlock({ ...block, reason: event.target.value })} /></div>
         {blockError && <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{blockError}</p>}
-        {prompt}
         <DialogFooter><Button onClick={saveBlock}>Save block</Button></DialogFooter>
       </DialogContent></Dialog>
       </div>
-    </main>
+    {confirmDialog}</main>
   );
 }
 

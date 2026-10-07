@@ -56,3 +56,4 @@
 - [x] Edit or delete a payment (amount, method, date, notes) from the client billing window or Recent payments; both ask "Are you sure?" (no password).
 - [x] Edit a client's name and phone; archive a client (only with a zero balance and no scheduled appointments) and restore them from search.
 - [x] Appointment clients stay Scheduled until the practitioner marks them No-show — including the waiting client on a shared appointment.
+- [x] The only password prompt is entering Admin; every other action asks "Are you sure?".

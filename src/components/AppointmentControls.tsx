@@ -6,7 +6,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { clientInSession, formatDuration, formatDurationLong, appointmentProgress, PROGRESS_LABEL, type Appointment, type AppointmentProgress } from "@/lib/data";
 import { sessionMinutes } from "@/lib/scheduling";
-import { usePassphraseGate } from "@/lib/lock";
 import { RecordPaymentDialog } from "@/components/RecordPaymentDialog";
 import { useStore, type EndSummary } from "@/lib/store";
 import { CorrectTimesDialog } from "@/components/CorrectTimesDialog";
@@ -44,7 +43,6 @@ export function StartEndControls({ item }: { item: Appointment }) {
   const { startClient, endClient, clients, appointments } = useStore();
   const navigate = useNavigate();
   const busyElsewhere = appointments.some((a) => a.id !== item.id && a.clients.some(clientInSession));
-  const { request, prompt } = usePassphraseGate();
   const [summary, setSummary] = useState<EndSummary | null>(null);
   const [paying, setPaying] = useState<EndSummary | null>(null);
   const [ending, setEnding] = useState(false);
@@ -56,9 +54,9 @@ export function StartEndControls({ item }: { item: Appointment }) {
   const waiting = waitingAll[0];
   const shared = item.clients.length > 1;
   const { confirm, dialog: confirmDialog } = useConfirm();
-  async function start(clientId: string) { if (!(await confirm({ title: `Start ${name(clientId)}'s session?`, description: "The clock starts now and billing is based on the time recorded.", confirmLabel: "Start session" }))) return; if (await request(`Starting ${name(clientId)}'s session`)) startClient(item.id, clientId); }
+  async function start(clientId: string) { if (!(await confirm({ title: "Are you sure?", description: `Start ${name(clientId)}'s session? The clock starts now and billing is based on the time recorded.`, confirmLabel: "Start session" }))) return; startClient(item.id, clientId); }
   function end() { setEnding(false); setSummary(endClient(item.id)); }
-  async function openCorrect() { if (await request("Correcting appointment times")) setCorrecting(true); }
+  function openCorrect() { setCorrecting(true); }
   const elapsedMin = running?.startedAt ? Math.max(1, Math.round((Date.now() - new Date(running.startedAt).getTime()) / 60000)) : 0;
   const confirmEnd = <Dialog open={ending} onOpenChange={setEnding}>
     <DialogContent>
@@ -98,5 +96,5 @@ export function StartEndControls({ item }: { item: Appointment }) {
   else if (item.startedAt && item.endedAt) control = <span className="flex flex-col text-right text-xs text-muted-foreground"><span className="font-bold text-foreground">Actual duration:</span><span>{formatDurationLong(sessionMinutes(item.startedAt, item.endedAt))}</span><span>{clock(item.startedAt)} – {clock(item.endedAt)}</span></span>;
   const timed = item.clients.some((c) => c.startedAt);
   const editBtn = timed && <Button size="icon" variant="ghost" className="h-11 w-11 text-muted-foreground" onClick={openCorrect} aria-label="Correct times"><Pencil /></Button>;
-  return <><span className="inline-flex items-center gap-1">{control}{editBtn}</span>{prompt}{confirmDialog}{popup}{payment}{confirmEnd}<CorrectTimesDialog open={correcting} onOpenChange={setCorrecting} item={item} /></>;
+  return <><span className="inline-flex items-center gap-1">{control}{editBtn}</span>{confirmDialog}{popup}{payment}{confirmEnd}<CorrectTimesDialog open={correcting} onOpenChange={setCorrecting} item={item} /></>;
 }

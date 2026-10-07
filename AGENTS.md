@@ -13,7 +13,7 @@
 
 - Keep this scheduler offline-only: persist operational records in device-local browser storage because the single practitioner must not depend on a network service.
 - Keep scheduling constraints in `src/lib/scheduling.ts` and display/data helpers in `src/lib/data.ts` so every booking entry point applies the same rules.
-- Book is the only public route; every other route renders through `AdminGate` in `src/lib/lock.tsx` (password hashing and device storage in `src/lib/privacy.ts`), and sensitive actions use its step-up gate instead of inline password checks, so client or billing records never appear on the public screen.
+- Book is the only public route; every other route renders through `AdminGate` in `src/lib/lock.tsx` (password hashing and device storage in `src/lib/privacy.ts`), so client or billing records never appear on the public screen. Entering Admin is the only password prompt: every other important action (start a session, record/edit/delete a payment, change hours, block time, correct times, restore a backup) asks "Are you sure?" via `useConfirm`.
 
 - Render a single shared ClientBalances table on Clients & Billing and initiate client payments from ClientBillingDialog, so the directory and payment entry points are not duplicated.
 - Read working hours only through `effectiveHours` (backed by `src/lib/availability.ts`, device-local) so weekly hours and per-date changes apply to every booking path.

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useConfirm } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ export function CorrectTimesDialog({ open, onOpenChange, item }: { open: boolean
   const [durationMin, setDuration] = useState(item.durationMin);
   const [rows, setRows] = useState<Record<string, Row>>({});
   const [error, setError] = useState<string | null>(null);
+  const { confirm, dialog } = useConfirm();
 
   useEffect(() => {
     if (!open) return;
@@ -35,7 +37,7 @@ export function CorrectTimesDialog({ open, onOpenChange, item }: { open: boolean
     return { minutes, amount: minutes * RATE_PER_MINUTE };
   }
 
-  function save() {
+  async function save() {
     const entries: { clientId: string; startedAt: string; endedAt?: string }[] = [];
     for (const client of timed) {
       const row = rows[client.clientId] ?? { start: "", end: "" };
@@ -50,12 +52,13 @@ export function CorrectTimesDialog({ open, onOpenChange, item }: { open: boolean
       const issue = validateAppointment({ date: item.date, time: item.time, durationMin, excludeId: item.id }, appointments, blockedTimes);
       if (issue) return setError(issue);
     }
+    if (!(await confirm({ title: "Are you sure?", description: "Save the corrected times? Charges for finished sessions are recalculated from the new times.", confirmLabel: "Save times", cancelLabel: "Go back" }))) return;
     correctTimes(item.id, { durationMin, clients: entries });
     onOpenChange(false);
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <><Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="gap-5">
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl">Correct times</DialogTitle>
@@ -95,5 +98,6 @@ export function CorrectTimesDialog({ open, onOpenChange, item }: { open: boolean
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    {dialog}</>
   );
 }

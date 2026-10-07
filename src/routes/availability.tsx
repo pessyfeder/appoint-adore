@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { blocksIssue, setAvailability, sortBlocks, useAvailability } from "@/lib/availability";
 import { formatTime, fromDateKey, toDateKey, type BusinessBlock } from "@/lib/data";
-import { usePassphraseGate } from "@/lib/lock";
+import { useConfirm } from "@/components/ConfirmDialog";
 import { blockedTimeIssue } from "@/lib/scheduling";
 import { useStore } from "@/lib/store";
 
@@ -23,7 +23,6 @@ export const Route = createFileRoute("/availability")({
 });
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-type Section = "weekly" | "date" | "block";
 
 function RangeEditor({ blocks, onChange }: { blocks: BusinessBlock[]; onChange: (next: BusinessBlock[]) => void }) {
   return (
@@ -45,8 +44,7 @@ function RangeEditor({ blocks, onChange }: { blocks: BusinessBlock[]; onChange: 
 function AvailabilityPage() {
   const availability = useAvailability();
   const { appointments, blockedTimes, addBlockedTime, removeBlockedTime } = useStore();
-  const { request, prompt } = usePassphraseGate();
-  const [gateAt, setGateAt] = useState<Section | null>(null);
+  const { confirm, dialog } = useConfirm();
   const [weekly, setWeekly] = useState(availability.weekly);
   const [weeklyMsg, setWeeklyMsg] = useState<{ error?: string; ok?: string }>({});
   const [date, setDate] = useState(toDateKey(new Date()));
@@ -60,11 +58,11 @@ function AvailabilityPage() {
     setDateBlocks(availability.overrides[date] ?? availability.weekly[fromDateKey(date).getDay()] ?? []);
   }, [date, availability]);
 
-  async function gated(section: Section, label: string) {
-    setGateAt(section);
-    const ok = await request(label);
-    setGateAt(null);
-    return ok;
+  const longDate = (key: string) => fromDateKey(key).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+
+  /** Every change on this page asks "Are you sure?" before it is saved. */
+  function sure(description: string, confirmLabel: string) {
+    return confirm({ title: "Are you sure?", description, confirmLabel, cancelLabel: "Go back" });
   }
 
   async function saveWeekly() {
@@ -72,7 +70,7 @@ function AvailabilityPage() {
       const issue = blocksIssue(weekly[d] ?? []);
       if (issue) return setWeeklyMsg({ error: `${DAYS[d]}: ${issue}` });
     }
-    if (!(await gated("weekly", "Changing weekly hours"))) return;
+    if (!(await sure("Save the new weekly hours? Booking will only offer times inside them. Existing appointments are not moved.", "Save weekly hours"))) return;
     const sorted = Object.fromEntries(Object.entries(weekly).map(([d, b]) => [d, sortBlocks(b)]));
     setAvailability({ ...availability, weekly: sorted });
     setWeeklyMsg({ ok: "Weekly hours saved." });
@@ -82,20 +80,20 @@ function AvailabilityPage() {
     const blocks = closed ? [] : dateBlocks;
     const issue = blocksIssue(blocks);
     if (issue) return setDateMsg({ error: issue });
-    if (!(await gated("date", "Changing hours for a date"))) return;
+    if (!(await sure(closed ? `Mark ${longDate(date)} as closed?` : `Save these hours for ${longDate(date)} only?`, closed ? "Mark closed" : "Save hours"))) return;
     setAvailability({ ...availability, overrides: { ...availability.overrides, [date]: sortBlocks(blocks) } });
     setDateMsg({ ok: closed ? "Marked closed." : "Hours saved for this date." });
   }
 
   async function clearDate(key: string) {
-    if (!(await gated("date", "Going back to weekly hours"))) return;
+    if (!(await sure(`Use the regular weekly hours again on ${longDate(key)}?`, "Use weekly hours"))) return;
     const { [key]: _removed, ...rest } = availability.overrides;
     setAvailability({ ...availability, overrides: rest });
     setDateMsg({ ok: "Weekly hours restored for that date." });
   }
 
   async function removeBlock(id: string) {
-    if (!(await gated("block", "Removing blocked time"))) return;
+    if (!(await sure("Remove this blocked time? Appointments can be booked then again.", "Remove block"))) return;
     removeBlockedTime(id);
     setBlockMsg({ ok: "Blocked time removed." });
   }
@@ -103,13 +101,12 @@ function AvailabilityPage() {
   async function saveBlock() {
     const issue = blockedTimeIssue(block, appointments);
     if (issue) return setBlockMsg({ error: issue });
-    if (!(await gated("block", "Blocking out time"))) return;
+    if (!(await sure(`Block ${longDate(block.date)}, ${formatTime(block.startTime)}–${formatTime(block.endTime)}? No appointments can be booked then.`, "Block time"))) return;
     addBlockedTime({ ...block, reason: block.reason.trim() });
     setBlock({ ...block, reason: "" });
     setBlockMsg({ ok: "Time blocked." });
   }
 
-  const longDate = (key: string) => fromDateKey(key).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
   const today = toDateKey(new Date());
   const overrides = Object.entries(availability.overrides).filter(([k]) => k >= today).sort(([a], [b]) => a.localeCompare(b));
   const blocks = [...blockedTimes].filter((b) => b.date >= today).sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime));
@@ -136,7 +133,6 @@ function AvailabilityPage() {
           </div>
           <div className="mt-4 flex flex-col gap-3">
             {msg(weeklyMsg)}
-            {gateAt === "weekly" && prompt}
             <div><Button onClick={saveWeekly}>Save weekly hours</Button></div>
           </div>
         </section>
@@ -152,7 +148,6 @@ function AvailabilityPage() {
             <RangeEditor blocks={dateBlocks} onChange={(next) => { setDateMsg({}); setDateBlocks(next); }} />
             <div className="mt-4 flex flex-col gap-3">
               {msg(dateMsg)}
-              {gateAt === "date" && prompt}
               <div className="flex flex-wrap gap-2">
                 <Button onClick={() => saveDate(false)}>Save for this date</Button>
                 <Button variant="outline" onClick={() => saveDate(true)}><CalendarOff /> Closed this day</Button>
@@ -180,7 +175,6 @@ function AvailabilityPage() {
             <div className="mt-3 flex flex-col gap-1.5"><Label htmlFor="b-reason">Reason</Label><Input id="b-reason" value={block.reason} maxLength={200} placeholder="e.g. Doctor appointment" onChange={(e) => setBlock({ ...block, reason: e.target.value })} /></div>
             <div className="mt-4 flex flex-col gap-3">
               {msg(blockMsg)}
-              {gateAt === "block" && prompt}
               <div><Button onClick={saveBlock}>Block time</Button></div>
             </div>
             {blocks.length > 0 && (
@@ -196,6 +190,7 @@ function AvailabilityPage() {
           </section>
         </div>
       </div>
+      {dialog}
     </main>
   );
 }

@@ -4,7 +4,6 @@ import { Download, FileUp, ShieldAlert } from "lucide-react";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { applyBackup, backupFileName, createBackup, markBackedUp, parseBackup, readLastBackup, type Backup, type BackupSummary } from "@/lib/backup";
-import { usePassphraseGate } from "@/lib/lock";
 import { clearSessionUnlock } from "@/lib/privacy";
 
 export const Route = createFileRoute("/backup")({
@@ -32,7 +31,6 @@ function download(backup: Backup, name = backupFileName(backup)) {
 }
 
 function BackupPage() {
-  const { request, prompt } = usePassphraseGate();
   const { confirm, dialog } = useConfirm();
   const fileInput = useRef<HTMLInputElement>(null);
   const [lastBackup, setLastBackup] = useState<string | null>(null);
@@ -63,13 +61,13 @@ function BackupPage() {
   async function restore() {
     if (!picked) return;
     const ok = await confirm({
-      title: "Replace everything on this device?",
-      description: `Every appointment, client, payment and hours setting here will be replaced by the backup from ${when(picked.summary.exportedAt)}. A copy of what's here now is saved to your downloads first.${picked.summary.hasPassword ? " Afterwards, unlock with the password that was in use when the backup was made." : ""}`,
+      title: "Are you sure?",
+      description: `Replace everything on this device? Every appointment, client, payment and hours setting here will be replaced by the backup from ${when(picked.summary.exportedAt)}. A copy of what's here now is saved to your downloads first.${picked.summary.hasPassword ? " Afterwards, unlock with the password that was in use when the backup was made." : ""}`,
       confirmLabel: "Replace with backup",
       cancelLabel: "Keep what's here",
       destructive: true,
     });
-    if (!ok || !(await request("Restoring a backup"))) return;
+    if (!ok) return;
     const current = createBackup(window.localStorage);
     download(current, backupFileName(current).replace("lumiere-backup-", "lumiere-before-restore-"));
     applyBackup(window.localStorage, picked.backup);
@@ -105,7 +103,6 @@ function BackupPage() {
           <Button className="h-11" variant="destructive" onClick={restore}><ShieldAlert /> Restore this backup</Button>
           <Button className="h-11" variant="ghost" onClick={() => setPicked(null)}>Cancel</Button>
         </div>
-        <div className="mt-3">{prompt}</div>
       </div>}
     </section>
     {dialog}
