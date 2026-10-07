@@ -19,3 +19,4 @@
 - Read working hours only through `effectiveHours` (backed by `src/lib/availability.ts`, device-local) so weekly hours and per-date changes apply to every booking path.
 - Never change appointment status on a timer: no-shows are marked by the practitioner (`canMarkNoShow` / `noShowCharge` in `src/lib/scheduling.ts`), and a fresh install starts with `emptyData()`, never demo records.
 - Any new device-storage key holding studio records must be added to `BACKUP_KEYS` in `src/lib/backup.ts` so backups stay complete.
+- Offline support lives in `public/sw.js` (registered from `__root.tsx`, production only, never inside the editor iframe). When adding a page, add its path to `ROUTES` in `public/sw.js` so it opens offline.

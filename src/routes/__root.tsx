@@ -88,10 +88,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: "Appointment scheduling for Lumière Electrolysis studio." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "theme-color", content: "#33724c" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "apple-touch-icon", href: "/icons/apple-touch-icon.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
@@ -120,8 +123,20 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Saves the app on the device so it opens without internet (see public/sw.js). Production only, and not
+ * inside the Lovable editor preview (an iframe), where a cached copy would hide new edits.
+ */
+function useOfflineSupport() {
+  useEffect(() => {
+    if (!import.meta.env.PROD || !("serviceWorker" in navigator) || window.self !== window.top) return;
+    navigator.serviceWorker.register("/sw.js").catch((error) => console.warn("Offline support unavailable", error));
+  }, []);
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useOfflineSupport();
 
   return (
     <QueryClientProvider client={queryClient}>

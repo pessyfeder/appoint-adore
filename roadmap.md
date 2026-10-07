@@ -61,3 +61,4 @@
 - [x] Week view hatches closed days, grays past days and fits a tablet. No hours text in day headers and no tap-to-book: booking is by the New appointment / Book Appointment buttons only.
 - [x] Month view grays past days, marks closed days and today.
 - [x] Booking: six common lengths plus an "Other length" list; a day with no times offers "Next available".
+- [x] Works offline after one online visit (service worker saves every page and its code) and can be installed as an app (manifest + icons).
