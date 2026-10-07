@@ -122,7 +122,7 @@ function BookPage() {
   return <main className="mx-auto max-w-3xl px-4 py-8">
     <p className="text-xs font-medium uppercase text-muted-foreground">Appointment</p>
     <h1 className="mt-1 font-serif text-3xl">{edit ? "Reschedule appointment" : "New appointment"}</h1>
-    <ol className="mt-6 grid grid-cols-4 gap-1">{STEPS.map((label, index) => <li key={label} className="min-w-0 text-center"><span className={`mx-auto flex h-8 w-8 items-center justify-center rounded-full text-sm ${index <= step ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}>{index < step ? <Check /> : index + 1}</span><span className="mt-1 block truncate text-xs text-muted-foreground">{label}</span></li>)}</ol>
+    <ol className="mt-6 grid grid-cols-4 gap-1">{STEPS.map((label, index) => <li key={label} className="min-w-0 text-center"><span className={`mx-auto flex h-8 w-8 items-center justify-center rounded-full text-sm ${index <= step ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}>{index < step ? <Check /> : index + 1}</span><span className="mt-1 block truncate text-xs text-muted-foreground">{isPublic && label === "Clients" ? "Your details" : label}</span></li>)}</ol>
 
     <section className="mt-7 border-y py-6">
       {step === 0 && <div><h2 className="font-serif text-xl">How long?</h2><div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-5">{DURATION_OPTIONS.map((duration) => <Button key={duration} variant={durationMin === duration ? "default" : "outline"} className="h-12" onClick={() => { setDuration(duration); setTime(null); }}>{formatDuration(duration)}</Button>)}</div></div>}
