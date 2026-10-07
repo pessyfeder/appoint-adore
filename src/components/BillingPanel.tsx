@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { ReportDetailDialog } from "@/components/ReportDetailDialog";
 import { buildReport, paymentsCsv, type LedgerRow } from "@/lib/billing";
-import { fromDateKey, toDateKey } from "@/lib/data";
+import { fromDateKey, paymentDateKey, toDateKey } from "@/lib/data";
 import { clientBalance } from "@/lib/scheduling";
 import { useStore } from "@/lib/store";
 
@@ -55,7 +55,7 @@ function BillingContent() {
 
     <section className="mt-7 overflow-hidden rounded-xl border bg-card">
       <h2 className="border-b p-5 font-serif text-xl">Recent payments</h2>
-      {recent.length === 0 ? <p className="p-6 text-center text-sm text-muted-foreground">No payments recorded yet.</p> : <ul className="divide-y">{recent.map((p) => <li key={p.id} className="flex justify-between gap-4 p-4 text-sm"><span>{store.clients.find((c) => c.id === p.clientId)?.name} <span className="text-muted-foreground">· {new Date(p.paidAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })} · {p.method}</span></span><span className="font-semibold">{money(p.amount)}</span></li>)}</ul>}
+      {recent.length === 0 ? <p className="p-6 text-center text-sm text-muted-foreground">No payments recorded yet.</p> : <ul className="divide-y">{recent.map((p) => <li key={p.id} className="flex justify-between gap-4 p-4 text-sm"><span>{store.clients.find((c) => c.id === p.clientId)?.name} <span className="text-muted-foreground">· {fromDateKey(paymentDateKey(p.paidAt)).toLocaleDateString("en-US", { month: "short", day: "numeric" })} · {p.method}</span></span><span className="font-semibold">{money(p.amount)}</span></li>)}</ul>}
     </section>
 
 

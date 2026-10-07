@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CLIENT_BADGE, CLIENT_LABEL } from "@/components/AppointmentControls";
-import { formatDuration, formatTime, fromDateKey } from "@/lib/data";
+import { formatDuration, formatTime, fromDateKey, paymentDateKey } from "@/lib/data";
 import type { LedgerRow } from "@/lib/billing";
 import { sessionMinutes } from "@/lib/scheduling";
 import { useStore } from "@/lib/store";
@@ -21,7 +21,7 @@ export function ReportDetailDialog({ row, onClose }: { row: LedgerRow | null; on
 
   return <Dialog open={Boolean(row)} onOpenChange={(o) => !o && onClose()}><DialogContent className="max-w-lg">
     {payment && <>
-      <DialogHeader><DialogTitle>Payment</DialogTitle><DialogDescription>{longDate(payment.paidAt.slice(0, 10))}</DialogDescription></DialogHeader>
+      <DialogHeader><DialogTitle>Payment</DialogTitle><DialogDescription>{longDate(paymentDateKey(payment.paidAt))}</DialogDescription></DialogHeader>
       <div className="divide-y rounded-lg border">
         <Row label="Client" value={name(payment.clientId)} />
         <Row label="Amount" value={`$${payment.amount.toFixed(2)}`} />

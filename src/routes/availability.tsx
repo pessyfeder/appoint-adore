@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { blocksIssue, setAvailability, sortBlocks, useAvailability } from "@/lib/availability";
 import { formatTime, fromDateKey, toDateKey, type BusinessBlock } from "@/lib/data";
 import { usePassphraseGate } from "@/lib/lock";
+import { blockedTimeIssue } from "@/lib/scheduling";
 import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/availability")({
@@ -43,7 +44,7 @@ function RangeEditor({ blocks, onChange }: { blocks: BusinessBlock[]; onChange: 
 
 function AvailabilityPage() {
   const availability = useAvailability();
-  const { blockedTimes, addBlockedTime, removeBlockedTime } = useStore();
+  const { appointments, blockedTimes, addBlockedTime, removeBlockedTime } = useStore();
   const { request, prompt } = usePassphraseGate();
   const [gateAt, setGateAt] = useState<Section | null>(null);
   const [weekly, setWeekly] = useState(availability.weekly);
@@ -86,14 +87,22 @@ function AvailabilityPage() {
     setDateMsg({ ok: closed ? "Marked closed." : "Hours saved for this date." });
   }
 
-  function clearDate(key: string) {
+  async function clearDate(key: string) {
+    if (!(await gated("date", "Going back to weekly hours"))) return;
     const { [key]: _removed, ...rest } = availability.overrides;
     setAvailability({ ...availability, overrides: rest });
+    setDateMsg({ ok: "Weekly hours restored for that date." });
+  }
+
+  async function removeBlock(id: string) {
+    if (!(await gated("block", "Removing blocked time"))) return;
+    removeBlockedTime(id);
+    setBlockMsg({ ok: "Blocked time removed." });
   }
 
   async function saveBlock() {
-    if (block.endTime <= block.startTime) return setBlockMsg({ error: "The end time must be after the start time." });
-    if (!block.reason.trim()) return setBlockMsg({ error: "Please add a short reason." });
+    const issue = blockedTimeIssue(block, appointments);
+    if (issue) return setBlockMsg({ error: issue });
     if (!(await gated("block", "Blocking out time"))) return;
     addBlockedTime({ ...block, reason: block.reason.trim() });
     setBlock({ ...block, reason: "" });
@@ -179,7 +188,7 @@ function AvailabilityPage() {
                 {blocks.map((b) => (
                   <li key={b.id} className="flex items-center justify-between gap-2 py-2 text-sm">
                     <span><span className="font-medium">{longDate(b.date)}</span> · {formatTime(b.startTime)}–{formatTime(b.endTime)} · {b.reason}</span>
-                    <Button variant="ghost" size="icon" aria-label={`Remove blocked time on ${longDate(b.date)}`} onClick={() => removeBlockedTime(b.id)}><Trash2 /></Button>
+                    <Button variant="ghost" size="icon" aria-label={`Remove blocked time on ${longDate(b.date)}`} onClick={() => removeBlock(b.id)}><Trash2 /></Button>
                   </li>
                 ))}
               </ul>

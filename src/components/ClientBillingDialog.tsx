@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { RecordPaymentDialog } from "@/components/RecordPaymentDialog";
 import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { fromDateKey, formatDurationLong, formatTime, statusLabel, type Client } from "@/lib/data";
+import { fromDateKey, formatDurationLong, paymentDateKey, formatTime, statusLabel, type Client } from "@/lib/data";
 import { clientBalance } from "@/lib/scheduling";
 import { useStore } from "@/lib/store";
 
@@ -74,7 +74,7 @@ export function ClientBillingDialog({ client, onClose }: { client: Client | null
       <h3 className="mt-2 font-serif text-lg">Payments</h3>
       <div className="max-h-[25vh] overflow-y-auto rounded-lg border">
         {data.payments.length === 0 ? <p className="p-5 text-center text-sm text-muted-foreground">No payments recorded.</p> : <ul className="divide-y">{data.payments.map((p) => <li key={p.id} className="flex items-center gap-3 p-3 text-sm">
-          <span className="text-muted-foreground">{new Date(p.paidAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+          <span className="text-muted-foreground">{fromDateKey(paymentDateKey(p.paidAt)).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
           <span className="capitalize">{p.method}</span>
           {p.notes && <span className="truncate text-xs text-muted-foreground">{p.notes}</span>}
           <span className="ml-auto font-medium">{money(p.amount)}</span>

@@ -65,12 +65,6 @@ export function fromDateKey(key: string): Date {
   return new Date(`${key}T12:00:00`);
 }
 
-export function offsetDate(days: number): string {
-  const date = new Date();
-  date.setDate(date.getDate() + days);
-  return toDateKey(date);
-}
-
 export function timeToMinutes(time: string): number {
   const [hours = 0, minutes = 0] = time.split(":").map(Number);
   return hours * 60 + minutes;
@@ -133,29 +127,19 @@ export function statusLabel(status: AppointmentStatus): string {
   return status === "no_show" ? "No-show" : status.charAt(0).toUpperCase() + status.slice(1);
 }
 
-export function makeSeedData() {
-  const clients: Client[] = [
-    { id: "c1", name: "Maya Thompson", phone: "(555) 214-8830", createdAt: offsetDate(-90), archived: false },
-    { id: "c2", name: "Jordan Lee", phone: "(555) 872-1190", createdAt: offsetDate(-60), archived: false },
-    { id: "c3", name: "Sofia Ramirez", phone: "(555) 340-2271", createdAt: offsetDate(-45), archived: false },
-    { id: "c4", name: "Ava Chen", phone: "(555) 903-4472", createdAt: offsetDate(-20), archived: false },
-  ];
-  const todayBlocks = effectiveHours(offsetDate(0));
-  const tomorrowBlocks = effectiveHours(offsetDate(1));
-  const todayStart = todayBlocks[0]?.start ?? "19:30";
-  const todayStartMinutes = timeToMinutes(todayStart);
-  const secondTodayStart = minutesToTime(todayStartMinutes + 60);
-  const tomorrowStart = tomorrowBlocks[0]?.start ?? "19:30";
-  const appointments: Appointment[] = [
-    { id: "a1", date: offsetDate(0), time: todayStart, durationMin: 30, clients: [{ clientId: "c1", status: "scheduled", charge: 0 }], notes: "Chin area" },
-    { id: "a2", date: offsetDate(0), time: secondTodayStart, durationMin: 60, clients: [{ clientId: "c3", status: "scheduled", charge: 0 }], notes: "Jawline" },
-    { id: "a3", date: offsetDate(1), time: tomorrowStart, durationMin: 45, clients: [{ clientId: "c2", status: "scheduled", charge: 0 }, { clientId: "c4", status: "scheduled", charge: 0 }], notes: "Shared family appointment" },
-    { id: "a4", date: offsetDate(-7), time: "10:30", durationMin: 30, clients: [{ clientId: "c1", status: "completed", charge: 75 }], notes: "" },
-  ];
-  const payments: Payment[] = [
-    { id: "p1", clientId: "c1", amount: 50, method: "card", paidAt: offsetDate(-7), notes: "Partial payment" },
-  ];
-  return { clients, appointments, payments, blockedTimes: [] as BlockedTime[] };
+/** A brand-new install starts with no records: the practitioner adds their own clients and appointments. */
+export function emptyData() {
+  return { clients: [] as Client[], appointments: [] as Appointment[], payments: [] as Payment[], blockedTimes: [] as BlockedTime[] };
+}
+
+/** Local calendar day a payment was recorded on. Older records stored a bare "YYYY-MM-DD". */
+export function paymentDateKey(paidAt: string): string {
+  return /^\d{4}-\d{2}-\d{2}$/.test(paidAt) ? paidAt : toDateKey(new Date(paidAt));
+}
+
+/** Local start of an appointment's booked slot. */
+export function appointmentStart(item: Pick<Appointment, "date" | "time">): Date {
+  return new Date(`${item.date}T${item.time}:00`);
 }
 /** Returns an error message when free-text notes look like gibberish; blank notes are allowed. */
 export function notesIssue(raw: string): string | null {

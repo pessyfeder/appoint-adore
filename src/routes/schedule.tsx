@@ -1,7 +1,7 @@
-import { useConfirm } from "@/components/ConfirmDialog";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { CLIENT_BADGE, CLIENT_LABEL, STATUS_CARD, StartEndControls, StatusBadge } from "@/components/AppointmentControls";
+import { ClientStatusActions } from "@/components/ClientStatusActions";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { ChevronLeft, ChevronRight, CalendarPlus, Clock3, Plus, UserRound } from "lucide-react";
@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { appointmentProgress, formatDuration, formatTime, fromDateKey, timeToMinutes, toDateKey, type Appointment } from "@/lib/data";
 import { usePassphraseGate } from "@/lib/lock";
+import { blockedTimeIssue } from "@/lib/scheduling";
 import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/schedule")({
@@ -36,9 +37,7 @@ function clientNames(item: Appointment, clients: { id: string; name: string }[])
 }
 
 function SchedulePage() {
-  const { appointments, clients, blockedTimes, addBlockedTime, setClientStatus, highlightId, setHighlightId } = useStore();
-  const { confirm, dialog: confirmDialog } = useConfirm();
-  const cancelClient = async (...args: [string, string]) => { const n = clients.find((c) => c.id === args[1])?.name ?? "this client"; if (await confirm({ title: `Cancel ${n}'s appointment?`, description: "This frees the time slot. It can't be undone.", confirmLabel: "Cancel appointment", cancelLabel: "Keep appointment", destructive: true })) setClientStatus(args[0], args[1], "cancelled"); };
+  const { appointments, clients, blockedTimes, addBlockedTime, highlightId, setHighlightId } = useStore();
   const { request, prompt } = usePassphraseGate();
   const [view, setView] = useState<"week" | "month">("week");
   const [cursor, setCursor] = useState(() => new Date());
@@ -71,9 +70,10 @@ function SchedulePage() {
   const [blockError, setBlockError] = useState<string | null>(null);
 
   async function saveBlock() {
-    if (block.endTime <= block.startTime) return setBlockError("The end time must be after the start time.");
+    const issue = blockedTimeIssue(block, appointments);
+    if (issue) return setBlockError(issue);
     if (!(await request("Blocking out time"))) return;
-    addBlockedTime(block);
+    addBlockedTime({ ...block, reason: block.reason.trim() });
     setBlockError(null);
     setBlockOpen(false);
   }
@@ -141,7 +141,7 @@ function SchedulePage() {
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/40 p-3"><StatusBadge item={current} /><StartEndControls item={current} /></div>
           <div className="space-y-3">{current.clients.map((entry) => {
             return <div key={entry.clientId} className="border-b pb-3">
-              <div className="flex flex-wrap items-center justify-between gap-2"><span>{clients.find((client) => client.id === entry.clientId)?.name}</span><div className="flex items-center gap-2"><span className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${entry.startedAt && !entry.endedAt ? "border-status-progress bg-status-progress text-foreground" : CLIENT_BADGE[entry.status]}`}>{entry.startedAt && !entry.endedAt ? "In progress" : CLIENT_LABEL[entry.status]}</span>{entry.status === "scheduled" && !entry.startedAt && <Button size="sm" variant="outline" className="h-10" onClick={() => cancelClient(current.id, entry.clientId)}>Cancel</Button>}</div></div>
+              <div className="flex flex-wrap items-center justify-between gap-2"><span>{clients.find((client) => client.id === entry.clientId)?.name}</span><div className="flex items-center gap-2"><span className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${entry.startedAt && !entry.endedAt ? "border-status-progress bg-status-progress text-foreground" : CLIENT_BADGE[entry.status]}`}>{entry.startedAt && !entry.endedAt ? "In progress" : CLIENT_LABEL[entry.status]}</span><ClientStatusActions item={current} clientId={entry.clientId} /></div></div>
             </div>;
           })}</div>
           {current.notes && <p className="text-sm text-muted-foreground">{current.notes}</p>}
@@ -151,13 +151,13 @@ function SchedulePage() {
 
       <Dialog open={blockOpen} onOpenChange={(open) => { setBlockOpen(open); if (!open) setBlockError(null); }}><DialogContent>
         <DialogHeader><DialogTitle>Block time</DialogTitle><DialogDescription>Keep appointments from being booked during this period.</DialogDescription></DialogHeader>
-        <div className="grid gap-3"><Input className="h-11" type="date" value={block.date} onChange={(event) => setBlock({ ...block, date: event.target.value })} /><div className="grid grid-cols-2 gap-3"><Input className="h-11" type="time" value={block.startTime} onChange={(event) => setBlock({ ...block, startTime: event.target.value })} /><Input className="h-11" type="time" value={block.endTime} onChange={(event) => setBlock({ ...block, endTime: event.target.value })} /></div><Input className="h-11" value={block.reason} onChange={(event) => setBlock({ ...block, reason: event.target.value })} /></div>
+        <div className="grid gap-3"><Input className="h-11" type="date" value={block.date} onChange={(event) => setBlock({ ...block, date: event.target.value })} /><div className="grid grid-cols-2 gap-3"><Input className="h-11" type="time" value={block.startTime} onChange={(event) => setBlock({ ...block, startTime: event.target.value })} /><Input className="h-11" type="time" value={block.endTime} onChange={(event) => setBlock({ ...block, endTime: event.target.value })} /></div><Input className="h-11" aria-label="Reason" placeholder="Reason (e.g. Doctor appointment)" maxLength={200} value={block.reason} onChange={(event) => setBlock({ ...block, reason: event.target.value })} /></div>
         {blockError && <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{blockError}</p>}
         {prompt}
         <DialogFooter><Button onClick={saveBlock}>Save block</Button></DialogFooter>
       </DialogContent></Dialog>
       </div>
-    {confirmDialog}</main>
+    </main>
   );
 }
 

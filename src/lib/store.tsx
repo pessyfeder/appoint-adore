@@ -1,8 +1,8 @@
 import type React from "react";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { z } from "zod";
-import { applyNoShows, RATE_PER_MINUTE, sessionMinutes } from "./scheduling";
-import { formatPhone, makeSeedData, type Appointment, type BlockedTime, type Client, type Payment } from "./data";
+import { noShowCharge, RATE_PER_MINUTE, sessionMinutes } from "./scheduling";
+import { emptyData, formatPhone, type Appointment, type BlockedTime, type Client, type Payment } from "./data";
 
 const STORAGE_KEY = "lumiere-scheduler-v2";
 const clientSchema = z.object({ name: z.string().trim().min(1).max(100), phone: z.string().regex(/^\(\d{3}\) \d{3}-\d{4}$/) });
@@ -11,7 +11,7 @@ const paymentSchema = z.object({ clientId: z.string().min(1), amount: z.number()
 const blockedSchema = z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), startTime: z.string().regex(/^\d{2}:\d{2}$/), endTime: z.string().regex(/^\d{2}:\d{2}$/), reason: z.string().trim().min(1).max(200) });
 const correctSchema = z.object({ durationMin: z.number().int().min(15).max(180), clients: z.array(z.object({ clientId: z.string().min(1), startedAt: z.string().min(1), endedAt: z.string().optional() })).min(1) });
 
-type StoreState = ReturnType<typeof makeSeedData>;
+type StoreState = ReturnType<typeof emptyData>;
 type Store = StoreState & {
   ready: boolean;
   addClient: (input: { name: string; phone: string }) => Client;
@@ -59,7 +59,7 @@ export function migrateLegacyTimes(state: StoreState): StoreState {
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<StoreState>(() => makeSeedData());
+  const [state, setState] = useState<StoreState>(() => emptyData());
   const [ready, setReady] = useState(false);
   const [highlightId, setHighlightId] = useState<string | null>(null);
 
@@ -70,14 +70,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
     setReady(true);
   }, []);
-
-  useEffect(() => {
-    if (!ready) return;
-    const sweep = () => setState((current) => { const next = applyNoShows(current.appointments); return next ? { ...current, appointments: next } : current; });
-    sweep();
-    const timer = window.setInterval(sweep, 60000);
-    return () => window.clearInterval(timer);
-  }, [ready]);
 
   useEffect(() => {
     if (ready) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -146,7 +138,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setState((current) => ({ ...current, appointments: current.appointments.map((item) => item.id === id ? { ...item, date: parsed.date, time: parsed.time, durationMin: parsed.durationMin, notes: parsed.notes, clients: parsed.clientIds.map((clientId) => item.clients.find((client) => client.clientId === clientId) ?? { clientId, status: "scheduled", charge: 0 }) } : item) }));
     },
     setClientStatus(appointmentId, clientId, status) {
-      setState((current) => ({ ...current, appointments: current.appointments.map((item) => item.id === appointmentId ? { ...item, clients: item.clients.map((client) => client.clientId === clientId ? { ...client, status, charge: status === "completed" || status === "no_show" ? item.durationMin * 2.5 : 0 } : client) } : item) }));
+      setState((current) => ({ ...current, appointments: current.appointments.map((item) => item.id === appointmentId ? { ...item, clients: item.clients.map((client) => client.clientId === clientId ? { ...client, status, charge: status === "completed" || status === "no_show" ? noShowCharge(item) : 0 } : client) } : item) }));
     },
     addPayment(input) {
       const parsed = paymentSchema.parse(input);

@@ -7,7 +7,7 @@ import { useConfirm } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { availableTimes, validateAppointment } from "@/lib/scheduling";
+import { availableTimes, pastStartIssue, validateAppointment } from "@/lib/scheduling";
 import { appointmentProgress, DURATION_OPTIONS, notesIssue, formatDuration, formatPhone, formatTime, fromDateKey, toDateKey } from "@/lib/data";
 import { useStore } from "@/lib/store";
 
@@ -84,7 +84,7 @@ function BookPage() {
     if (existing && appointmentProgress(existing) !== "scheduled") { setError("Only scheduled appointments can be rescheduled."); return; }
     const noteError = notesIssue(notes);
     if (noteError) { setError(noteError); setStep(2); return; }
-    const issue = validateAppointment({ date, time, durationMin, ...(edit ? { excludeId: edit } : {}) }, store.appointments, store.blockedTimes);
+    const issue = pastStartIssue(date, time) ?? validateAppointment({ date, time, durationMin, ...(edit ? { excludeId: edit } : {}) }, store.appointments, store.blockedTimes);
     if (issue) { setError(issue); setStep(1); return; }
     if (edit && existing) {
       const names = clientIds.map((id) => store.clients.find((client) => client.id === id)?.name).filter(Boolean).join(" & ") || "this";
@@ -95,10 +95,12 @@ function BookPage() {
     }
     let ids = clientIds;
     if (isPublic) {
-      // Reuse a matching client record by phone number; otherwise create one. Nothing about it is shown back.
+      // Reuse a matching client record by name and phone number; otherwise create one. Nothing about it is shown back.
       const phone = formatPhone(guest.phone);
       const digits = phone.replace(/\D/g, "");
-      const match = store.clients.find((client) => client.phone.replace(/\D/g, "") === digits);
+      // Requiring the name too means a typed phone number alone can't attach a booking to someone else.
+      const sameName = (a: string, b: string) => a.trim().replace(/\s+/g, " ").toLowerCase() === b.trim().replace(/\s+/g, " ").toLowerCase();
+      const match = store.clients.find((client) => !client.archived && client.phone.replace(/\D/g, "") === digits && sameName(client.name, guest.name));
       try { ids = [match ? match.id : store.addClient({ name: guest.name.trim(), phone }).id]; }
       catch { setError("Enter a name and 10-digit phone number."); setStep(2); return; }
     }

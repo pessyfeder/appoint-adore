@@ -43,3 +43,11 @@
 
 - [x] Replace the upper client list with Client balances; move Record payment into the client billing info window.
 - [x] Add a "Clients" section header on Clients & Billing matching the "Billing" header.
+
+- [x] Fresh installs start empty (no demo clients, appointments or payments).
+- [x] No-shows are marked by the practitioner once the start time passes (never automatically) and billed the full booked length; a no-show can be undone.
+- [x] Booking never offers or accepts a start time that has already passed.
+- [x] Payments are dated by the local day they were recorded (reports, CSV, history).
+- [x] Blocked time needs a reason and cannot cover a booked appointment; removing blocks or date overrides needs the password.
+- [x] Public booking reuses a client record only when both name and phone match.
+- [x] Dashboard shows the number of clients booked today.

@@ -1,4 +1,4 @@
-import type { Appointment, Client, Payment } from "./data";
+import { paymentDateKey, type Appointment, type Client, type Payment } from "./data";
 
 export type Charge = { appointmentId: string; clientId: string; date: string; amount: number; kind: "completed" | "no_show"; unpaid: number };
 
@@ -25,7 +25,7 @@ export function buildReport(from: string, to: string, appointments: Appointment[
   const name = (id: string) => clients.find((c) => c.id === id)?.name ?? "Unknown";
   const rows: LedgerRow[] = [];
   for (const p of payments) {
-    const date = p.paidAt.slice(0, 10);
+    const date = paymentDateKey(p.paidAt);
     if (date >= from && date <= to) rows.push({ date, clientName: name(p.clientId), label: `Payment (${p.method})`, amount: p.amount, unpaid: false, paymentId: p.id, clientId: p.clientId });
   }
   for (const c of chargesWithUnpaid(appointments, payments)) {
@@ -41,7 +41,7 @@ export function paymentsCsv(from: string, to: string, payments: Payment[], clien
   const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
   const lines = ["Date,Client,Amount,Method,Notes"];
   for (const p of [...payments].sort((a, b) => a.paidAt.localeCompare(b.paidAt))) {
-    const date = p.paidAt.slice(0, 10);
+    const date = paymentDateKey(p.paidAt);
     if (date < from || date > to) continue;
     lines.push([date, esc(clients.find((c) => c.id === p.clientId)?.name ?? ""), p.amount.toFixed(2), p.method, esc(p.notes)].join(","));
   }

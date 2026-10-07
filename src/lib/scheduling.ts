@@ -1,4 +1,4 @@
-import { effectiveHours, minutesToTime, timeToMinutes, type Appointment, type BlockedTime } from "./data";
+import { appointmentStart, clientInSession, effectiveHours, formatTime, minutesToTime, timeToMinutes, type Appointment, type AppointmentClient, type BlockedTime } from "./data";
 
 type Candidate = { date: string; time: string; durationMin: number; excludeId?: string };
 
@@ -30,17 +30,34 @@ export function validateAppointment(candidate: Candidate, appointments: Appointm
   return null;
 }
 
-export function availableTimes(date: string, durationMin: number, appointments: Appointment[], blocks: BlockedTime[]): string[] {
+/** New bookings and reschedules can't start at a time that has already passed. */
+export function pastStartIssue(date: string, time: string, now: Date = new Date()): string | null {
+  return appointmentStart({ date, time }) <= now ? "That time has already passed. Choose a later time." : null;
+}
+
+export function availableTimes(date: string, durationMin: number, appointments: Appointment[], blocks: BlockedTime[], now: Date = new Date()): string[] {
   const results: string[] = [];
   for (const block of effectiveHours(date)) {
     const start = timeToMinutes(block.start);
     const end = timeToMinutes(block.end);
     for (let minute = start; minute + durationMin <= end; minute += 15) {
       const time = minutesToTime(minute);
-      if (!validateAppointment({ date, time, durationMin }, appointments, blocks)) results.push(time);
+      if (!pastStartIssue(date, time, now) && !validateAppointment({ date, time, durationMin }, appointments, blocks)) results.push(time);
     }
   }
   return results;
+}
+
+/** Blocked time may not sit on top of a booked appointment; returns the reason it can't be saved. */
+export function blockedTimeIssue(block: Omit<BlockedTime, "id">, appointments: Appointment[]): string | null {
+  if (!block.reason.trim()) return "Please add a short reason.";
+  if (block.endTime <= block.startTime) return "The end time must be after the start time.";
+  const start = timeToMinutes(block.startTime);
+  const end = timeToMinutes(block.endTime);
+  const clash = appointments.find((item) => item.date === block.date
+    && item.clients.some((client) => client.status === "scheduled" || clientInSession(client))
+    && overlaps(start, end, timeToMinutes(item.time), timeToMinutes(item.time) + item.durationMin));
+  return clash ? `This overlaps a booked appointment at ${formatTime(clash.time)}. Reschedule or cancel it first.` : null;
 }
 
 export function clientBalance(clientId: string, appointments: Appointment[], payments: { clientId: string; amount: number }[]) {
@@ -55,17 +72,12 @@ export function sessionMinutes(startedAt: string, endedAt: string) {
   return Math.max(1, Math.round((new Date(endedAt).getTime() - new Date(startedAt).getTime()) / 60000));
 }
 
-/** Clients still "scheduled" on an appointment whose slot has ended without being started become no-shows, billed for the scheduled length. */
-export function applyNoShows(appointments: Appointment[], now: Date = new Date()): Appointment[] | null {
-  let changed = false;
-  const next = appointments.map((item) => {
-    if (item.startedAt) return item;
-    const [y, m, d] = item.date.split("-").map(Number);
-    const [hh, mm] = item.time.split(":").map(Number);
-    const end = new Date(y!, m! - 1, d!, hh!, mm! + item.durationMin);
-    if (end > now || !item.clients.some((c) => c.status === "scheduled")) return item;
-    changed = true;
-    return { ...item, clients: item.clients.map((c) => c.status === "scheduled" ? { ...c, status: "no_show" as const, charge: item.durationMin * RATE_PER_MINUTE } : c) };
-  });
-  return changed ? next : null;
+/** No-shows are billed for the full booked length. */
+export function noShowCharge(item: Pick<Appointment, "durationMin">) {
+  return item.durationMin * RATE_PER_MINUTE;
+}
+
+/** The practitioner may mark a waiting client as a no-show once the booked start time has passed. */
+export function canMarkNoShow(item: Appointment, client: AppointmentClient, now: Date = new Date()) {
+  return client.status === "scheduled" && !client.startedAt && appointmentStart(item) <= now;
 }
