@@ -137,6 +137,13 @@ export function paymentDateKey(paidAt: string): string {
   return /^\d{4}-\d{2}-\d{2}$/.test(paidAt) ? paidAt : toDateKey(new Date(paidAt));
 }
 
+/** Moves a payment to another local day, keeping the time of day it was recorded (midday for old date-only records). */
+export function movePaidAt(paidAt: string, dateKey: string): string {
+  if (paymentDateKey(paidAt) === dateKey) return paidAt;
+  const time = /^\d{4}-\d{2}-\d{2}$/.test(paidAt) ? "12:00" : isoToTime(paidAt);
+  return timeToISO(dateKey, time);
+}
+
 /** Local start of an appointment's booked slot. */
 export function appointmentStart(item: Pick<Appointment, "date" | "time">): Date {
   return new Date(`${item.date}T${item.time}:00`);

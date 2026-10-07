@@ -2,7 +2,7 @@ import type React from "react";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { z } from "zod";
 import { noShowCharge, RATE_PER_MINUTE, sessionMinutes } from "./scheduling";
-import { emptyData, formatPhone, type Appointment, type BlockedTime, type Client, type Payment } from "./data";
+import { emptyData, formatPhone, movePaidAt, type Appointment, type BlockedTime, type Client, type Payment } from "./data";
 
 const STORAGE_KEY = "lumiere-scheduler-v2";
 const clientSchema = z.object({ name: z.string().trim().min(1).max(100), phone: z.string().regex(/^\(\d{3}\) \d{3}-\d{4}$/) });
@@ -21,6 +21,10 @@ type Store = StoreState & {
   addPayment: (input: { clientId: string; amount: number; method: Payment["method"]; notes: string }) => void;
   addBlockedTime: (input: Omit<BlockedTime, "id">) => void;
   removeBlockedTime: (id: string) => void;
+  updateClient: (id: string, input: { name: string; phone: string }) => void;
+  setClientArchived: (id: string, archived: boolean) => void;
+  updatePayment: (id: string, input: { amount: number; method: Payment["method"]; notes: string; date: string }) => void;
+  deletePayment: (id: string) => void;
   startClient: (appointmentId: string, clientId: string) => void;
   endClient: (appointmentId: string) => EndSummary | null;
   correctTimes: (appointmentId: string, input: { durationMin: number; clients: { clientId: string; startedAt: string; endedAt?: string }[] }) => void;
@@ -166,6 +170,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const parsed = paymentSchema.parse(input);
       const payment: Payment = { ...parsed, id: nextId("payment"), paidAt: new Date().toISOString() };
       setState((current) => ({ ...current, payments: [...current.payments, payment] }));
+    },
+    updateClient(id, input) {
+      const parsed = clientSchema.parse({ ...input, phone: formatPhone(input.phone) });
+      setState((current) => ({ ...current, clients: current.clients.map((client) => client.id === id ? { ...client, ...parsed } : client) }));
+    },
+    setClientArchived(id, archived) {
+      setState((current) => ({ ...current, clients: current.clients.map((client) => client.id === id ? { ...client, archived } : client) }));
+    },
+    updatePayment(id, input) {
+      const parsed = paymentSchema.omit({ clientId: true }).extend({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }).parse(input);
+      setState((current) => ({ ...current, payments: current.payments.map((payment) => payment.id === id ? { ...payment, amount: parsed.amount, method: parsed.method, notes: parsed.notes, paidAt: movePaidAt(payment.paidAt, parsed.date) } : payment) }));
+    },
+    deletePayment(id) {
+      setState((current) => ({ ...current, payments: current.payments.filter((payment) => payment.id !== id) }));
     },
     addBlockedTime(input) {
       const parsed = blockedSchema.parse(input);

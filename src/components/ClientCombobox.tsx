@@ -109,7 +109,7 @@ export function ClientCombobox({ clients, onSelect, onNewClient }: Props) {
                 type="button"
               >
                 <span className="min-w-0">
-                  <span className="block truncate font-medium">{client.name}</span>
+                  <span className="block truncate font-medium">{client.name}{client.archived && <span className="ml-2 text-xs font-normal text-muted-foreground">Archived</span>}</span>
                   <span className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Phone className="h-3 w-3" /> {client.phone}
                   </span>

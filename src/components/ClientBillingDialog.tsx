@@ -1,6 +1,7 @@
-import { CreditCard } from "lucide-react";
+import { CreditCard, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RecordPaymentDialog } from "@/components/RecordPaymentDialog";
+import { EditPaymentDialog } from "@/components/EditPaymentDialog";
 import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { fromDateKey, formatDurationLong, paymentDateKey, formatTime, statusLabel, type Client } from "@/lib/data";
@@ -20,6 +21,7 @@ const STATUS_STYLE: Record<string, string> = {
 export function ClientBillingDialog({ client, onClose }: { client: Client | null; onClose: () => void }) {
   const store = useStore();
   const [payOpen, setPayOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const data = useMemo(() => {
     if (!client) return null;
@@ -78,6 +80,7 @@ export function ClientBillingDialog({ client, onClose }: { client: Client | null
           <span className="capitalize">{p.method}</span>
           {p.notes && <span className="truncate text-xs text-muted-foreground">{p.notes}</span>}
           <span className="ml-auto font-medium">{money(p.amount)}</span>
+          <Button size="icon" variant="ghost" className="h-10 w-10 text-muted-foreground" aria-label={`Edit the ${money(p.amount)} payment`} onClick={() => setEditingId(p.id)}><Pencil /></Button>
         </li>)}</ul>}
       </div>
       <DialogFooter>
@@ -86,5 +89,6 @@ export function ClientBillingDialog({ client, onClose }: { client: Client | null
     </DialogContent>
   </Dialog>
   <RecordPaymentDialog open={payOpen} onOpenChange={setPayOpen} clientIds={[client.id]} />
+  <EditPaymentDialog payment={store.payments.find((p) => p.id === editingId) ?? null} onClose={() => setEditingId(null)} />
   </>;
 }

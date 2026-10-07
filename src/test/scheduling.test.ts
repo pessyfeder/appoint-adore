@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { emptyData, paymentDateKey, toDateKey, type Appointment } from "../lib/data";
+import { emptyData, isoToTime, movePaidAt, paymentDateKey, toDateKey, type Appointment } from "../lib/data";
 import { availableTimes, blockedTimeIssue, canMarkNoShow, noShowCharge, pastStartIssue } from "../lib/scheduling";
 
 // 2030-01-07 is a Monday: default hours 10:30–1:30 and 7:30–10:30.
@@ -93,5 +93,16 @@ describe("demo record cleanup", () => {
     // A record that no longer matches the demo name/phone is treated as real and kept.
     const renamed = { ...state, clients: [{ ...maya, name: "Someone Else" }, real] };
     expect(removeDemoRecords(renamed)).toBe(renamed);
+  });
+});
+
+describe("editing a payment's date", () => {
+  it("moves it to the new local day and keeps the time it was recorded", () => {
+    const evening = new Date(2030, 0, 7, 21, 45).toISOString();
+    const moved = movePaidAt(evening, "2030-01-05");
+    expect(paymentDateKey(moved)).toBe("2030-01-05");
+    expect(isoToTime(moved)).toBe("21:45");
+    expect(movePaidAt(evening, "2030-01-07")).toBe(evening);
+    expect(paymentDateKey(movePaidAt("2030-01-07", "2030-01-04"))).toBe("2030-01-04");
   });
 });

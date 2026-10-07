@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
-import { Download, FileText, ReceiptText } from "lucide-react";
+import { Download, FileText, Pencil, ReceiptText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ReportDetailDialog } from "@/components/ReportDetailDialog";
+import { EditPaymentDialog } from "@/components/EditPaymentDialog";
 import { buildReport, paymentsCsv, type LedgerRow } from "@/lib/billing";
 import { fromDateKey, paymentDateKey, toDateKey } from "@/lib/data";
 import { clientBalance } from "@/lib/scheduling";
@@ -23,6 +24,7 @@ function BillingContent() {
   const [to, setTo] = useState(today);
   const [reportOpen, setReportOpen] = useState(false);
   const [detail, setDetail] = useState<LedgerRow | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const rows = useMemo(() => store.clients.filter((c) => !c.archived).map((client) => ({
     client,
@@ -55,7 +57,7 @@ function BillingContent() {
 
     <section className="mt-7 overflow-hidden rounded-xl border bg-card">
       <h2 className="border-b p-5 font-serif text-xl">Recent payments</h2>
-      {recent.length === 0 ? <p className="p-6 text-center text-sm text-muted-foreground">No payments recorded yet.</p> : <ul className="divide-y">{recent.map((p) => <li key={p.id} className="flex justify-between gap-4 p-4 text-sm"><span>{store.clients.find((c) => c.id === p.clientId)?.name} <span className="text-muted-foreground">· {fromDateKey(paymentDateKey(p.paidAt)).toLocaleDateString("en-US", { month: "short", day: "numeric" })} · {p.method}</span></span><span className="font-semibold">{money(p.amount)}</span></li>)}</ul>}
+      {recent.length === 0 ? <p className="p-6 text-center text-sm text-muted-foreground">No payments recorded yet.</p> : <ul className="divide-y">{recent.map((p) => <li key={p.id} className="flex items-center justify-between gap-4 px-4 py-2 text-sm"><span>{store.clients.find((c) => c.id === p.clientId)?.name} <span className="text-muted-foreground">· {fromDateKey(paymentDateKey(p.paidAt)).toLocaleDateString("en-US", { month: "short", day: "numeric" })} · {p.method}</span></span><span className="flex items-center gap-1"><span className="font-semibold">{money(p.amount)}</span><Button size="icon" variant="ghost" className="h-10 w-10 text-muted-foreground" aria-label={`Edit the ${money(p.amount)} payment`} onClick={() => setEditingId(p.id)}><Pencil /></Button></span></li>)}</ul>}
     </section>
 
 
@@ -76,6 +78,7 @@ function BillingContent() {
       </div>
     </DialogContent></Dialog>
     <ReportDetailDialog row={detail} onClose={() => setDetail(null)} />
+    <EditPaymentDialog payment={store.payments.find((p) => p.id === editingId) ?? null} onClose={() => setEditingId(null)} />
   </div>;
 }
 

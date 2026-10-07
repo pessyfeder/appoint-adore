@@ -1,15 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
-import { Lock, Phone, ReceiptText, UserPlus } from "lucide-react";
+import { useState } from "react";
+import { Archive, ArchiveRestore, Pencil, Phone, ReceiptText, UserPlus } from "lucide-react";
 import { BillingPanel, ClientBalances } from "@/components/BillingPanel";
 import { ClientCombobox } from "@/components/ClientCombobox";
 import { ClientBillingDialog } from "@/components/ClientBillingDialog";
+import { useConfirm } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatPhone } from "@/lib/data";
-import { useLock } from "@/lib/lock";
 import { clientBalance } from "@/lib/scheduling";
 import { useStore } from "@/lib/store";
 
@@ -29,148 +27,136 @@ export const Route = createFileRoute("/clients")({
 
 function ClientsPage() {
   const store = useStore();
-  const { verify } = useLock();
-  const [pass, setPass] = useState("");
-  const [passError, setPassError] = useState("");
-  const [checking, setChecking] = useState(false);
-  const timerRef = useRef<number | null>(null);
-  const attemptRef = useRef(0);
+  const { confirm, dialog } = useConfirm();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({ name: "", phone: "" });
   const [billingInfoId, setBillingInfoId] = useState<string | null>(null);
-  // The Admin password already guards this page.
-  const [pageUnlocked, setPageUnlocked] = useState(true);
+  const [notice, setNotice] = useState("");
 
   const selected = store.clients.find((client) => client.id === selectedId) ?? null;
   const balance = selected ? clientBalance(selected.id, store.appointments, store.payments) : 0;
   const visits = selected
     ? store.appointments.flatMap((item) => item.clients).filter((entry) => entry.clientId === selected.id && entry.status === "completed").length
     : 0;
+  const upcoming = selected
+    ? store.appointments.filter((item) => item.clients.some((entry) => entry.clientId === selected.id && entry.status === "scheduled")).length
+    : 0;
+  const active = store.clients.filter((client) => !client.archived).length;
   const canSave = draft.name.trim().length > 0 && PHONE_PATTERN.test(draft.phone);
 
   function startNew(name = "") {
     setDraft({ name, phone: "" });
+    setEditing(false);
     setCreating(true);
+  }
+
+  function startEdit() {
+    if (!selected) return;
+    setDraft({ name: selected.name, phone: selected.phone });
+    setCreating(false);
+    setEditing(true);
+    setNotice("");
+  }
+
+  function closeForm() {
+    setCreating(false);
+    setEditing(false);
+    setDraft({ name: "", phone: "" });
   }
 
   function saveClient() {
     if (!canSave) return;
-    const client = store.addClient({ name: draft.name.trim(), phone: draft.phone });
-    setSelectedId(client.id);
-    setCreating(false);
-    setDraft({ name: "", phone: "" });
+    if (editing && selected) {
+      store.updateClient(selected.id, { name: draft.name.trim(), phone: draft.phone });
+      setNotice("Client details saved.");
+    } else {
+      const client = store.addClient({ name: draft.name.trim(), phone: draft.phone });
+      setSelectedId(client.id);
+    }
+    closeForm();
   }
 
-  /** Verify without waiting for a button press; a match opens the page on its own. */
-  function check(value: string) {
-    const attempt = ++attemptRef.current;
-    setChecking(true);
-    void verify(value).then((ok) => {
-      if (attempt !== attemptRef.current) return;
-      setChecking(false);
-      if (ok) {
-        setPageUnlocked(true);
-        return;
-      }
-      setPassError("That password doesn’t match.");
-    });
+  async function toggleArchive() {
+    if (!selected) return;
+    if (selected.archived) {
+      store.setClientArchived(selected.id, false);
+      setNotice("Client restored to the active list.");
+      return;
+    }
+    if (Math.abs(balance) > 0.004) {
+      setNotice(`${selected.name} has a ${balance > 0 ? "balance owed" : "credit"} of $${Math.abs(balance).toFixed(2)}. Settle it before archiving.`);
+      return;
+    }
+    if (upcoming > 0) {
+      setNotice(`${selected.name} still has ${upcoming} scheduled appointment${upcoming === 1 ? "" : "s"}. Cancel or complete ${upcoming === 1 ? "it" : "them"} before archiving.`);
+      return;
+    }
+    const ok = await confirm({ title: `Archive ${selected.name}?`, description: "They'll be hidden from booking and the balances list. Their history is kept, and you can restore them any time by searching their name.", confirmLabel: "Archive client", cancelLabel: "Keep active" });
+    if (!ok) return;
+    store.setClientArchived(selected.id, true);
+    setNotice("Client archived.");
   }
 
-  function typePass(value: string) {
-    setPass(value);
-    setPassError("");
-    if (timerRef.current) window.clearTimeout(timerRef.current);
-    if (!value) return;
-    timerRef.current = window.setTimeout(() => check(value), 400);
-  }
-
-  useEffect(() => () => { if (timerRef.current) window.clearTimeout(timerRef.current); }, []);
-
-  if (!pageUnlocked) {
-    return <main className="mx-auto max-w-5xl px-4 py-8">
-      <p className="text-xs font-medium uppercase text-muted-foreground">Practitioner only</p>
-      <h1 className="mt-1 font-serif text-3xl">Clients &amp; Billing</h1>
-      <form
-        className="mt-8 border border-dashed p-6 sm:p-8"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (checking || !pass) return;
-          if (timerRef.current) window.clearTimeout(timerRef.current);
-          check(pass);
-        }}
-      >
-        <div className="flex items-start gap-3">
-          <Lock className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Client records and billing are private. Enter your password to open this page.</p>
-        </div>
-        <label className="mt-5 block text-sm font-medium" htmlFor="clients-password">Password</label>
-        <Input
-          className="mt-1 h-12 max-w-sm"
-          id="clients-password"
-          type="password"
-          autoComplete="current-password"
-          autoFocus
-          value={pass}
-          onChange={(event) => typePass(event.target.value)}
-        />
-        {passError && <p className="mt-2 text-sm text-destructive">{passError}</p>}
-        {checking && <p className="mt-3 text-xs text-muted-foreground" role="status">Checking…</p>}
-      </form>
-    </main>;
-  }
+  const form = (creating || editing) && <div className="mt-4 grid gap-2 border bg-card p-4 sm:grid-cols-[1fr_1fr_auto]">
+    {editing && <p className="text-sm font-medium sm:col-span-3">Edit client details</p>}
+    <Input className="h-11" aria-label="Full name" placeholder="Full name" maxLength={100} value={draft.name} onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))} />
+    <Input className="h-11" aria-label="Phone" inputMode="tel" placeholder="Phone" value={draft.phone} onChange={(event) => setDraft((current) => ({ ...current, phone: formatPhone(event.target.value) }))} />
+    <div className="flex gap-2">
+      <Button className="h-11" disabled={!canSave} onClick={saveClient}>Save</Button>
+      <Button className="h-11" variant="ghost" onClick={closeForm}>Cancel</Button>
+    </div>
+  </div>;
 
   return <main className="mx-auto max-w-5xl px-4 py-8">
-      <p className="text-xs font-medium uppercase text-muted-foreground">Practitioner only</p>
-      <h1 className="mt-1 font-serif text-3xl">Clients &amp; Billing</h1>
+    <p className="text-xs font-medium uppercase text-muted-foreground">Practitioner only</p>
+    <h1 className="mt-1 font-serif text-3xl">Clients &amp; Billing</h1>
     <section className="mt-5">
       <div className="flex flex-wrap justify-end">
         <Button className="h-11" variant="outline" onClick={() => startNew()}><UserPlus /> New client</Button>
       </div>
 
-
-    <div className="mt-6">
-      <ClientCombobox
-        clients={store.clients}
-        onNewClient={startNew}
-        onSelect={(client) => { setSelectedId(client.id); setCreating(false); }}
-      />
-      <p className="mt-2 text-xs text-muted-foreground">{store.clients.length} client{store.clients.length === 1 ? "" : "s"} on file</p>
-    </div>
-
-    <ClientBalances onViewBilling={setBillingInfoId} />
-
-    {creating && <div className="mt-4 grid gap-2 border bg-card p-4 sm:grid-cols-[1fr_1fr_auto]">
-      <Input className="h-11" placeholder="Full name" value={draft.name} onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))} />
-      <Input className="h-11" inputMode="tel" placeholder="Phone" value={draft.phone} onChange={(event) => setDraft((current) => ({ ...current, phone: formatPhone(event.target.value) }))} />
-      <div className="flex gap-2">
-        <Button className="h-11" disabled={!canSave} onClick={saveClient}>Save</Button>
-        <Button className="h-11" variant="ghost" onClick={() => { setCreating(false); setDraft({ name: "", phone: "" }); }}>Cancel</Button>
+      <div className="mt-6">
+        <ClientCombobox
+          clients={store.clients}
+          onNewClient={startNew}
+          onSelect={(client) => { setSelectedId(client.id); closeForm(); setNotice(""); }}
+        />
+        <p className="mt-2 text-xs text-muted-foreground">{active} client{active === 1 ? "" : "s"} on file{active !== store.clients.length ? ` · ${store.clients.length - active} archived` : ""}</p>
       </div>
-    </div>}
 
-    {selected ? <article className="mt-5 border bg-card p-5 sm:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h2 className="font-serif text-2xl">{selected.name}</h2>
-          <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground"><Phone className="h-4 w-4" /> {selected.phone}</p>
+      <ClientBalances onViewBilling={setBillingInfoId} />
+
+      {creating && form}
+
+      {selected ? <article className="mt-5 border bg-card p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="flex flex-wrap items-center gap-2 font-serif text-2xl">{selected.name}{selected.archived && <span className="rounded-full border px-2 py-0.5 font-sans text-[11px] font-medium text-muted-foreground">Archived</span>}</h2>
+            <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground"><Phone className="h-4 w-4" /> {selected.phone}</p>
+          </div>
+          <div className="text-right">
+            <p className={`text-xl font-semibold ${balance > 0 ? "text-destructive" : ""}`}>${balance.toFixed(2)}</p>
+            <p className="text-xs text-muted-foreground">balance</p>
+          </div>
         </div>
-        <div className="text-right">
-          <p className={`text-xl font-semibold ${balance > 0 ? "text-destructive" : ""}`}>${balance.toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground">balance</p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button className="h-11" variant="outline" onClick={() => setBillingInfoId(selected.id)}><ReceiptText /> View billing info</Button>
+          <Button className="h-11" variant="outline" onClick={startEdit}><Pencil /> Edit details</Button>
+          <Button className="h-11" variant="ghost" onClick={toggleArchive}>{selected.archived ? <><ArchiveRestore /> Restore client</> : <><Archive /> Archive</>}</Button>
         </div>
-      </div>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Button className="h-11" variant="outline" onClick={() => setBillingInfoId(selected.id)}><ReceiptText /> View billing info</Button>
-      </div>
-      <p className="mt-4 text-sm text-muted-foreground">{visits} completed visit{visits === 1 ? "" : "s"}</p>
-    </article> : <p className="mt-5 border border-dashed p-6 text-center text-sm text-muted-foreground">Start typing above to pull up a client, or create a new one.</p>}
+        {editing && form}
+        {notice && <p className="mt-3 text-sm text-muted-foreground" role="status">{notice}</p>}
+        <p className="mt-4 text-sm text-muted-foreground">{visits} completed visit{visits === 1 ? "" : "s"}</p>
+      </article> : <p className="mt-5 border border-dashed p-6 text-center text-sm text-muted-foreground">Start typing above to pull up a client, or create a new one.</p>}
 
-    <ClientBillingDialog client={store.clients.find((c) => c.id === billingInfoId) ?? null} onClose={() => setBillingInfoId(null)} />
+      <ClientBillingDialog client={store.clients.find((c) => c.id === billingInfoId) ?? null} onClose={() => setBillingInfoId(null)} />
     </section>
 
     <section className="mt-8">
       <BillingPanel />
     </section>
+    {dialog}
   </main>;
 }
