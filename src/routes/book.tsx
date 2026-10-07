@@ -92,12 +92,31 @@ function BookPage() {
       const ok = await confirm({ title: `Reschedule ${names}'s appointment?`, description: `From ${oldWhen} to ${newWhen}.`, confirmLabel: "Reschedule appointment", cancelLabel: "Keep original" });
       if (!ok) return;
     }
-    const input = { date, time, durationMin, clientIds, notes };
+    let ids = clientIds;
+    if (isPublic) {
+      // Reuse a matching client record by phone number; otherwise create one. Nothing about it is shown back.
+      const phone = formatPhone(guest.phone);
+      const digits = phone.replace(/\D/g, "");
+      const match = store.clients.find((client) => client.phone.replace(/\D/g, "") === digits);
+      try { ids = [match ? match.id : store.addClient({ name: guest.name.trim(), phone }).id]; }
+      catch { setError("Enter a name and 10-digit phone number."); setStep(2); return; }
+    }
+    const input = { date, time, durationMin, clientIds: ids, notes };
     const savedId = edit ? (store.updateAppointment(edit, input), edit) : store.addAppointment(input).id;
+    const when = `${fromDateKey(date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} at ${formatTime(time)}`;
+    if (isPublic) { setBooked(when); return; }
     store.setHighlightId(savedId);
-    toast.success(edit ? "Appointment updated" : "Appointment confirmed", { description: `${fromDateKey(date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} at ${formatTime(time)}` });
+    toast.success(edit ? "Appointment updated" : "Appointment confirmed", { description: when });
     navigate({ to: "/schedule" });
   }
+
+  if (booked) return <main className="mx-auto max-w-xl px-4 py-16 text-center">
+    <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground"><Check className="h-7 w-7" /></span>
+    <h1 className="mt-5 font-serif text-3xl">Appointment booked</h1>
+    <p className="mt-3 text-lg">{booked}</p>
+    <p className="mt-1 text-muted-foreground">{formatDuration(durationMin)}</p>
+    <Button className="mt-8 h-12 px-6" onClick={resetForm}><CalendarPlus /> Book another appointment</Button>
+  </main>;
 
   return <main className="mx-auto max-w-3xl px-4 py-8">
     <p className="text-xs font-medium uppercase text-muted-foreground">Appointment</p>
