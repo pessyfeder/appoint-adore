@@ -64,3 +64,7 @@
 - [x] Works offline after one online visit (service worker saves every page and its code) and can be installed as an app (manifest + icons).
 - [x] Upcoming bookings left outside business hours after an hours change are flagged in amber (week and month views, appointment window, Dashboard notice) until rescheduled or cancelled.
 - [x] Rescheduling can be abandoned with "Cancel reschedule" on any step; asks "Are you sure?" only if something was changed, and the appointment keeps its original time.
+- [x] Exit Admin asks "Are you sure?" before locking.
+- [x] Booking "Who is coming?" has a search (name or phone); picked clients stay on top; no match offers "Add as new client".
+- [x] Confirmation popups keep their text while closing (no empty flash).
+- [x] Password reset warning mentions restoring from a backup file.

@@ -7,12 +7,14 @@ type Options = { title: string; description?: string; confirmLabel: string; canc
 /** Promise-based confirmation popup: `if (await confirm({...})) doIt()`. Render `dialog` once. */
 export function useConfirm() {
   const [opts, setOpts] = useState<Options | null>(null);
+  // Keep showing the last text while the popup animates closed, so it never flashes empty.
+  const [open, setOpen] = useState(false);
   const resolveRef = useRef<((ok: boolean) => void) | null>(null);
   function confirm(next: Options) {
-    return new Promise<boolean>((resolve) => { resolveRef.current = resolve; setOpts(next); });
+    return new Promise<boolean>((resolve) => { resolveRef.current = resolve; setOpts(next); setOpen(true); });
   }
-  function settle(ok: boolean) { const r = resolveRef.current; resolveRef.current = null; setOpts(null); r?.(ok); }
-  const dialog: ReactNode = <Dialog open={Boolean(opts)} onOpenChange={(o) => !o && settle(false)}>
+  function settle(ok: boolean) { const r = resolveRef.current; resolveRef.current = null; setOpen(false); r?.(ok); }
+  const dialog: ReactNode = <Dialog open={open} onOpenChange={(o) => !o && settle(false)}>
     <DialogContent>{opts && <>
       <DialogHeader><DialogTitle className="font-serif text-2xl">{opts.title}</DialogTitle>{opts.description && <DialogDescription>{opts.description}</DialogDescription>}</DialogHeader>
       <DialogFooter className="flex-wrap gap-2">

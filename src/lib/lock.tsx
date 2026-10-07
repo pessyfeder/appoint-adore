@@ -192,7 +192,7 @@ function LockScreen({ status }: { status: Status }) {
             <div className="mt-5 border border-dashed p-4">
               <p className="text-sm font-medium">Reset the password?</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Resetting erases every appointment, client and payment stored on this tablet, then lets you choose a new password.
+                Resetting erases every appointment, client and payment stored on this tablet, then lets you choose a new password. If you have a backup file, you can bring everything back afterwards from Admin → Backup.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button

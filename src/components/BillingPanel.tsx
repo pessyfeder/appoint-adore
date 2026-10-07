@@ -26,11 +26,6 @@ function BillingContent() {
   const [detail, setDetail] = useState<LedgerRow | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const rows = useMemo(() => store.clients.filter((c) => !c.archived).map((client) => ({
-    client,
-    balance: clientBalance(client.id, store.appointments, store.payments),
-    noShows: store.appointments.filter((a) => a.clients.some((c) => c.clientId === client.id && c.status === "no_show")).length,
-  })).sort((a, b) => b.balance - a.balance), [store.clients, store.appointments, store.payments]);
   const report = useMemo(() => buildReport(from, to, store.appointments, store.payments, store.clients), [from, to, store.appointments, store.payments, store.clients]);
   const recent = [...store.payments].sort((a, b) => b.paidAt.localeCompare(a.paidAt)).slice(0, 8);
 

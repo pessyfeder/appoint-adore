@@ -2,6 +2,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { CalendarPlus, LogOut, ShieldCheck, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLock } from "@/lib/lock";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 const adminLinks = [
   { to: "/", label: "Dashboard" },
@@ -20,6 +21,13 @@ export function Nav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const onBook = pathname.startsWith("/book");
   const unlocked = status === "unlocked";
+  const { confirm, dialog } = useConfirm();
+
+  async function exitAdmin() {
+    if (!(await confirm({ title: "Are you sure?", description: "Leave Admin? You'll need your password to come back in.", confirmLabel: "Exit Admin", cancelLabel: "Stay in Admin" }))) return;
+    lock();
+    void navigate({ to: "/book", search: { edit: undefined } });
+  }
 
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur">
@@ -58,16 +66,14 @@ export function Nav() {
             <Button
               className="h-11"
               variant="ghost"
-              onClick={() => {
-                lock();
-                void navigate({ to: "/book", search: { edit: undefined } });
-              }}
+              onClick={exitAdmin}
             >
               <LogOut /> Exit Admin
             </Button>
           </div>
         </div>
       )}
+      {dialog}
     </header>
   );
 }
