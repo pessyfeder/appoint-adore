@@ -69,7 +69,15 @@ export function LockProvider({ children }: { children: ReactNode }) {
     [status],
   );
 
-  return <LockContext.Provider value={value}>{status === "unlocked" ? children : <LockScreen status={status} />}</LockContext.Provider>;
+  // Only first-time setup blocks the whole app; once a password exists the public Book screen stays usable
+  // and Admin pages are gated by <AdminGate>.
+  return <LockContext.Provider value={value}>{status === "unlocked" || status === "locked" ? children : <LockScreen status={status} />}</LockContext.Provider>;
+}
+
+/** Renders practitioner-only content, or the inline Admin password screen while locked. */
+export function AdminGate({ children }: { children: ReactNode }) {
+  const { status } = useLock();
+  return status === "unlocked" ? <>{children}</> : <LockScreen status={status} />;
 }
 
 function LockScreen({ status }: { status: Status }) {
@@ -156,8 +164,8 @@ function LockScreen({ status }: { status: Status }) {
           </>
         ) : (
           <>
-            <h1 className="mt-6 font-serif text-2xl">Practitioner access</h1>
-            <p className="mt-2 text-sm text-muted-foreground">Enter your password to open the schedule, clients and payments.</p>
+            <h1 className="mt-6 font-serif text-2xl">Admin</h1>
+            <p className="mt-2 text-sm text-muted-foreground">Enter your password to open the dashboard, schedule, hours, clients and billing.</p>
             <label className="mt-5 block text-sm font-medium" htmlFor="unlock-password">
               Password
             </label>
