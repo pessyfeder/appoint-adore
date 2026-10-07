@@ -8,6 +8,7 @@ const adminLinks = [
   { to: "/schedule", label: "Schedule" },
   { to: "/availability", label: "Hours" },
   { to: "/clients", label: "Clients & Billing" },
+  { to: "/backup", label: "Backup" },
 ] as const;
 
 const tab = "inline-flex h-11 items-center gap-2 rounded-full px-5 text-sm font-medium text-muted-foreground transition-colors";

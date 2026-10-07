@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AvailabilityRouteImport } from './routes/availability'
+import { Route as BackupRouteImport } from './routes/backup'
 import { Route as BillingRouteImport } from './routes/billing'
 import { Route as BookRouteImport } from './routes/book'
 import { Route as ClientsRouteImport } from './routes/clients'
@@ -24,6 +25,11 @@ const IndexRoute = IndexRouteImport.update({
 const AvailabilityRoute = AvailabilityRouteImport.update({
   id: '/availability',
   path: '/availability',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BackupRoute = BackupRouteImport.update({
+  id: '/backup',
+  path: '/backup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BillingRoute = BillingRouteImport.update({
@@ -50,6 +56,7 @@ const ScheduleRoute = ScheduleRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/availability': typeof AvailabilityRoute
+  '/backup': typeof BackupRoute
   '/billing': typeof BillingRoute
   '/book': typeof BookRoute
   '/clients': typeof ClientsRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/availability': typeof AvailabilityRoute
+  '/backup': typeof BackupRoute
   '/billing': typeof BillingRoute
   '/book': typeof BookRoute
   '/clients': typeof ClientsRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/availability': typeof AvailabilityRoute
+  '/backup': typeof BackupRoute
   '/billing': typeof BillingRoute
   '/book': typeof BookRoute
   '/clients': typeof ClientsRoute
@@ -75,13 +84,27 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/availability' | '/billing' | '/book' | '/clients' | '/schedule'
+    | '/'
+    | '/availability'
+    | '/backup'
+    | '/billing'
+    | '/book'
+    | '/clients'
+    | '/schedule'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/availability' | '/billing' | '/book' | '/clients' | '/schedule'
+  to:
+    | '/'
+    | '/availability'
+    | '/backup'
+    | '/billing'
+    | '/book'
+    | '/clients'
+    | '/schedule'
   id:
     | '__root__'
     | '/'
     | '/availability'
+    | '/backup'
     | '/billing'
     | '/book'
     | '/clients'
@@ -91,6 +114,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AvailabilityRoute: typeof AvailabilityRoute
+  BackupRoute: typeof BackupRoute
   BillingRoute: typeof BillingRoute
   BookRoute: typeof BookRoute
   ClientsRoute: typeof ClientsRoute
@@ -111,6 +135,13 @@ declare module '@tanstack/react-router' {
       path: '/availability'
       fullPath: '/availability'
       preLoaderRoute: typeof AvailabilityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/backup': {
+      id: '/backup'
+      path: '/backup'
+      fullPath: '/backup'
+      preLoaderRoute: typeof BackupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/billing': {
@@ -147,6 +178,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AvailabilityRoute: AvailabilityRoute,
+  BackupRoute: BackupRoute,
   BillingRoute: BillingRoute,
   BookRoute: BookRoute,
   ClientsRoute: ClientsRoute,

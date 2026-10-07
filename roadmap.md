@@ -52,3 +52,4 @@
 - [x] Public booking reuses a client record only when both name and phone match.
 - [x] Dashboard shows the number of clients booked today.
 - [x] Remove demo clients (and their appointments and payments) left by older versions; real records are untouched.
+- [x] Backup page: download one backup file of all records, hours and password; restore from a file (password-gated, saves a safety copy first); Dashboard reminds when no backup in 7 days.
