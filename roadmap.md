@@ -63,3 +63,4 @@
 - [x] Booking: six common lengths plus an "Other length" list; a day with no times offers "Next available".
 - [x] Works offline after one online visit (service worker saves every page and its code) and can be installed as an app (manifest + icons).
 - [x] Upcoming bookings left outside business hours after an hours change are flagged in amber (week and month views, appointment window, Dashboard notice) until rescheduled or cancelled.
+- [x] Rescheduling can be abandoned with "Cancel reschedule" on any step; asks "Are you sure?" only if something was changed, and the appointment keeps its original time.

@@ -1,7 +1,7 @@
 import { toast } from "sonner";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, CalendarPlus, Check, UserPlus } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarPlus, Check, UserPlus, X } from "lucide-react";
 import { useLock } from "@/lib/lock";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
@@ -75,6 +75,16 @@ function BookPage() {
     setNotes(existing.notes);
   }, [seeded]);
 
+  /** Leave the reschedule without saving: the appointment keeps its original time. Asks first only if something was changed. */
+  async function cancelReschedule() {
+    if (!existing) return;
+    const changed = durationMin !== existing.durationMin || date !== existing.date || time !== existing.time || notes !== existing.notes
+      || clientIds.join() !== existing.clients.map((item) => item.clientId).join();
+    if (changed && !(await confirm({ title: "Are you sure?", description: `Discard your changes? The appointment stays on ${fromDateKey(existing.date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} at ${formatTime(existing.time)}.`, confirmLabel: "Discard changes", cancelLabel: "Keep editing" }))) return;
+    store.setHighlightId(existing.id);
+    navigate({ to: "/schedule" });
+  }
+
   const times = useMemo(() => availableTimes(date, durationMin, store.appointments.filter((item) => item.id !== edit), store.blockedTimes), [date, durationMin, edit, store.appointments, store.blockedTimes]);
   const nextOpen = useMemo(() => (step === 1 && times.length === 0 ? nextOpenDate(date, durationMin, store.appointments.filter((item) => item.id !== edit), store.blockedTimes) : null), [step, times.length, date, durationMin, edit, store.appointments, store.blockedTimes]);
   const guestValid = guest.name.trim().length > 0 && guest.phone.replace(/\D/g, "").length === 10;
@@ -138,8 +148,13 @@ function BookPage() {
   </main>;
 
   return <main className="mx-auto max-w-3xl px-4 py-8">
-    <p className="text-xs font-medium uppercase text-muted-foreground">Appointment</p>
-    <h1 className="mt-1 font-serif text-3xl">{edit ? "Reschedule appointment" : "New appointment"}</h1>
+    <div className="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <p className="text-xs font-medium uppercase text-muted-foreground">Appointment</p>
+        <h1 className="mt-1 font-serif text-3xl">{edit ? "Reschedule appointment" : "New appointment"}</h1>
+      </div>
+      {existing && <Button variant="outline" className="h-11" onClick={cancelReschedule}><X /> Cancel reschedule</Button>}
+    </div>
     <ol className="mt-6 grid grid-cols-4 gap-1">{STEPS.map((label, index) => <li key={label} className="min-w-0 text-center"><span className={`mx-auto flex h-8 w-8 items-center justify-center rounded-full text-sm ${index <= step ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}>{index < step ? <Check /> : index + 1}</span><span className="mt-1 block truncate text-xs text-muted-foreground">{isPublic && label === "Clients" ? "Your details" : label}</span></li>)}</ol>
 
     <section className="mt-7 border-y py-6">
