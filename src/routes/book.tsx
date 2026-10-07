@@ -27,8 +27,12 @@ const STEPS = ["Duration", "Date & time", "Clients", "Confirm"];
 
 function BookPage() {
   const navigate = useNavigate();
-  const { edit } = Route.useSearch();
+  const search = Route.useSearch();
   const store = useStore();
+  const { status } = useLock();
+  // Without the Admin password the Book screen is public: no client list, no rescheduling.
+  const isPublic = status !== "unlocked";
+  const edit = isPublic ? undefined : search.edit;
   const existing = edit ? store.appointments.find((item) => item.id === edit) : undefined;
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [step, setStep] = useState(0);
@@ -40,6 +44,8 @@ function BookPage() {
   const [newClient, setNewClient] = useState({ name: "", phone: "" });
   const [showNew, setShowNew] = useState(false);
   const [error, setError] = useState("");
+  const [guest, setGuest] = useState({ name: "", phone: "" });
+  const [booked, setBooked] = useState<string | null>(null);
   const seeded = store.ready && Boolean(edit);
 
   // Saved data loads just after first paint, so re-sync the form once the
@@ -54,7 +60,13 @@ function BookPage() {
   }, [seeded]);
 
   const times = useMemo(() => availableTimes(date, durationMin, store.appointments.filter((item) => item.id !== edit), store.blockedTimes), [date, durationMin, edit, store.appointments, store.blockedTimes]);
-  const canContinue = step === 0 || (step === 1 && Boolean(time)) || (step === 2 && clientIds.length > 0);
+  const guestValid = guest.name.trim().length > 0 && guest.phone.replace(/\D/g, "").length === 10;
+  const canContinue = step === 0 || (step === 1 && Boolean(time)) || (step === 2 && (isPublic ? guestValid : clientIds.length > 0));
+
+  function resetForm() {
+    setStep(0); setDuration(30); setDate(toDateKey(new Date())); setTime(null);
+    setClientIds([]); setNotes(""); setGuest({ name: "", phone: "" }); setError(""); setBooked(null);
+  }
 
   function addNewClient() {
     try {
