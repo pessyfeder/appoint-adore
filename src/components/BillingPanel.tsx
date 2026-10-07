@@ -26,7 +26,7 @@ function BillingContent() {
   const [detail, setDetail] = useState<LedgerRow | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const report = useMemo(() => buildReport(from, to, store.appointments, store.payments, store.clients), [from, to, store.appointments, store.payments, store.clients]);
+  const report = useMemo(() => buildReport(from, to, store.appointments, store.payments, store.clients, store.adjustments), [from, to, store.appointments, store.payments, store.clients, store.adjustments]);
   const recent = [...store.payments].sort((a, b) => b.paidAt.localeCompare(a.paidAt)).slice(0, 8);
 
   function exportCsv() {
@@ -81,7 +81,7 @@ export function ClientBalances({ onViewBilling }: { onViewBilling: (clientId: st
   const store = useStore();
   const rows = useMemo(() => store.clients.filter((c) => !c.archived).map((client) => ({
     client,
-    balance: clientBalance(client.id, store.appointments, store.payments),
+    balance: clientBalance(client.id, store.appointments, store.payments, store.adjustments),
     noShows: store.appointments.filter((a) => a.clients.some((c) => c.clientId === client.id && c.status === "no_show")).length,
   })).sort((a, b) => b.balance - a.balance), [store.clients, store.appointments, store.payments]);
   return (

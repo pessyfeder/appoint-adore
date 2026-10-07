@@ -11,7 +11,7 @@ const booked = (time: string, status: Appointment["clients"][number]["status"] =
 
 describe("first run", () => {
   it("starts with no clients, appointments or payments", () => {
-    expect(emptyData()).toEqual({ clients: [], appointments: [], payments: [], blockedTimes: [] });
+    expect(emptyData()).toEqual({ clients: [], appointments: [], payments: [], adjustments: [], blockedTimes: [] });
   });
 });
 
@@ -84,6 +84,7 @@ describe("demo record cleanup", () => {
         { id: "p1", clientId: "c1", amount: 50, method: "card" as const, paidAt: "2030-01-01", notes: "" },
         { id: "p2", clientId: "client-1", amount: 20, method: "cash" as const, paidAt: "2030-01-01", notes: "" },
       ],
+      adjustments: [],
       blockedTimes: [],
     };
     const cleaned = removeDemoRecords(state);

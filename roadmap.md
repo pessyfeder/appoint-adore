@@ -72,3 +72,5 @@
 - [x] End session asks "Are you sure?" like Start does.
 - [x] Ending a session from the top banner now shows the Session complete window.
 - [x] Admin tabs renamed: View Schedule, Edit Hours.
+- [x] Client billing window: edit a finished session or no-show (start/end, paused minutes, charge from time or typed, notes).
+- [x] Adjust a client's balance: enter the correct balance and a reason; saved as an adjustment (listed, removable, counted in the report).

@@ -2,12 +2,14 @@ import type React from "react";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { z } from "zod";
 import { noShowCharge, RATE_PER_MINUTE } from "./scheduling";
-import { clientInSession, clientPaused, emptyData, formatPhone, movePaidAt, pausedMsSoFar, workedMinutes, type Appointment, type BlockedTime, type Client, type Payment } from "./data";
+import { clientInSession, clientPaused, emptyData, formatPhone, movePaidAt, pausedMsSoFar, workedMinutes, type Appointment, type BlockedTime, type Adjustment, type Client, type Payment } from "./data";
 
 const STORAGE_KEY = "lumiere-scheduler-v2";
 const clientSchema = z.object({ name: z.string().trim().min(1).max(100), phone: z.string().regex(/^\(\d{3}\) \d{3}-\d{4}$/) });
 const appointmentSchema = z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), time: z.string().regex(/^\d{2}:\d{2}$/), durationMin: z.number().int().min(15).max(180), clientIds: z.array(z.string()).min(1).max(6), notes: z.string().trim().max(500) });
 const paymentSchema = z.object({ clientId: z.string().min(1), amount: z.number().positive().max(100000), method: z.enum(["cash", "card", "check", "other"]), notes: z.string().trim().max(300) });
+const adjustmentSchema = z.object({ clientId: z.string().min(1), amount: z.number().refine((value) => Math.abs(value) >= 0.01 && Math.abs(value) <= 100000), reason: z.string().trim().min(1).max(300) });
+const sessionEditSchema = z.object({ startedAt: z.string().optional(), endedAt: z.string().optional(), pausedMs: z.number().min(0).optional(), charge: z.number().min(0).max(100000).optional(), notes: z.string().trim().max(500) });
 const blockedSchema = z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), startTime: z.string().regex(/^\d{2}:\d{2}$/), endTime: z.string().regex(/^\d{2}:\d{2}$/), reason: z.string().trim().min(1).max(200) });
 const correctSchema = z.object({ durationMin: z.number().int().min(15).max(180), clients: z.array(z.object({ clientId: z.string().min(1), startedAt: z.string().min(1), endedAt: z.string().optional() })).min(1) });
 
@@ -25,6 +27,9 @@ type Store = StoreState & {
   setClientArchived: (id: string, archived: boolean) => void;
   updatePayment: (id: string, input: { amount: number; method: Payment["method"]; notes: string; date: string }) => void;
   deletePayment: (id: string) => void;
+  addAdjustment: (input: { clientId: string; amount: number; reason: string }) => void;
+  deleteAdjustment: (id: string) => void;
+  editSession: (appointmentId: string, clientId: string, input: SessionEdit) => void;
   startClient: (appointmentId: string, clientId: string) => void;
   endClient: (appointmentId: string) => EndSummary | null;
   pauseClient: (appointmentId: string) => void;
@@ -33,6 +38,9 @@ type Store = StoreState & {
   highlightId: string | null;
   setHighlightId: (id: string | null) => void;
 };
+
+/** Changes to one client's finished (or no-show) session. Times are ISO; leave them out for a no-show. */
+export type SessionEdit = { startedAt?: string; endedAt?: string; pausedMs?: number; charge?: number; notes: string };
 
 export type EndSummary = { appointmentId: string; clientId: string; minutes: number; amount: number; pausedMinutes: number; nextClientId: string | null };
 
@@ -64,6 +72,7 @@ export function removeDemoRecords(state: StoreState): StoreState {
       .map((a) => ({ ...a, clients: a.clients.filter((c) => !demo.has(c.clientId)) }))
       .filter((a) => a.clients.length > 0),
     payments: state.payments.filter((p) => !demo.has(p.clientId)),
+    adjustments: (state.adjustments ?? []).filter((a) => !demo.has(a.clientId)),
   };
 }
 
@@ -94,7 +103,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const saved = window.localStorage.getItem(STORAGE_KEY);
     if (saved) {
-      try { setState(removeDemoRecords(migrateLegacyTimes(JSON.parse(saved) as StoreState))); } catch { window.localStorage.removeItem(STORAGE_KEY); }
+      try { setState(removeDemoRecords(migrateLegacyTimes({ ...emptyData(), ...(JSON.parse(saved) as Partial<StoreState>) }))); } catch { window.localStorage.removeItem(STORAGE_KEY); }
     }
     setReady(true);
   }, []);
@@ -144,7 +153,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const clients = item.clients.map((client) => {
             const next = patch.get(client.clientId);
             if (!next) return client;
-            const charge = next.endedAt ? workedMinutes({ ...client, startedAt: next.startedAt, endedAt: next.endedAt }) * RATE_PER_MINUTE : client.charge;
+            const charge = next.endedAt && !client.customCharge ? workedMinutes({ ...client, startedAt: next.startedAt, endedAt: next.endedAt }) * RATE_PER_MINUTE : client.charge;
             return { ...client, startedAt: next.startedAt, endedAt: next.endedAt, charge, status: next.endedAt ? ("completed" as const) : client.status };
           });
           const started = clients.map((client) => client.startedAt).filter((value): value is string => Boolean(value));
@@ -197,6 +206,41 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     },
     deletePayment(id) {
       setState((current) => ({ ...current, payments: current.payments.filter((payment) => payment.id !== id) }));
+    },
+    addAdjustment(input) {
+      const parsed = adjustmentSchema.parse(input);
+      const adjustment: Adjustment = { ...parsed, amount: Math.round(parsed.amount * 100) / 100, id: nextId("adjustment"), createdAt: new Date().toISOString() };
+      setState((current) => ({ ...current, adjustments: [...current.adjustments, adjustment] }));
+    },
+    deleteAdjustment(id) {
+      setState((current) => ({ ...current, adjustments: current.adjustments.filter((item) => item.id !== id) }));
+    },
+    editSession(appointmentId, clientId, input) {
+      const parsed = sessionEditSchema.parse(input);
+      setState((current) => ({
+        ...current,
+        appointments: current.appointments.map((item) => {
+          if (item.id !== appointmentId) return item;
+          const clients = item.clients.map((client) => {
+            if (client.clientId !== clientId) return client;
+            const timed = parsed.startedAt && parsed.endedAt ? { ...client, startedAt: parsed.startedAt, endedAt: parsed.endedAt, pausedMs: parsed.pausedMs ?? 0, pausedAt: undefined } : client;
+            // A typed charge wins; otherwise a timed session is re-billed from its (possibly corrected) times.
+            const custom = parsed.charge !== undefined;
+            const charge = custom ? Math.round(parsed.charge! * 100) / 100 : timed.startedAt && timed.endedAt ? workedMinutes(timed) * RATE_PER_MINUTE : client.charge;
+            return { ...timed, charge, customCharge: custom || undefined };
+          });
+          const started = clients.map((c) => c.startedAt).filter((value): value is string => Boolean(value)).map(Date.parse);
+          const ended = clients.map((c) => c.endedAt).filter((value): value is string => Boolean(value)).map(Date.parse);
+          const allDone = clients.every((c) => c.status === "cancelled" || c.status === "no_show" || Boolean(c.endedAt));
+          return {
+            ...item,
+            notes: parsed.notes,
+            clients,
+            startedAt: started.length ? new Date(Math.min(...started)).toISOString() : item.startedAt,
+            endedAt: started.length && allDone && ended.length ? new Date(Math.max(...ended)).toISOString() : item.endedAt,
+          } as typeof item;
+        }),
+      }));
     },
     addBlockedTime(input) {
       const parsed = blockedSchema.parse(input);

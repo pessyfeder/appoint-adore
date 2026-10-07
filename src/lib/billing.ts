@@ -1,15 +1,22 @@
-import { paymentDateKey, type Appointment, type Client, type Payment } from "./data";
+import { paymentDateKey, type Adjustment, type Appointment, type Client, type Payment } from "./data";
 
-export type Charge = { appointmentId: string; clientId: string; date: string; amount: number; kind: "completed" | "no_show"; unpaid: number };
+export type Charge = { appointmentId?: string; adjustmentId?: string; clientId: string; date: string; amount: number; kind: "completed" | "no_show" | "adjustment"; unpaid: number };
 
-/** Every charge per client, with payments applied oldest-first to work out what is still unpaid. */
-export function chargesWithUnpaid(appointments: Appointment[], payments: Payment[]): Charge[] {
-  const charges: Charge[] = appointments.flatMap((item) => item.clients
-    .filter((c) => (c.status === "completed" || c.status === "no_show") && c.charge > 0)
-    .map((c) => ({ appointmentId: item.id, clientId: c.clientId, date: item.date, amount: c.charge, kind: c.status as Charge["kind"], unpaid: c.charge })))
-    .sort((a, b) => a.date.localeCompare(b.date));
+/**
+ * Every charge per client, with payments applied oldest-first to work out what is still unpaid.
+ * Balance adjustments that add to what a client owes count as charges; ones that give credit count like payments.
+ */
+export function chargesWithUnpaid(appointments: Appointment[], payments: Payment[], adjustments: Adjustment[] = []): Charge[] {
+  const charges: Charge[] = [
+    ...appointments.flatMap((item) => item.clients
+      .filter((c) => (c.status === "completed" || c.status === "no_show") && c.charge > 0)
+      .map((c) => ({ appointmentId: item.id, clientId: c.clientId, date: item.date, amount: c.charge, kind: c.status as Charge["kind"], unpaid: c.charge }))),
+    ...adjustments.filter((a) => a.amount > 0)
+      .map((a) => ({ adjustmentId: a.id, clientId: a.clientId, date: paymentDateKey(a.createdAt), amount: a.amount, kind: "adjustment" as const, unpaid: a.amount })),
+  ].sort((a, b) => a.date.localeCompare(b.date));
   const paid = new Map<string, number>();
   for (const p of payments) paid.set(p.clientId, (paid.get(p.clientId) ?? 0) + p.amount);
+  for (const a of adjustments) if (a.amount < 0) paid.set(a.clientId, (paid.get(a.clientId) ?? 0) - a.amount);
   for (const charge of charges) {
     const left = paid.get(charge.clientId) ?? 0;
     const applied = Math.min(left, charge.amount);
@@ -19,17 +26,24 @@ export function chargesWithUnpaid(appointments: Appointment[], payments: Payment
   return charges;
 }
 
-export type LedgerRow = { date: string; clientName: string; label: string; amount: number; unpaid: boolean; paymentId?: string; appointmentId?: string; clientId: string };
+export type LedgerRow = { date: string; clientName: string; label: string; amount: number; unpaid: boolean; paymentId?: string; appointmentId?: string; adjustmentId?: string; clientId: string };
 
-export function buildReport(from: string, to: string, appointments: Appointment[], payments: Payment[], clients: Client[]) {
+const UNPAID_LABEL: Record<Charge["kind"], string> = { completed: "Unpaid", no_show: "No Show", adjustment: "Adjustment (unpaid)" };
+
+export function buildReport(from: string, to: string, appointments: Appointment[], payments: Payment[], clients: Client[], adjustments: Adjustment[] = []) {
   const name = (id: string) => clients.find((c) => c.id === id)?.name ?? "Unknown";
   const rows: LedgerRow[] = [];
   for (const p of payments) {
     const date = paymentDateKey(p.paidAt);
     if (date >= from && date <= to) rows.push({ date, clientName: name(p.clientId), label: `Payment (${p.method})`, amount: p.amount, unpaid: false, paymentId: p.id, clientId: p.clientId });
   }
-  for (const c of chargesWithUnpaid(appointments, payments)) {
-    if (c.unpaid > 0.004 && c.date <= to) rows.push({ date: c.date, clientName: name(c.clientId), label: c.kind === "no_show" ? "No Show" : "Unpaid", amount: -c.unpaid, unpaid: true, appointmentId: c.appointmentId, clientId: c.clientId });
+  for (const c of chargesWithUnpaid(appointments, payments, adjustments)) {
+    if (c.unpaid > 0.004 && c.date <= to) {
+      const row: LedgerRow = { date: c.date, clientName: name(c.clientId), label: UNPAID_LABEL[c.kind], amount: -c.unpaid, unpaid: true, clientId: c.clientId };
+      if (c.appointmentId) row.appointmentId = c.appointmentId;
+      if (c.adjustmentId) row.adjustmentId = c.adjustmentId;
+      rows.push(row);
+    }
   }
   rows.sort((a, b) => a.date.localeCompare(b.date));
   const collected = rows.filter((r) => !r.unpaid).reduce((s, r) => s + r.amount, 0);

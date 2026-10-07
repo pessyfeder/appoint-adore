@@ -75,10 +75,11 @@ export function blockedTimeIssue(block: Omit<BlockedTime, "id">, appointments: A
   return clash ? `This overlaps a booked appointment at ${formatTime(clash.time)}. Reschedule or cancel it first.` : null;
 }
 
-export function clientBalance(clientId: string, appointments: Appointment[], payments: { clientId: string; amount: number }[]) {
+export function clientBalance(clientId: string, appointments: Appointment[], payments: { clientId: string; amount: number }[], adjustments: { clientId: string; amount: number }[] = []) {
   const charged = appointments.flatMap((item) => item.clients).filter((item) => item.clientId === clientId).reduce((sum, item) => sum + item.charge, 0);
   const paid = payments.filter((item) => item.clientId === clientId).reduce((sum, item) => sum + item.amount, 0);
-  return charged - paid;
+  const adjusted = adjustments.filter((item) => item.clientId === clientId).reduce((sum, item) => sum + item.amount, 0);
+  return charged - paid + adjusted;
 }
 export const RATE_PER_MINUTE = 2.5;
 

@@ -20,6 +20,8 @@ export type AppointmentClient = {
   pausedMs?: number;
   /** When the current pause began, while the session is paused. */
   pausedAt?: string | undefined;
+  /** Set when the practitioner typed the charge by hand; corrected times then leave it alone. */
+  customCharge?: boolean | undefined;
 };
 
 export const clientInSession = (c: AppointmentClient) => Boolean(c.startedAt && !c.endedAt);
@@ -61,6 +63,15 @@ export type Payment = {
   method: "cash" | "card" | "check" | "other";
   paidAt: string;
   notes: string;
+};
+
+/** A manual correction to a client's balance. Positive adds to what they owe; negative gives them credit. */
+export type Adjustment = {
+  id: string;
+  clientId: string;
+  amount: number;
+  reason: string;
+  createdAt: string;
 };
 
 export type BlockedTime = {
@@ -152,7 +163,7 @@ export function statusLabel(status: AppointmentStatus): string {
 
 /** A brand-new install starts with no records: the practitioner adds their own clients and appointments. */
 export function emptyData() {
-  return { clients: [] as Client[], appointments: [] as Appointment[], payments: [] as Payment[], blockedTimes: [] as BlockedTime[] };
+  return { clients: [] as Client[], appointments: [] as Appointment[], payments: [] as Payment[], adjustments: [] as Adjustment[], blockedTimes: [] as BlockedTime[] };
 }
 
 /** Local calendar day a payment was recorded on. Older records stored a bare "YYYY-MM-DD". */

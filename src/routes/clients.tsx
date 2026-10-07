@@ -36,7 +36,7 @@ function ClientsPage() {
   const [notice, setNotice] = useState("");
 
   const selected = store.clients.find((client) => client.id === selectedId) ?? null;
-  const balance = selected ? clientBalance(selected.id, store.appointments, store.payments) : 0;
+  const balance = selected ? clientBalance(selected.id, store.appointments, store.payments, store.adjustments) : 0;
   const visits = selected
     ? store.appointments.flatMap((item) => item.clients).filter((entry) => entry.clientId === selected.id && entry.status === "completed").length
     : 0;

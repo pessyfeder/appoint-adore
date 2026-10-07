@@ -17,6 +17,7 @@ export function ReportDetailDialog({ row, onClose }: { row: LedgerRow | null; on
   const name = (id: string) => store.clients.find((c) => c.id === id)?.name ?? "Unknown";
   const payment = row?.paymentId ? store.payments.find((p) => p.id === row.paymentId) : undefined;
   const appt = row?.appointmentId ? store.appointments.find((a) => a.id === row.appointmentId) : undefined;
+  const adjustment = row?.adjustmentId ? store.adjustments.find((a) => a.id === row.adjustmentId) : undefined;
 
   return <Dialog open={Boolean(row)} onOpenChange={(o) => !o && onClose()}><DialogContent className="max-w-lg">
     {payment && <>
@@ -43,6 +44,15 @@ export function ReportDetailDialog({ row, onClose }: { row: LedgerRow | null; on
         </div>)}
       </div>
     </>}
-    {row && !payment && !appt && <p className="text-sm text-muted-foreground">This record is no longer available.</p>}
+    {adjustment && row && <>
+      <DialogHeader><DialogTitle>Balance adjustment</DialogTitle><DialogDescription>{longDate(paymentDateKey(adjustment.createdAt))}</DialogDescription></DialogHeader>
+      <div className="divide-y rounded-lg border">
+        <Row label="Client" value={name(adjustment.clientId)} />
+        <Row label="Adjustment" value={`${adjustment.amount > 0 ? "+" : "−"}$${Math.abs(adjustment.amount).toFixed(2)}`} />
+        <Row label="Reason" value={adjustment.reason} />
+        <Row label="Still unpaid" value={<span className="text-destructive">${(-row.amount).toFixed(2)}</span>} />
+      </div>
+    </>}
+    {row && !payment && !appt && !adjustment && <p className="text-sm text-muted-foreground">This record is no longer available.</p>}
   </DialogContent></Dialog>;
 }
