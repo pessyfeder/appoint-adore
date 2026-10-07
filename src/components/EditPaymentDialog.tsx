@@ -6,15 +6,13 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { paymentDateKey, toDateKey, type Payment } from "@/lib/data";
-import { usePassphraseGate } from "@/lib/lock";
 import { useStore } from "@/lib/store";
 
 const METHODS: Payment["method"][] = ["cash", "card", "check", "other"];
 
-/** Fix a payment entered by mistake (amount, method, date, notes) or delete it. Both need the practitioner password. */
+/** Fix a payment entered by mistake (amount, method, date, notes) or delete it. Both ask "Are you sure?" first. */
 export function EditPaymentDialog({ payment, onClose }: { payment: Payment | null; onClose: () => void }) {
   const store = useStore();
-  const { request, prompt } = usePassphraseGate();
   const { confirm, dialog } = useConfirm();
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<Payment["method"]>("cash");
@@ -39,15 +37,17 @@ export function EditPaymentDialog({ payment, onClose }: { payment: Payment | nul
     if (!payment) return;
     if (!(Number(amount) > 0)) return setError("Enter an amount above $0.");
     if (!date || date > today) return setError("Choose a date that isn't in the future.");
-    if (!(await request("Changing a payment"))) return;
-    store.updatePayment(payment.id, { amount: Math.round(Number(amount) * 100) / 100, method, notes, date });
+    const rounded = Math.round(Number(amount) * 100) / 100;
+    const ok = await confirm({ title: "Are you sure?", description: `Save the changes to ${name}'s payment (now $${rounded.toFixed(2)}, ${method})? Their balance updates to match.`, confirmLabel: "Save changes", cancelLabel: "Go back" });
+    if (!ok) return;
+    store.updatePayment(payment.id, { amount: rounded, method, notes, date });
     onClose();
   }
 
   async function remove() {
     if (!payment) return;
-    const ok = await confirm({ title: `Delete ${name}'s $${payment.amount.toFixed(2)} payment?`, description: "Their balance goes back up by this amount. This can't be undone.", confirmLabel: "Delete payment", cancelLabel: "Keep payment", destructive: true });
-    if (!ok || !(await request("Deleting a payment"))) return;
+    const ok = await confirm({ title: "Are you sure?", description: `Delete ${name}'s $${payment.amount.toFixed(2)} payment? Their balance goes back up by this amount. This can't be undone.`, confirmLabel: "Delete payment", cancelLabel: "Keep payment", destructive: true });
+    if (!ok) return;
     store.deletePayment(payment.id);
     onClose();
   }
@@ -65,7 +65,6 @@ export function EditPaymentDialog({ payment, onClose }: { payment: Payment | nul
           <label className="grid gap-1 text-xs text-muted-foreground">Notes<Input className="h-11" maxLength={300} placeholder="Optional" value={notes} onChange={(e) => setNotes(e.target.value)} /></label>
         </div>
         {error && <p className="text-sm text-destructive">{error}</p>}
-        {prompt}
         <DialogFooter className="flex-wrap gap-2 sm:justify-between">
           <Button className="h-11" variant="ghost" onClick={remove}><Trash2 /> Delete payment</Button>
           <div className="flex gap-2">
