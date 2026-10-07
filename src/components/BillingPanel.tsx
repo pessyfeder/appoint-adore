@@ -83,7 +83,7 @@ export function ClientBalances({ onViewBilling }: { onViewBilling: (clientId: st
     client,
     balance: clientBalance(client.id, store.appointments, store.payments, store.adjustments),
     noShows: store.appointments.filter((a) => a.clients.some((c) => c.clientId === client.id && c.status === "no_show")).length,
-  })).sort((a, b) => b.balance - a.balance), [store.clients, store.appointments, store.payments]);
+  })).sort((a, b) => b.balance - a.balance), [store.clients, store.appointments, store.payments, store.adjustments]);
   return (
     <section className="mt-5 overflow-hidden rounded-xl border bg-card">
       <h2 className="border-b p-5 font-serif text-xl">Client balances</h2>
