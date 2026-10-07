@@ -5,6 +5,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
@@ -13,7 +14,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { LockProvider } from "../lib/lock";
+import { AdminGate, LockProvider, useLock } from "../lib/lock";
 import { StoreProvider } from "../lib/store";
 import { Nav } from "../components/Nav";
 import { ActiveSessionBanner } from "../components/ActiveSessionBanner";
@@ -127,11 +128,21 @@ function RootComponent() {
       <LockProvider>
         <StoreProvider>
           <Nav />
-          <ActiveSessionBanner />
-          <Outlet />
+          <GatedContent />
           <Toaster position="top-center" richColors />
         </StoreProvider>
       </LockProvider>
     </QueryClientProvider>
   );
+}
+
+/** Book is public; every other page sits behind the Admin password. */
+function GatedContent() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { status } = useLock();
+  const isPublic = pathname.startsWith("/book") ? status !== "unlocked" : false;
+  if (pathname.startsWith("/book")) {
+    return <><ActiveSessionBanner isPublic={isPublic} /><Outlet /></>;
+  }
+  return <AdminGate><ActiveSessionBanner /><Outlet /></AdminGate>;
 }
