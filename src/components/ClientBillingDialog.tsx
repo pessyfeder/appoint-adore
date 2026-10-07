@@ -4,7 +4,7 @@ import { RecordPaymentDialog } from "@/components/RecordPaymentDialog";
 import { EditPaymentDialog } from "@/components/EditPaymentDialog";
 import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { fromDateKey, formatDurationLong, paymentDateKey, formatTime, statusLabel, type Client } from "@/lib/data";
+import { fromDateKey, formatDurationLong, paymentDateKey, workedMinutes, formatTime, statusLabel, type Client } from "@/lib/data";
 import { clientBalance } from "@/lib/scheduling";
 import { useStore } from "@/lib/store";
 
@@ -37,6 +37,7 @@ export function ClientBillingDialog({ client, onClose }: { client: Client | null
           charge: c.charge,
           startedAt: c.startedAt,
           endedAt: c.endedAt,
+          worked: c.startedAt && c.endedAt ? workedMinutes(c) : 0,
         })))
       .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
     const payments = store.payments
@@ -68,7 +69,7 @@ export function ClientBillingDialog({ client, onClose }: { client: Client | null
         {data.entries.length === 0 ? <p className="p-5 text-center text-sm text-muted-foreground">No appointments yet.</p> : <ul className="divide-y">{data.entries.map((e) => <li key={e.id} className="flex flex-wrap items-center gap-3 p-3 text-sm">
           <span className="text-muted-foreground">{fromDateKey(e.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} · {formatTime(e.time)}</span>
           <span className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${STATUS_STYLE[e.status]}`}>{statusLabel(e.status)}</span>
-          {e.startedAt && e.endedAt && <span className="text-xs text-muted-foreground">{formatDurationLong(Math.round((new Date(e.endedAt).getTime() - new Date(e.startedAt).getTime()) / 60000))}</span>}
+          {e.startedAt && e.endedAt && <span className="text-xs text-muted-foreground">{formatDurationLong(e.worked)}</span>}
           <span className="ml-auto font-medium">{(e.status === "completed" || e.status === "no_show") ? money(e.charge) : e.status === "scheduled" ? `booked ${formatDurationLong(e.durationMin)}` : "—"}</span>
         </li>)}</ul>}
       </div>

@@ -16,9 +16,32 @@ export type AppointmentClient = {
   charge: number;
   startedAt?: string;
   endedAt?: string;
+  /** Total time (ms) of finished pauses; paused time is not billed. */
+  pausedMs?: number;
+  /** When the current pause began, while the session is paused. */
+  pausedAt?: string | undefined;
 };
 
 export const clientInSession = (c: AppointmentClient) => Boolean(c.startedAt && !c.endedAt);
+export const clientPaused = (c: AppointmentClient) => Boolean(clientInSession(c) && c.pausedAt);
+
+/** Paused time so far in ms, including a pause that is still running (counted up to the end, or `now`). */
+export function pausedMsSoFar(c: AppointmentClient, now: number = Date.now()): number {
+  const until = c.endedAt ? new Date(c.endedAt).getTime() : now;
+  return (c.pausedMs ?? 0) + (c.pausedAt ? Math.max(0, until - new Date(c.pausedAt).getTime()) : 0);
+}
+
+/** Time actually worked on a client in ms: start to end (or `now` while running), minus paused time. */
+export function workedMs(c: AppointmentClient, now: number = Date.now()): number {
+  if (!c.startedAt) return 0;
+  const until = c.endedAt ? new Date(c.endedAt).getTime() : now;
+  return Math.max(0, until - new Date(c.startedAt).getTime() - pausedMsSoFar(c, now));
+}
+
+/** Billable whole minutes worked (at least 1). */
+export function workedMinutes(c: AppointmentClient, now: number = Date.now()): number {
+  return Math.max(1, Math.round(workedMs(c, now) / 60000));
+}
 
 export type Appointment = {
   id: string;
@@ -166,9 +189,10 @@ export function notesIssue(raw: string): string | null {
   return null;
 }
 
-export type AppointmentProgress = "scheduled" | "in_progress" | "ended" | "cancelled" | "no_show";
+export type AppointmentProgress = "scheduled" | "in_progress" | "paused" | "ended" | "cancelled" | "no_show";
 
 export function appointmentProgress(item: Appointment): AppointmentProgress {
+  if (item.clients.some(clientPaused)) return "paused";
   if (item.clients.some(clientInSession)) return "in_progress";
   const waiting = item.clients.some((c) => c.status === "scheduled");
   if (waiting) return item.startedAt ? "in_progress" : "scheduled";
@@ -178,4 +202,4 @@ export function appointmentProgress(item: Appointment): AppointmentProgress {
   return "ended";
 }
 
-export const PROGRESS_LABEL: Record<AppointmentProgress, string> = { scheduled: "Scheduled", in_progress: "In progress", ended: "Completed", cancelled: "Cancelled", no_show: "No-show" };
+export const PROGRESS_LABEL: Record<AppointmentProgress, string> = { scheduled: "Scheduled", in_progress: "In progress", paused: "Paused", ended: "Completed", cancelled: "Cancelled", no_show: "No-show" };

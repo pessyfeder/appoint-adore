@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DURATION_OPTIONS, formatDuration, formatTime, fromDateKey, isoToTime, timeToISO, type Appointment } from "@/lib/data";
-import { RATE_PER_MINUTE, sessionMinutes, validateAppointment } from "@/lib/scheduling";
+import { DURATION_OPTIONS, formatDuration, formatTime, fromDateKey, isoToTime, timeToISO, workedMinutes, type Appointment } from "@/lib/data";
+import { RATE_PER_MINUTE, validateAppointment } from "@/lib/scheduling";
 import { useStore } from "@/lib/store";
 
 type Row = { start: string; end: string };
@@ -33,8 +33,11 @@ export function CorrectTimesDialog({ open, onOpenChange, item }: { open: boolean
   function preview(clientId: string) {
     const row = rows[clientId];
     if (!row?.start || !row.end) return null;
-    const minutes = sessionMinutes(timeToISO(item.date, row.start), timeToISO(item.date, row.end));
-    return { minutes, amount: minutes * RATE_PER_MINUTE };
+    const client = item.clients.find((entry) => entry.clientId === clientId);
+    if (!client) return null;
+    // Paused time recorded during the session stays unbilled after the times are corrected.
+    const minutes = workedMinutes({ ...client, startedAt: timeToISO(item.date, row.start), endedAt: timeToISO(item.date, row.end), pausedAt: undefined });
+    return { minutes, amount: minutes * RATE_PER_MINUTE, pausedMinutes: Math.round((client.pausedMs ?? 0) / 60000) };
   }
 
   async function save() {
@@ -78,7 +81,7 @@ export function CorrectTimesDialog({ open, onOpenChange, item }: { open: boolean
                 </div>
                 <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2 text-sm">
                   <span className="text-muted-foreground">{running ? "Still running" : "Charge"}</span>
-                  {shown && <span className="font-semibold tabular-nums">{formatDuration(shown.minutes)} · ${shown.amount.toFixed(2)}</span>}
+                  {shown && <span className="font-semibold tabular-nums">{formatDuration(shown.minutes)} · ${shown.amount.toFixed(2)}{shown.pausedMinutes > 0 && <span className="ml-1 font-normal text-muted-foreground">({formatDuration(shown.pausedMinutes)} paused, not billed)</span>}</span>}
                 </div>
               </div>
             );

@@ -68,3 +68,7 @@
 - [x] Booking "Who is coming?" has a search (name or phone); picked clients stay on top; no match offers "Add as new client".
 - [x] Confirmation popups keep their text while closing (no empty flash).
 - [x] Password reset warning mentions restoring from a backup file.
+- [x] Pause / Resume a running session; paused time is never billed (timer freezes, banner says Session paused, End and Session complete show paused time, Correct times keeps it out of the charge).
+- [x] End session asks "Are you sure?" like Start does.
+- [x] Ending a session from the top banner now shows the Session complete window.
+- [x] Admin tabs renamed: View Schedule, Edit Hours.

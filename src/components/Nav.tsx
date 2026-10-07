@@ -6,8 +6,8 @@ import { useConfirm } from "@/components/ConfirmDialog";
 
 const adminLinks = [
   { to: "/", label: "Dashboard" },
-  { to: "/schedule", label: "Schedule" },
-  { to: "/availability", label: "Hours" },
+  { to: "/schedule", label: "View Schedule" },
+  { to: "/availability", label: "Edit Hours" },
   { to: "/clients", label: "Clients & Billing" },
   { to: "/backup", label: "Backup" },
 ] as const;

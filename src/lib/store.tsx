@@ -1,8 +1,8 @@
 import type React from "react";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { z } from "zod";
-import { noShowCharge, RATE_PER_MINUTE, sessionMinutes } from "./scheduling";
-import { emptyData, formatPhone, movePaidAt, type Appointment, type BlockedTime, type Client, type Payment } from "./data";
+import { noShowCharge, RATE_PER_MINUTE } from "./scheduling";
+import { clientInSession, clientPaused, emptyData, formatPhone, movePaidAt, pausedMsSoFar, workedMinutes, type Appointment, type BlockedTime, type Client, type Payment } from "./data";
 
 const STORAGE_KEY = "lumiere-scheduler-v2";
 const clientSchema = z.object({ name: z.string().trim().min(1).max(100), phone: z.string().regex(/^\(\d{3}\) \d{3}-\d{4}$/) });
@@ -27,12 +27,14 @@ type Store = StoreState & {
   deletePayment: (id: string) => void;
   startClient: (appointmentId: string, clientId: string) => void;
   endClient: (appointmentId: string) => EndSummary | null;
+  pauseClient: (appointmentId: string) => void;
+  resumeClient: (appointmentId: string) => void;
   correctTimes: (appointmentId: string, input: { durationMin: number; clients: { clientId: string; startedAt: string; endedAt?: string }[] }) => void;
   highlightId: string | null;
   setHighlightId: (id: string | null) => void;
 };
 
-export type EndSummary = { appointmentId: string; clientId: string; minutes: number; amount: number; nextClientId: string | null };
+export type EndSummary = { appointmentId: string; clientId: string; minutes: number; amount: number; pausedMinutes: number; nextClientId: string | null };
 
 // Keep one context instance across live code reloads, so the provider and its users never point at different copies.
 const contextHost = globalThis as unknown as { __lumiereStoreContext?: React.Context<Store | null> };
@@ -114,12 +116,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const item = state.appointments.find((a) => a.id === appointmentId);
       const running = item?.clients.find((c) => c.startedAt && !c.endedAt);
       if (!item || !running) return null;
-      const endedAt = new Date().toISOString();
-      const minutes = sessionMinutes(running.startedAt!, endedAt);
+      const now = Date.now();
+      const endedAt = new Date(now).toISOString();
+      // Ending while paused closes the pause at the end time, so the paused stretch is never billed.
+      const finished = { ...running, endedAt, pausedMs: pausedMsSoFar(running, now), pausedAt: undefined, status: "completed" as const };
+      const minutes = workedMinutes(finished, now);
       const amount = minutes * RATE_PER_MINUTE;
       const next = item.clients.find((c) => c.status === "scheduled" && !c.startedAt && c.clientId !== running.clientId);
-      setState((current) => ({ ...current, appointments: current.appointments.map((a) => a.id !== appointmentId ? a : { ...a, endedAt: next ? undefined : endedAt, clients: a.clients.map((c) => c.clientId === running.clientId ? { ...c, endedAt, status: "completed", charge: amount } : c) } as typeof a) }));
-      return { appointmentId, clientId: running.clientId, minutes, amount, nextClientId: next?.clientId ?? null };
+      setState((current) => ({ ...current, appointments: current.appointments.map((a) => a.id !== appointmentId ? a : { ...a, endedAt: next ? undefined : endedAt, clients: a.clients.map((c) => c.clientId === running.clientId ? { ...finished, charge: amount } : c) } as typeof a) }));
+      return { appointmentId, clientId: running.clientId, minutes, amount, pausedMinutes: Math.round((finished.pausedMs ?? 0) / 60000), nextClientId: next?.clientId ?? null };
+    },
+    pauseClient(appointmentId) {
+      const pausedAt = new Date().toISOString();
+      setState((current) => ({ ...current, appointments: current.appointments.map((a) => a.id !== appointmentId ? a : { ...a, clients: a.clients.map((c) => clientInSession(c) && !c.pausedAt ? { ...c, pausedAt } : c) }) }));
+    },
+    resumeClient(appointmentId) {
+      const now = Date.now();
+      setState((current) => ({ ...current, appointments: current.appointments.map((a) => a.id !== appointmentId ? a : { ...a, clients: a.clients.map((c) => clientPaused(c) ? { ...c, pausedMs: pausedMsSoFar(c, now), pausedAt: undefined } : c) }) }));
     },
     correctTimes(appointmentId, input) {
       const parsed = correctSchema.parse(input);
@@ -131,7 +144,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const clients = item.clients.map((client) => {
             const next = patch.get(client.clientId);
             if (!next) return client;
-            const charge = next.endedAt ? sessionMinutes(next.startedAt, next.endedAt) * RATE_PER_MINUTE : client.charge;
+            const charge = next.endedAt ? workedMinutes({ ...client, startedAt: next.startedAt, endedAt: next.endedAt }) * RATE_PER_MINUTE : client.charge;
             return { ...client, startedAt: next.startedAt, endedAt: next.endedAt, charge, status: next.endedAt ? ("completed" as const) : client.status };
           });
           const started = clients.map((client) => client.startedAt).filter((value): value is string => Boolean(value));

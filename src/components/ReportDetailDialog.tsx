@@ -1,8 +1,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CLIENT_BADGE, CLIENT_LABEL } from "@/components/AppointmentControls";
-import { formatDuration, formatTime, fromDateKey, paymentDateKey } from "@/lib/data";
+import { formatDuration, formatTime, fromDateKey, paymentDateKey, workedMinutes } from "@/lib/data";
 import type { LedgerRow } from "@/lib/billing";
-import { sessionMinutes } from "@/lib/scheduling";
 import { useStore } from "@/lib/store";
 
 const longDate = (key: string) => fromDateKey(key).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
@@ -40,7 +39,7 @@ export function ReportDetailDialog({ row, onClose }: { row: LedgerRow | null; on
       <div className="divide-y rounded-lg border">
         {appt.clients.map((c) => <div key={c.clientId} className={`grid gap-1 p-3 text-sm ${c.clientId === row.clientId ? "bg-muted/40" : ""}`}>
           <div className="flex items-center justify-between"><span className="font-semibold">{name(c.clientId)}</span><span className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${CLIENT_BADGE[c.status]}`}>{CLIENT_LABEL[c.status]}</span></div>
-          <div className="flex justify-between text-muted-foreground"><span>{clock(c.startedAt)} – {clock(c.endedAt)}{c.startedAt && c.endedAt ? ` · ${formatDuration(sessionMinutes(c.startedAt, c.endedAt))}` : ""}</span><span>Charge ${c.charge.toFixed(2)}</span></div>
+          <div className="flex justify-between text-muted-foreground"><span>{clock(c.startedAt)} – {clock(c.endedAt)}{c.startedAt && c.endedAt ? ` · ${formatDuration(workedMinutes(c))}` : ""}</span><span>Charge ${c.charge.toFixed(2)}</span></div>
         </div>)}
       </div>
     </>}

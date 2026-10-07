@@ -1,11 +1,10 @@
 import { useConfirm } from "@/components/ConfirmDialog";
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { CreditCard, Pencil, Play, Square } from "lucide-react";
+import { CreditCard, Pause, Pencil, Play, Square } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { clientInSession, formatDuration, formatDurationLong, appointmentProgress, PROGRESS_LABEL, type Appointment, type AppointmentProgress } from "@/lib/data";
-import { sessionMinutes } from "@/lib/scheduling";
+import { clientInSession, formatDuration, formatDurationLong, appointmentProgress, pausedMsSoFar, PROGRESS_LABEL, workedMinutes, type Appointment, type AppointmentProgress } from "@/lib/data";
 import { RecordPaymentDialog } from "@/components/RecordPaymentDialog";
 import { useStore, type EndSummary } from "@/lib/store";
 import { CorrectTimesDialog } from "@/components/CorrectTimesDialog";
@@ -13,6 +12,7 @@ import { CorrectTimesDialog } from "@/components/CorrectTimesDialog";
 export const STATUS_BADGE: Record<AppointmentProgress, string> = {
   scheduled: "border-status-scheduled/40 bg-status-scheduled/15 text-status-scheduled",
   in_progress: "border-status-progress bg-status-progress text-foreground",
+  paused: "border-status-progress border-dashed bg-muted text-foreground",
   ended: "border-status-completed/40 bg-status-completed/15 text-status-completed",
   cancelled: "border-status-cancelled/40 bg-status-cancelled/15 text-status-cancelled line-through",
   no_show: "border-status-noshow/40 bg-status-noshow/15 text-status-noshow",
@@ -25,6 +25,7 @@ export const CLIENT_LABEL = { scheduled: "Scheduled", completed: "Completed", ca
 export const STATUS_CARD: Record<AppointmentProgress, string> = {
   scheduled: "border-l-4 border-l-status-scheduled bg-status-scheduled/5",
   in_progress: "border-l-4 border-l-status-progress bg-status-progress/15",
+  paused: "border-l-4 border-dashed border-l-status-progress bg-muted/60",
   ended: "border-l-4 border-l-status-completed bg-status-completed/5",
   cancelled: "border-l-4 border-l-status-cancelled bg-status-cancelled/10 opacity-70",
   no_show: "border-l-4 border-l-status-noshow bg-status-noshow/5",
@@ -40,7 +41,7 @@ function clock(iso?: string) {
 }
 
 export function StartEndControls({ item }: { item: Appointment }) {
-  const { startClient, endClient, clients, appointments } = useStore();
+  const { startClient, endClient, pauseClient, resumeClient, clients, appointments } = useStore();
   const navigate = useNavigate();
   const busyElsewhere = appointments.some((a) => a.id !== item.id && a.clients.some(clientInSession));
   const [summary, setSummary] = useState<EndSummary | null>(null);
@@ -57,14 +58,17 @@ export function StartEndControls({ item }: { item: Appointment }) {
   async function start(clientId: string) { if (!(await confirm({ title: "Are you sure?", description: `Start ${name(clientId)}'s session? The clock starts now and billing is based on the time recorded.`, confirmLabel: "Start session" }))) return; startClient(item.id, clientId); }
   function end() { setEnding(false); setSummary(endClient(item.id)); }
   function openCorrect() { setCorrecting(true); }
-  const elapsedMin = running?.startedAt ? Math.max(1, Math.round((Date.now() - new Date(running.startedAt).getTime()) / 60000)) : 0;
+  const elapsedMin = running ? workedMinutes(running) : 0;
+  const pausedMin = running ? Math.round(pausedMsSoFar(running) / 60000) : 0;
+  const paused = Boolean(running?.pausedAt);
   const confirmEnd = <Dialog open={ending} onOpenChange={setEnding}>
     <DialogContent>
-      <DialogHeader><DialogTitle className="font-serif text-2xl">End {running ? name(running.clientId) : "this"} session?</DialogTitle><DialogDescription>Review the elapsed time before stopping the clock.</DialogDescription></DialogHeader>
+      <DialogHeader><DialogTitle className="font-serif text-2xl">Are you sure?</DialogTitle><DialogDescription>End {running ? `${name(running.clientId)}'s` : "this"} session? Review the time before stopping the clock.</DialogDescription></DialogHeader>
       {running && <div className="divide-y rounded-lg border">
         <div className="flex justify-between p-4"><span className="text-muted-foreground">Client</span><span className="font-semibold">{name(running.clientId)}</span></div>
         <div className="flex justify-between p-4"><span className="text-muted-foreground">Started</span><span className="font-semibold">{clock(running.startedAt)}</span></div>
-        <div className="flex justify-between p-4"><span className="text-muted-foreground">Elapsed so far</span><span className="font-semibold">{formatDuration(elapsedMin)}</span></div>
+        <div className="flex justify-between p-4"><span className="text-muted-foreground">Time worked (billed)</span><span className="font-semibold">{formatDuration(elapsedMin)}</span></div>
+        {pausedMin > 0 && <div className="flex justify-between p-4"><span className="text-muted-foreground">Paused (not billed)</span><span className="font-semibold">{formatDuration(pausedMin)}</span></div>}
       </div>}
       <DialogFooter className="flex-wrap gap-2">
         <Button className="h-11" variant="outline" onClick={() => setEnding(false)}>Keep running</Button>
@@ -78,6 +82,7 @@ export function StartEndControls({ item }: { item: Appointment }) {
       <div className="divide-y rounded-lg border">
         <div className="flex justify-between p-4"><span className="text-muted-foreground">Client</span><span className="font-semibold">{name(summary.clientId)}</span></div>
         <div className="flex justify-between p-4"><span className="text-muted-foreground">Duration</span><span className="font-semibold">{formatDuration(summary.minutes)}</span></div>
+        {summary.pausedMinutes > 0 && <div className="flex justify-between p-4"><span className="text-muted-foreground">Paused (not billed)</span><span className="font-semibold">{formatDuration(summary.pausedMinutes)}</span></div>}
         <div className="flex justify-between p-4"><span className="text-muted-foreground">Amount owed</span><span className="text-lg font-semibold">${summary.amount.toFixed(2)}</span></div>
       </div>
       {summary.nextClientId && <p className="rounded-lg bg-muted p-3 text-sm">{waitingAll.length > 1 ? "Choose who to start next." : `${name(summary.nextClientId)} is still waiting on this appointment.`}</p>}
@@ -90,10 +95,12 @@ export function StartEndControls({ item }: { item: Appointment }) {
   </Dialog>;
   const payment = <RecordPaymentDialog open={Boolean(paying)} onOpenChange={(o: boolean) => { if (!o) setPaying(null); }} clientIds={paying ? [paying.clientId] : undefined} defaultAmount={paying?.amount} onSaved={() => void navigate({ to: "/clients" })} />;
   let control = null;
-  if (running) control = <div className="flex items-center gap-2"><span className="text-xs text-muted-foreground">{shared ? `${first(running.clientId)} · ` : ""}started {clock(running.startedAt)}</span><Button className="h-11" variant="destructive" onClick={() => setEnding(true)}><Square /> End{shared ? ` ${first(running.clientId)}` : ""}</Button></div>;
+  if (running) control = <div className="flex flex-wrap items-center gap-2"><span className="text-xs text-muted-foreground">{shared ? `${first(running.clientId)} · ` : ""}{paused ? `paused since ${clock(running.pausedAt)}` : `started ${clock(running.startedAt)}`}</span>{paused
+    ? <Button className="h-11" onClick={() => resumeClient(item.id)}><Play /> Resume</Button>
+    : <Button className="h-11" variant="outline" onClick={() => pauseClient(item.id)}><Pause /> Pause</Button>}<Button className="h-11" variant="destructive" onClick={() => setEnding(true)}><Square /> End{shared ? ` ${first(running.clientId)}` : ""}</Button></div>;
   else if (waiting && busyElsewhere) control = <span className="text-xs text-muted-foreground">Another session is running</span>;
   else if (waiting) control = <div className="flex flex-wrap items-center gap-2">{waitingAll.map((c) => <Button key={c.clientId} className="h-11" onClick={() => start(c.clientId)}><Play /> Start{shared ? ` ${first(c.clientId)}` : ""}</Button>)}</div>;
-  else if (item.startedAt && item.endedAt) control = <span className="flex flex-col text-right text-xs text-muted-foreground"><span className="font-bold text-foreground">Actual duration:</span><span>{formatDurationLong(sessionMinutes(item.startedAt, item.endedAt))}</span><span>{clock(item.startedAt)} – {clock(item.endedAt)}</span></span>;
+  else if (item.startedAt && item.endedAt) control = <span className="flex flex-col text-right text-xs text-muted-foreground"><span className="font-bold text-foreground">Actual duration:</span><span>{formatDurationLong(item.clients.filter((c) => c.startedAt && c.endedAt).reduce((sum, c) => sum + workedMinutes(c), 0))}</span><span>{clock(item.startedAt)} – {clock(item.endedAt)}</span></span>;
   const timed = item.clients.some((c) => c.startedAt);
   const editBtn = timed && <Button size="icon" variant="ghost" className="h-11 w-11 text-muted-foreground" onClick={openCorrect} aria-label="Correct times"><Pencil /></Button>;
   return <><span className="inline-flex items-center gap-1">{control}{editBtn}</span>{confirmDialog}{popup}{payment}{confirmEnd}<CorrectTimesDialog open={correcting} onOpenChange={setCorrecting} item={item} /></>;

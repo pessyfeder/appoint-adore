@@ -82,11 +82,6 @@ export function clientBalance(clientId: string, appointments: Appointment[], pay
 }
 export const RATE_PER_MINUTE = 2.5;
 
-/** Minutes actually worked between start and end (at least 1). */
-export function sessionMinutes(startedAt: string, endedAt: string) {
-  return Math.max(1, Math.round((new Date(endedAt).getTime() - new Date(startedAt).getTime()) / 60000));
-}
-
 /** No-shows are billed for the full booked length. */
 export function noShowCharge(item: Pick<Appointment, "durationMin">) {
   return item.durationMin * RATE_PER_MINUTE;

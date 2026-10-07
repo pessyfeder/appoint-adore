@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { emptyData, isoToTime, movePaidAt, paymentDateKey, toDateKey, type Appointment } from "../lib/data";
+import { emptyData, isoToTime, movePaidAt, pausedMsSoFar, paymentDateKey, toDateKey, workedMinutes, workedMs, type Appointment } from "../lib/data";
 import { appointmentsOutsideHours, availableTimes, blockedTimeIssue, canMarkNoShow, noShowCharge, pastStartIssue } from "../lib/scheduling";
 
 // 2030-01-07 is a Monday: default hours 10:30–1:30 and 7:30–10:30.
@@ -119,5 +119,29 @@ describe("changing hours", () => {
     expect(ids(appointmentsOutsideHours([morning, evening], () => [], at("09:00")))).toEqual(["a-10:30", "a-19:30"]);
     // Bookings that already started (or whose time has passed) aren't flagged.
     expect(ids(appointmentsOutsideHours([morning], eveningsOnly, at("11:00")))).toEqual([]);
+  });
+});
+
+describe("pausing a session", () => {
+  const t = (time: string) => at(time).getTime();
+  const iso = (time: string) => at(time).toISOString();
+  const base = { clientId: "c1", status: "scheduled" as const, charge: 0, startedAt: iso("10:00") };
+
+  it("doesn't count paused time as worked", () => {
+    // 10:00 start, paused 10:20–10:30 (finished pause), ended 10:45 → 35 minutes worked.
+    const done = { ...base, status: "completed" as const, endedAt: iso("10:45"), pausedMs: 10 * 60000 };
+    expect(workedMinutes(done)).toBe(35);
+  });
+
+  it("freezes the clock while paused", () => {
+    const paused = { ...base, pausedAt: iso("10:20") };
+    expect(Math.round(workedMs(paused, t("10:20")) / 60000)).toBe(20);
+    expect(Math.round(workedMs(paused, t("10:50")) / 60000)).toBe(20);
+    expect(Math.round(pausedMsSoFar(paused, t("10:50")) / 60000)).toBe(30);
+  });
+
+  it("adds up several pauses, and a pause still open when the session ends", () => {
+    const endedWhilePaused = { ...base, endedAt: iso("11:00"), pausedMs: 5 * 60000, pausedAt: iso("10:50") };
+    expect(workedMinutes(endedWhilePaused)).toBe(45);
   });
 });
