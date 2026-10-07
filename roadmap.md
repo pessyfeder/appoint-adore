@@ -51,3 +51,4 @@
 - [x] Blocked time needs a reason and cannot cover a booked appointment; removing blocks or date overrides needs the password.
 - [x] Public booking reuses a client record only when both name and phone match.
 - [x] Dashboard shows the number of clients booked today.
+- [x] Remove demo clients (and their appointments and payments) left by older versions; real records are untouched.

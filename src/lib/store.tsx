@@ -39,6 +39,28 @@ function nextId(prefix: string) {
 }
 
 /** Older sessions stored start/end on the appointment only; copy them onto the clients so per-client tools (Correct times) see them. Charges are kept as recorded. */
+/** Demo clients older versions saved on first run (id, name, phone). Real clients get generated ids, so these can't collide. */
+const DEMO_CLIENTS: [string, string, string][] = [
+  ["c1", "Maya Thompson", "(555) 214-8830"],
+  ["c2", "Jordan Lee", "(555) 872-1190"],
+  ["c3", "Sofia Ramirez", "(555) 340-2271"],
+  ["c4", "Ava Chen", "(555) 903-4472"],
+];
+
+/** Removes the demo clients plus their appointment entries and payments, leaving every real record untouched. */
+export function removeDemoRecords(state: StoreState): StoreState {
+  const demo = new Set(DEMO_CLIENTS.filter(([id, name, phone]) => state.clients.some((c) => c.id === id && c.name === name && c.phone === phone)).map(([id]) => id));
+  if (!demo.size) return state;
+  return {
+    ...state,
+    clients: state.clients.filter((c) => !demo.has(c.id)),
+    appointments: state.appointments
+      .map((a) => ({ ...a, clients: a.clients.filter((c) => !demo.has(c.clientId)) }))
+      .filter((a) => a.clients.length > 0),
+    payments: state.payments.filter((p) => !demo.has(p.clientId)),
+  };
+}
+
 export function migrateLegacyTimes(state: StoreState): StoreState {
   let changed = false;
   const appointments = state.appointments.map((item) => {
@@ -66,7 +88,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const saved = window.localStorage.getItem(STORAGE_KEY);
     if (saved) {
-      try { setState(migrateLegacyTimes(JSON.parse(saved) as StoreState)); } catch { window.localStorage.removeItem(STORAGE_KEY); }
+      try { setState(removeDemoRecords(migrateLegacyTimes(JSON.parse(saved) as StoreState))); } catch { window.localStorage.removeItem(STORAGE_KEY); }
     }
     setReady(true);
   }, []);

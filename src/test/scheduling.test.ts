@@ -68,3 +68,30 @@ describe("payment dates", () => {
     expect(paymentDateKey("2030-01-07")).toBe("2030-01-07");
   });
 });
+
+describe("demo record cleanup", () => {
+  it("removes the old demo clients and their records but keeps real ones", async () => {
+    const { removeDemoRecords } = await import("../lib/store");
+    const real = { id: "client-1", name: "Real Client", phone: "(555) 000-1111", createdAt: "", archived: false };
+    const maya = { id: "c1", name: "Maya Thompson", phone: "(555) 214-8830", createdAt: "", archived: false };
+    const state = {
+      clients: [maya, real],
+      appointments: [
+        { ...booked("10:30"), id: "a1" },
+        { ...booked("11:30"), id: "mixed", clients: [{ clientId: "c1", status: "scheduled" as const, charge: 0 }, { clientId: "client-1", status: "scheduled" as const, charge: 0 }] },
+      ],
+      payments: [
+        { id: "p1", clientId: "c1", amount: 50, method: "card" as const, paidAt: "2030-01-01", notes: "" },
+        { id: "p2", clientId: "client-1", amount: 20, method: "cash" as const, paidAt: "2030-01-01", notes: "" },
+      ],
+      blockedTimes: [],
+    };
+    const cleaned = removeDemoRecords(state);
+    expect(cleaned.clients).toEqual([real]);
+    expect(cleaned.appointments.map((a) => [a.id, a.clients.map((c) => c.clientId)])).toEqual([["mixed", ["client-1"]]]);
+    expect(cleaned.payments.map((p) => p.id)).toEqual(["p2"]);
+    // A record that no longer matches the demo name/phone is treated as real and kept.
+    const renamed = { ...state, clients: [{ ...maya, name: "Someone Else" }, real] };
+    expect(removeDemoRecords(renamed)).toBe(renamed);
+  });
+});
