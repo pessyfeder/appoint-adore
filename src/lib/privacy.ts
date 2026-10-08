@@ -7,15 +7,18 @@ export const MIN_PASSPHRASE = 4;
 export type RecoveryRecord = { questions: [string, string]; salt: string; hash: string };
 export type LockRecord = { salt: string; hash: string; createdAt: string; recovery?: RecoveryRecord | undefined };
 
+// Personal, unchanging details that aren't easy to look up online (no birthplace, maiden name or school).
 export const SECURITY_QUESTIONS = [
-  "What was the name of your first pet?",
-  "What city were you born in?",
-  "What is your mother's maiden name?",
-  "What was the name of your elementary school?",
-  "What street did you grow up on?",
-  "What was the make of your first car?",
-  "What was your childhood nickname?",
-  "What is the name of your favorite teacher?",
+  "What was the name of your first stuffed animal or doll?",
+  "What was the first name of your childhood best friend?",
+  "What was the first concert or show you went to?",
+  "What was your favorite food as a child?",
+  "What was the name of your first boss?",
+  "In what city did your parents meet?",
+  "What was the name of the school where you trained in electrolysis?",
+  "What was the first name of your first client?",
+  "What was the name of the street your grandparents lived on?",
+  "What was your dream job as a child?",
 ];
 
 export const MIN_ANSWER = 2;
