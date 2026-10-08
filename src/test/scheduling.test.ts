@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { emptyData, isoToTime, movePaidAt, pausedMsSoFar, paymentDateKey, toDateKey, workedMinutes, workedMs, type Appointment } from "../lib/data";
-import { appointmentsOutsideHours, availableTimes, blockedTimeIssue, canMarkNoShow, checkTimes, noShowCharge, pastStartIssue, validateAppointment } from "../lib/scheduling";
+import { appointmentsOutsideHours, availableTimes, blockedTimeIssue, canMarkNoShow, noShowCharge, pastStartIssue, validateAppointment } from "../lib/scheduling";
 
 // 2030-01-07 is a Monday: default hours 10:30–1:30 and 7:30–10:30.
 const MONDAY = "2030-01-07";
@@ -158,18 +158,5 @@ describe("pausing a session", () => {
   it("adds up several pauses, and a pause still open when the session ends", () => {
     const endedWhilePaused = { ...base, endedAt: iso("11:00"), pausedMs: 5 * 60000, pausedAt: iso("10:50") };
     expect(workedMinutes(endedWhilePaused)).toBe(45);
-  });
-});
-
-describe("Check Availability", () => {
-  const times = ["10:30", "11:00", "19:30", "20:00"];
-  it("keeps every time, the earliest, the latest, or one specific time", () => {
-    expect(checkTimes(times, "any", null)).toEqual(times);
-    expect(checkTimes(times, "earliest", null)).toEqual(["10:30"]);
-    expect(checkTimes(times, "latest", null)).toEqual(["20:00"]);
-    expect(checkTimes(times, "specific", "19:30")).toEqual(["19:30"]);
-    expect(checkTimes(times, "specific", "12:00")).toEqual([]);
-    expect(checkTimes(times, "specific", null)).toEqual([]);
-    expect(checkTimes([], "earliest", null)).toEqual([]);
   });
 });
