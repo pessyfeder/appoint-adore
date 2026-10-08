@@ -218,3 +218,18 @@ export function appointmentProgress(item: Appointment): AppointmentProgress {
 }
 
 export const PROGRESS_LABEL: Record<AppointmentProgress, string> = { scheduled: "Scheduled", in_progress: "In progress", paused: "Paused", ended: "Completed", cancelled: "Cancelled", no_show: "No-show" };
+
+/**
+ * Search Appointment: bookings whose client name or phone contains `query` (phone by digits) and/or that fall on
+ * `dateKey`, newest first. With neither filter there are no results.
+ */
+export function searchAppointments(query: string, dateKey: string, appointments: Appointment[], clients: Client[], limit = 200): Appointment[] {
+  const needle = query.trim().toLowerCase().replace(/\s+/g, " ");
+  if (!needle && !dateKey) return [];
+  const digits = needle.replace(/\D/g, "");
+  const matching = new Set(clients.filter((client) => client.name.toLowerCase().replace(/\s+/g, " ").includes(needle) || (digits.length > 0 && client.phone.replace(/\D/g, "").includes(digits))).map((client) => client.id));
+  return appointments
+    .filter((item) => (!dateKey || item.date === dateKey) && (!needle || item.clients.some((entry) => matching.has(entry.clientId))))
+    .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time))
+    .slice(0, limit);
+}

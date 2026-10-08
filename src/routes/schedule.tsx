@@ -3,9 +3,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useToday } from "@/hooks/use-today";
 import { CLIENT_BADGE, CLIENT_LABEL, STATUS_CARD, StartEndControls, StatusBadge } from "@/components/AppointmentControls";
 import { ClientStatusActions } from "@/components/ClientStatusActions";
+import { AppointmentSearchDialog } from "@/components/AppointmentSearchDialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { AlertTriangle, ChevronLeft, ChevronRight, CalendarPlus, UserRound } from "lucide-react";
+import { AlertTriangle, ChevronLeft, ChevronRight, CalendarPlus, Search, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { appointmentProgress, formatDuration, formatTime, fromDateKey, timeToMinutes, toDateKey, type Appointment } from "@/lib/data";
@@ -52,6 +53,7 @@ function SchedulePage() {
   }
   const [selected, setSelected] = useState<Appointment | null>(null);
   const [goOpen, setGoOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   useEffect(() => {
     if (!highlightId) return;
     const target = appointments.find((item) => item.id === highlightId);
@@ -88,6 +90,7 @@ function SchedulePage() {
             <h1 className="mt-1 font-serif text-3xl">Schedule</h1>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" className="h-11" onClick={() => setSearchOpen(true)}><Search className="opacity-60" /> Search appointment</Button>
             <Button asChild className="h-11"><Link to="/book" search={{ edit: undefined }}><CalendarPlus /> New appointment</Link></Button>
           </div>
         </div>
@@ -146,6 +149,7 @@ function SchedulePage() {
           {appointmentProgress(current) === "scheduled" && <DialogFooter><Button asChild variant={outside.ids.has(current.id) ? "default" : "outline"} className="h-11"><Link to="/book" search={{ edit: current.id }}>Reschedule</Link></Button></DialogFooter>}
         </>}</DialogContent>
       </Dialog>
+      <AppointmentSearchDialog open={searchOpen} onOpenChange={setSearchOpen} onPick={(item) => { setSearchOpen(false); setCursor(fromDateKey(item.date)); setHighlightId(item.id); setSelected(item); }} />
       </div>
     </main>
   );

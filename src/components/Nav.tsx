@@ -22,6 +22,8 @@ export function Nav() {
   const onBook = pathname.startsWith("/book");
   const unlocked = status === "unlocked";
   const { confirm, dialog } = useConfirm();
+  // The Book Appointment tab is the public screen handed to clients, so going there always locks Admin.
+  const toPublicBook = () => { if (unlocked) lock(); };
 
   async function exitAdmin() {
     if (!(await confirm({ title: "Are you sure?", description: "Leave Admin? You'll need your password to come back in.", confirmLabel: "Exit Admin", cancelLabel: "Stay in Admin" }))) return;
@@ -32,14 +34,14 @@ export function Nav() {
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4">
-        <Link to="/book" search={{ edit: undefined }} className="flex items-center gap-2">
+        <Link to="/book" search={{ edit: undefined }} className="flex items-center gap-2" onClick={toPublicBook}>
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <Sparkles className="h-4 w-4" />
           </span>
           <span className="font-display text-xl font-semibold tracking-tight">Lumière Electrolysis</span>
         </Link>
         <nav className="flex items-center gap-1">
-          <Link to="/book" search={{ edit: undefined }} className={`${tab} ${onBook ? activeTab : ""}`}>
+          <Link to="/book" search={{ edit: undefined }} className={`${tab} ${onBook ? activeTab : ""}`} onClick={toPublicBook}>
             <CalendarPlus className="h-4 w-4" /> Book Appointment
           </Link>
           <Link to="/" className={`${tab} ${!onBook ? activeTab : ""}`}>
