@@ -101,7 +101,7 @@ export function AvailabilityPicker({ durationMin, excludeId, date, time, onChang
         const isSelected = cell.key === date;
         if (!cell.inRange) return <div key={cell.key} className="min-h-16 border-b border-r p-1 text-xs text-muted-foreground/50 [&:nth-child(7n)]:border-r-0">{day.getDate()}</div>;
         if (!cell.matched.length) return <div key={cell.key} className={`min-h-16 border-b border-r bg-muted/60 p-1 text-muted-foreground [&:nth-child(7n)]:border-r-0 ${isSelected ? "ring-2 ring-inset ring-muted-foreground/50" : ""}`}>{dayLabel}<span className="text-[11px]">{cell.closed ? "Closed" : waitingForTime ? "" : cell.all.length ? "Not open" : "Full"}</span></div>;
-        return <button key={cell.key} type="button" aria-pressed={isSelected} className={`min-h-16 border-b border-r p-1 text-left transition-colors [&:nth-child(7n)]:border-r-0 ${isSelected ? "bg-primary text-primary-foreground" : "bg-emerald-50 text-emerald-950 hover:bg-emerald-100"}`} onClick={() => onChange(cell.key, cell.key === date ? time : null)}>
+        return <button key={cell.key} type="button" aria-pressed={isSelected} className={`min-h-16 border-b border-r p-1 text-left transition-colors [&:nth-child(7n)]:border-r-0 ${isSelected ? "bg-primary text-primary-foreground" : "bg-emerald-50 text-emerald-950 hover:bg-emerald-100"}`} onClick={() => onChange(cell.key, check === "any" ? (cell.key === date ? time : null) : cell.matched[0] ?? null)}>
           {dayLabel}
           <span className="block text-[11px] font-medium">Open</span>
           <span className={`block text-[11px] ${isSelected ? "" : "text-emerald-800"}`}>{check === "any" ? `${cell.matched.length} ${cell.matched.length === 1 ? "time" : "times"}` : formatTime(cell.matched[0]!)}</span>
@@ -115,7 +115,9 @@ export function AvailabilityPicker({ durationMin, excludeId, date, time, onChang
     {nextTier && <Button variant="outline" className="mt-2 h-11 w-full" onClick={() => setTier(RANGE_TIERS.indexOf(nextTier))}>Show more (upcoming {rangeLabel(nextTier)})</Button>}
 
     <section className="mt-6 rounded-lg border bg-card p-4" aria-live="polite">
-      <h3 className="font-serif text-lg">{fromDateKey(date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</h3>
+      {/* With Earliest, Latest or Specific time, tapping a day pre-selects its matching time to confirm. */}
+      <h3 className="font-serif text-xl">{time ? "Confirm or choose a different time" : "Choose a time"}</h3>
+      <p className="mt-1 text-sm text-muted-foreground">{fromDateKey(date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}{time ? ` at ${formatTime(time)} — tap Continue to confirm.` : ""}</p>
       {selected && selected.all.length > 0
         ? <DayTimes dateKey={date} times={selected.all} matched={check === "any" ? [] : selected.matched} time={time} onPick={(picked) => onChange(date, picked)} />
         : <p className="mt-2 text-sm text-muted-foreground">{effectiveHours(date).length === 0 ? "Closed this day." : `No open times this day for ${formatDuration(durationMin)}.`} Tap a green day above.</p>}
