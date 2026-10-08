@@ -37,7 +37,10 @@ export function buildReport(from: string, to: string, appointments: Appointment[
     const date = paymentDateKey(p.paidAt);
     if (date >= from && date <= to) rows.push({ date, clientName: name(p.clientId), label: `Payment (${p.method})`, amount: p.amount, unpaid: false, paymentId: p.id, clientId: p.clientId });
   }
-  for (const c of chargesWithUnpaid(appointments, payments, adjustments)) {
+  // "Owed" is as of the range's last day: payments and credits made after it don't reduce it.
+  const paidBy = payments.filter((p) => paymentDateKey(p.paidAt) <= to);
+  const adjustedBy = adjustments.filter((a) => paymentDateKey(a.createdAt) <= to);
+  for (const c of chargesWithUnpaid(appointments, paidBy, adjustedBy)) {
     if (c.unpaid > 0.004 && c.date <= to) {
       const row: LedgerRow = { date: c.date, clientName: name(c.clientId), label: UNPAID_LABEL[c.kind], amount: -c.unpaid, unpaid: true, clientId: c.clientId };
       if (c.appointmentId) row.appointmentId = c.appointmentId;

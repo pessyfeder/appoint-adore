@@ -193,7 +193,7 @@ function AvailabilityPage() {
           <section className="rounded-xl border border-border bg-card p-5">
             <h2 className="mb-4 text-lg font-semibold">Block out time</h2>
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="flex flex-col gap-1.5"><Label htmlFor="b-date">Date</Label><Input id="b-date" type="date" value={block.date} onChange={(e) => setBlock({ ...block, date: e.target.value })} /></div>
+              <div className="flex flex-col gap-1.5"><Label htmlFor="b-date">Date</Label><Input id="b-date" type="date" min={today} value={block.date} onChange={(e) => setBlock({ ...block, date: e.target.value })} /></div>
               <div className="flex flex-col gap-1.5"><Label htmlFor="b-start">From</Label><Input id="b-start" type="time" value={block.startTime} onChange={(e) => setBlock({ ...block, startTime: e.target.value })} /></div>
               <div className="flex flex-col gap-1.5"><Label htmlFor="b-end">To</Label><Input id="b-end" type="time" value={block.endTime} onChange={(e) => setBlock({ ...block, endTime: e.target.value })} /></div>
             </div>

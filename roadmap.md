@@ -79,3 +79,8 @@
 - [x] Undoing a no-show or ending a timed session clears a hand-set charge, so Correct times re-bills the session.
 - [x] Correcting a booked length re-bills a no-show on the same appointment (hand-set charges are kept).
 - [x] A public booking by an archived client restores their record instead of creating a duplicate.
+- [x] Booking can't leave a gap under 15 minutes next to blocked time.
+- [x] Record payment has no preselected method: the method is chosen for every payment.
+- [x] Payment report "Owed" is as of the range's last day: payments and credits made later don't reduce it.
+- [x] Blocked time can't be added for a time that has already passed.
+- [x] Archiving a client explains exactly what is still open: a running session, upcoming appointments to cancel, and past appointments to mark No-show or Cancel (with dates).

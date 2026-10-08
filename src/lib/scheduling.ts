@@ -23,6 +23,8 @@ export function validateAppointment(candidate: Candidate, appointments: Appointm
 
   const boundaries = [timeToMinutes(containing.start), timeToMinutes(containing.end)];
   for (const item of existing) boundaries.push(timeToMinutes(item.time), timeToMinutes(item.time) + item.durationMin);
+  // Blocked time is a hard edge too, so a booking can't leave an unusable sliver next to it.
+  for (const item of blocks) if (item.date === candidate.date) boundaries.push(timeToMinutes(item.startTime), timeToMinutes(item.endTime));
   const before = Math.max(...boundaries.filter((value) => value <= start));
   const after = Math.min(...boundaries.filter((value) => value >= end));
   if (start - before > 0 && start - before < 15) return "This start leaves an unusable gap under 15 minutes.";
@@ -64,9 +66,10 @@ export function appointmentsOutsideHours(appointments: Appointment[], hoursFor: 
 }
 
 /** Blocked time may not sit on top of a booked appointment; returns the reason it can't be saved. */
-export function blockedTimeIssue(block: Omit<BlockedTime, "id">, appointments: Appointment[]): string | null {
+export function blockedTimeIssue(block: Omit<BlockedTime, "id">, appointments: Appointment[], now: Date = new Date()): string | null {
   if (!block.reason.trim()) return "Please add a short reason.";
   if (block.endTime <= block.startTime) return "The end time must be after the start time.";
+  if (appointmentStart({ date: block.date, time: block.endTime }) <= now) return "That time has already passed. Choose a later date or time.";
   const start = timeToMinutes(block.startTime);
   const end = timeToMinutes(block.endTime);
   const clash = appointments.find((item) => item.date === block.date

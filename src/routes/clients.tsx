@@ -7,7 +7,7 @@ import { ClientBillingDialog } from "@/components/ClientBillingDialog";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatPhone } from "@/lib/data";
+import { appointmentStart, formatPhone, formatTime, fromDateKey } from "@/lib/data";
 import { clientBalance } from "@/lib/scheduling";
 import { useStore } from "@/lib/store";
 
@@ -40,9 +40,14 @@ function ClientsPage() {
   const visits = selected
     ? store.appointments.flatMap((item) => item.clients).filter((entry) => entry.clientId === selected.id && entry.status === "completed").length
     : 0;
-  const upcoming = selected
-    ? store.appointments.filter((item) => item.clients.some((entry) => entry.clientId === selected.id && entry.status === "scheduled")).length
-    : 0;
+  // Appointments still open for this client, split into ones yet to come and past ones never marked.
+  const pending = selected
+    ? store.appointments.filter((item) => item.clients.some((entry) => entry.clientId === selected.id && entry.status === "scheduled")).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
+    : [];
+  const started = (item: (typeof pending)[number]) => Boolean(item.clients.find((entry) => entry.clientId === selected?.id)?.startedAt);
+  const running = pending.filter(started);
+  const unmarked = pending.filter((item) => !started(item) && appointmentStart(item) <= new Date());
+  const upcoming = pending.filter((item) => !started(item) && appointmentStart(item) > new Date());
   const active = store.clients.filter((client) => !client.archived).length;
   const canSave = draft.name.trim().length > 0 && PHONE_PATTERN.test(draft.phone);
 
@@ -89,8 +94,13 @@ function ClientsPage() {
       setNotice(`${selected.name} has a ${balance > 0 ? "balance owed" : "credit"} of $${Math.abs(balance).toFixed(2)}. Settle it before archiving.`);
       return;
     }
-    if (upcoming > 0) {
-      setNotice(`${selected.name} still has ${upcoming} scheduled appointment${upcoming === 1 ? "" : "s"}. Cancel or complete ${upcoming === 1 ? "it" : "them"} before archiving.`);
+    if (pending.length > 0) {
+      const when = (list: typeof pending) => list.map((item) => `${fromDateKey(item.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })} ${formatTime(item.time)}`).join(", ");
+      const parts = [];
+      if (running.length) parts.push("Their session is still running: end it first.");
+      if (upcoming.length) parts.push(`Cancel the upcoming appointment${upcoming.length === 1 ? "" : "s"} (${when(upcoming)}).`);
+      if (unmarked.length) parts.push(`${unmarked.length === 1 ? "A past appointment was" : `${unmarked.length} past appointments were`} never marked (${when(unmarked)}): open ${unmarked.length === 1 ? "it" : "each one"} on the Schedule and choose No-show or Cancel.`);
+      setNotice(`${selected.name} can't be archived yet. ${parts.join(" ")}`);
       return;
     }
     const ok = await confirm({ title: `Archive ${selected.name}?`, description: "They'll be hidden from booking and the balances list. Their history is kept, and you can restore them any time by searching their name.", confirmLabel: "Archive client", cancelLabel: "Keep active" });

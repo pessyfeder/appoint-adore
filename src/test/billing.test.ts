@@ -27,3 +27,19 @@ describe("balance adjustments", () => {
     expect(increased.rows.find((row) => row.unpaid)?.adjustmentId).toBe("adj10");
   });
 });
+
+describe("payment report", () => {
+  it("shows what was owed at the end of the range: later payments and credits don't reduce it", () => {
+    const appointments = [visit("a1", "2030-01-07", 75)];
+    const later: Payment = { ...payment(75), paidAt: "2030-02-03T15:00:00.000Z" };
+    const january = buildReport("2030-01-01", "2030-01-31", appointments, [later], [], [adjustment(-75, "2030-02-04T15:00:00.000Z")]);
+    expect(january.owed).toBe(75);
+    expect(january.collected).toBe(0);
+    expect(buildReport("2030-02-01", "2030-02-28", appointments, [later], []).owed).toBe(0);
+  });
+
+  it("only counts sessions marked completed (or no-shows), never ones still scheduled", () => {
+    const waiting: Appointment = { ...visit("a2", "2030-01-08", 0), clients: [{ clientId: "c1", status: "scheduled", charge: 0 }] };
+    expect(buildReport("2030-01-01", "2030-01-31", [visit("a1", "2030-01-07", 75), waiting], [], []).owed).toBe(75);
+  });
+});

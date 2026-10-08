@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { emptyData, isoToTime, movePaidAt, pausedMsSoFar, paymentDateKey, toDateKey, workedMinutes, workedMs, type Appointment } from "../lib/data";
-import { appointmentsOutsideHours, availableTimes, blockedTimeIssue, canMarkNoShow, noShowCharge, pastStartIssue } from "../lib/scheduling";
+import { appointmentsOutsideHours, availableTimes, blockedTimeIssue, canMarkNoShow, noShowCharge, pastStartIssue, validateAppointment } from "../lib/scheduling";
 
 // 2030-01-07 is a Monday: default hours 10:30–1:30 and 7:30–10:30.
 const MONDAY = "2030-01-07";
@@ -58,6 +58,20 @@ describe("blocked time", () => {
     expect(blockedTimeIssue(block, [booked("11:00")])).toMatch(/11:00 AM/);
     expect(blockedTimeIssue(block, [booked("11:00", "cancelled")])).toBeNull();
     expect(blockedTimeIssue(block, [booked("11:30")])).toBeNull();
+  });
+
+  it("can't be added once it has already ended", () => {
+    expect(blockedTimeIssue(block, [], at("11:30"))).toMatch(/already passed/);
+    expect(blockedTimeIssue({ ...block, date: "2030-01-06" }, [], at("09:00"))).toMatch(/already passed/);
+    // A block that started earlier today but hasn't ended yet is still fine.
+    expect(blockedTimeIssue(block, [], at("11:00"))).toBeNull();
+  });
+
+  it("is an edge for the 15-minute gap rule", () => {
+    const lunch = { id: "b1", ...block, startTime: "12:00", endTime: "13:00" };
+    expect(validateAppointment({ date: MONDAY, time: "11:20", durationMin: 30 }, [], [lunch])).toMatch(/gap under 15/);
+    expect(validateAppointment({ date: MONDAY, time: "11:30", durationMin: 30 }, [], [lunch])).toBeNull();
+    expect(validateAppointment({ date: MONDAY, time: "11:00", durationMin: 45 }, [], [lunch])).toBeNull();
   });
 });
 
