@@ -96,3 +96,4 @@
 - [x] Required fields across the app show a red asterisk after their label (screen readers hear "required"); unlabeled payment fields got visible labels.
 - [x] Book Appointment confirmation: "Book another appointment" (keeps the client's name and phone) and "Done" (clears the form for the next person).
 - [x] Password recovery by security questions: setup asks for two questions and answers (stored hashed, not case-sensitive); "Forgot password?" answers them to choose a new password without erasing anything (short wait after 5 wrong tries). Admin → Backup can add or change the questions after entering the current password. Erasing the tablet remains the last resort.
+- [x] Removed the Exit Admin button; tapping Book Appointment (or the logo) is how Admin is locked.

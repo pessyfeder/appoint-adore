@@ -1,8 +1,6 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { CalendarPlus, LogOut, ShieldCheck, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { CalendarPlus, ShieldCheck, Sparkles } from "lucide-react";
 import { useLock } from "@/lib/lock";
-import { useConfirm } from "@/components/ConfirmDialog";
 
 const adminLinks = [
   { to: "/", label: "Dashboard" },
@@ -17,19 +15,11 @@ const activeTab = "bg-primary text-primary-foreground";
 
 export function Nav() {
   const { status, lock } = useLock();
-  const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const onBook = pathname.startsWith("/book");
   const unlocked = status === "unlocked";
-  const { confirm, dialog } = useConfirm();
   // The Book Appointment tab is the public screen handed to clients, so going there always locks Admin.
   const toPublicBook = () => { if (unlocked) lock(); };
-
-  async function exitAdmin() {
-    if (!(await confirm({ title: "Are you sure?", description: "Leave Admin? You'll need your password to come back in.", confirmLabel: "Exit Admin", cancelLabel: "Stay in Admin" }))) return;
-    lock();
-    void navigate({ to: "/book", search: { edit: undefined } });
-  }
 
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur">
@@ -51,7 +41,7 @@ export function Nav() {
       </div>
       {!onBook && unlocked && (
         <div className="border-t border-border">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-2">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-4 py-2">
             <nav className="flex flex-wrap gap-1">
               {adminLinks.map((l) => (
                 <Link
@@ -65,17 +55,9 @@ export function Nav() {
                 </Link>
               ))}
             </nav>
-            <Button
-              className="h-11"
-              variant="ghost"
-              onClick={exitAdmin}
-            >
-              <LogOut /> Exit Admin
-            </Button>
           </div>
         </div>
       )}
-      {dialog}
     </header>
   );
 }
