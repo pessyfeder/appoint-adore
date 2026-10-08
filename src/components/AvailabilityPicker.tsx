@@ -12,11 +12,12 @@ import { useStore } from "@/lib/store";
 const RANGE_TIERS = [14, 30, 60, 90];
 const rangeLabel = (days: number) => (days < 28 ? `${days / 7} weeks` : days < 60 ? "month" : `${Math.round(days / 30)} months`);
 
-const CHECKS: { check: AvailabilityCheck; label: string }[] = [
-  { check: "any", label: "Any time" },
-  { check: "earliest", label: "Earliest" },
-  { check: "latest", label: "Latest" },
-  { check: "specific", label: "Specific time" },
+/** Start-time choices; the hint says what each one shows on the calendar. */
+const CHECKS: { check: AvailabilityCheck; label: string; hint: string }[] = [
+  { check: "any", label: "Any time", hint: "Each day shows how many start times are open." },
+  { check: "earliest", label: "Earliest time", hint: "Each day shows its earliest open start time." },
+  { check: "latest", label: "Latest time", hint: "Each day shows its latest open start time." },
+  { check: "specific", label: "Specific time", hint: "Days that have this start time open are green." },
 ];
 
 type Day = { key: string; inRange: boolean; closed: boolean; all: string[]; matched: string[] };
@@ -75,7 +76,8 @@ export function AvailabilityPicker({ durationMin, excludeId, date, time, onChang
   const nextTier = RANGE_TIERS.find((value) => value > days);
 
   return <div>
-    <div className="flex flex-wrap items-center gap-2">
+    <p className="text-sm font-medium">Start time</p>
+    <div className="mt-1 flex flex-wrap items-center gap-2">
       <div className="grid flex-1 grid-cols-2 gap-1 rounded-lg bg-muted p-1 sm:grid-cols-4">
         {CHECKS.map((item) => <Button key={item.check} variant={check === item.check ? "default" : "ghost"} className="h-11" onClick={() => setCheck(item.check)}>{item.label}</Button>)}
       </div>
@@ -87,7 +89,7 @@ export function AvailabilityPicker({ durationMin, excludeId, date, time, onChang
     <p className={`mt-2 text-sm ${!waitingForTime && !anyOpen ? "text-destructive" : "text-muted-foreground"}`}>
       {waitingForTime ? "Choose a time to see which days have it open."
         : !anyOpen ? (check === "specific" && specific ? `${formatTime(specific)} isn't open on any day in this range.` : "No open days in this range.")
-        : `Open days for a ${formatDuration(durationMin)} appointment. Tap a green day to see its times.`}
+        : `${CHECKS.find((item) => item.check === check)!.hint} Tap a green day to see all its times for a ${formatDuration(durationMin)} appointment.`}
     </p>
 
     <div className="mt-3 grid grid-cols-7 overflow-hidden rounded-lg border">
