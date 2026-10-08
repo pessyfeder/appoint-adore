@@ -9,7 +9,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { AlertTriangle, ChevronLeft, ChevronRight, CalendarPlus, Search, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { appointmentProgress, formatDuration, formatTime, fromDateKey, timeToMinutes, toDateKey, type Appointment } from "@/lib/data";
+import { appointmentProgress, blockedSpan, formatDuration, formatTime, fromDateKey, timeToMinutes, toDateKey, type Appointment } from "@/lib/data";
 import { useAvailability } from "@/lib/availability";
 import { OUTSIDE_HOURS_CARD, useOutsideHours } from "@/lib/outside-hours";
 import { useStore } from "@/lib/store";
@@ -128,7 +128,7 @@ function SchedulePage() {
               <div className={`border-b px-1 py-1.5 text-center ${today ? "bg-primary text-primary-foreground" : past ? "bg-muted text-muted-foreground" : "bg-muted/40"}`}><p className="text-[11px] font-medium uppercase leading-none tracking-tight">{day.toLocaleDateString("en-US", { weekday: "short" })}</p><p className="mt-1 text-base font-semibold leading-none">{day.getDate()}</p></div>
               <div className={`space-y-2 p-2 ${past ? "opacity-75" : ""}`}>
                 {dayAppointments.map((item) => <Button key={item.id} data-appointment={item.id} variant="outline" className={`h-auto w-full items-start justify-start whitespace-normal p-2 text-left transition-shadow ${STATUS_CARD[appointmentProgress(item)]} ${outside.ids.has(item.id) ? OUTSIDE_HOURS_CARD : ""} ${item.id === highlightId ? "border-primary bg-primary/10 ring-2 ring-primary ring-offset-2" : ""}`} onClick={() => setSelected(item)}><span className="w-full"><span className="block font-semibold">{formatTime(item.time)}</span>{outside.ids.has(item.id) && <span className="mb-1 flex items-start gap-0.5 text-[10px] font-semibold leading-tight text-amber-900"><AlertTriangle className="h-3 w-3 shrink-0" />Reschedule</span>}<span className="block text-xs text-muted-foreground">{clientNames(item, clients)}</span><span className="block text-xs text-muted-foreground">{formatDuration(item.durationMin)}</span></span></Button>)}
-                {dayBlocks.map((item) => <div key={item.id} className="border border-dashed bg-muted/50 p-2 text-xs text-muted-foreground">{formatTime(item.startTime)}–{formatTime(item.endTime)}<br />{item.reason}</div>)}
+                {dayBlocks.map((item) => <div key={item.id} className="border border-dashed bg-muted/50 p-2 text-xs text-muted-foreground">{blockedSpan(item)}<br />{item.reason}</div>)}
                 {!dayAppointments.length && !dayBlocks.length && <p className="pt-5 text-center text-xs text-muted-foreground">{closed ? "Closed" : "No appointments"}</p>}
               </div>
             </div>;

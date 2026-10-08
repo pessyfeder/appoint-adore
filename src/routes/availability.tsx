@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { useToday } from "@/hooks/use-today";
 import { createFileRoute } from "@tanstack/react-router";
-import { CalendarOff, Plus, Trash2 } from "lucide-react";
+import { CalendarClock, CalendarOff, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RequiredMark } from "@/components/RequiredMark";
 import { blocksIssue, setAvailability, sortBlocks, useAvailability, type Availability } from "@/lib/availability";
-import { formatTime, fromDateKey, toDateKey, type BusinessBlock } from "@/lib/data";
+import { ALL_DAY, blockedSpan, formatTime, fromDateKey, toDateKey, type BusinessBlock } from "@/lib/data";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { appointmentsOutsideHours, blockedTimeIssue } from "@/lib/scheduling";
 import { useStore } from "@/lib/store";
@@ -49,11 +51,13 @@ function AvailabilityPage() {
   const { confirm, dialog } = useConfirm();
   const [weekly, setWeekly] = useState(availability.weekly);
   const [weeklyMsg, setWeeklyMsg] = useState<{ error?: string; ok?: string }>({});
+  const [weeklyOpen, setWeeklyOpen] = useState(false);
   const [date, setDate] = useState(toDateKey(new Date()));
   const [dateBlocks, setDateBlocks] = useState<BusinessBlock[]>([]);
   const [dateMsg, setDateMsg] = useState<{ error?: string; ok?: string }>({});
   const [block, setBlock] = useState({ date: toDateKey(new Date()), startTime: "10:30", endTime: "11:30", reason: "" });
   const [blockMsg, setBlockMsg] = useState<{ error?: string; ok?: string }>({});
+  const [blockAllDay, setBlockAllDay] = useState(false);
 
   useEffect(() => setWeekly(availability.weekly), [availability.weekly]);
   useEffect(() => {
@@ -96,7 +100,15 @@ function AvailabilityPage() {
     const warning = outsideWarning(hoursWith(sorted, availability.overrides));
     if (!(await sure(`Save the new weekly hours? Booking will only offer times inside them.${warning.text}`, warning.count ? "Save anyway" : "Save weekly hours"))) return;
     setAvailability({ ...availability, weekly: sorted });
+    setWeeklyOpen(false);
     setWeeklyMsg({ ok: `Weekly hours saved.${keptNote(warning.count)}` });
+  }
+
+  /** Weekly hours are edited in a popup that always starts from the saved hours. */
+  function openWeekly(open: boolean) {
+    setWeekly(availability.weekly);
+    setWeeklyMsg({});
+    setWeeklyOpen(open);
   }
 
   async function saveDate(closed: boolean) {
@@ -125,10 +137,11 @@ function AvailabilityPage() {
   }
 
   async function saveBlock() {
-    const issue = blockedTimeIssue(block, appointments);
+    const toSave = blockAllDay ? { ...block, ...ALL_DAY } : block;
+    const issue = blockedTimeIssue(toSave, appointments);
     if (issue) return setBlockMsg({ error: issue });
-    if (!(await sure(`Block ${longDate(block.date)}, ${formatTime(block.startTime)}–${formatTime(block.endTime)}? No appointments can be booked then.`, "Block time"))) return;
-    addBlockedTime({ ...block, reason: block.reason.trim() });
+    if (!(await sure(blockAllDay ? `Block all of ${longDate(block.date)}? No appointments can be booked that day.` : `Block ${longDate(block.date)}, ${formatTime(block.startTime)}–${formatTime(block.endTime)}? No appointments can be booked then.`, blockAllDay ? "Block day" : "Block time"))) return;
+    addBlockedTime({ ...toSave, reason: toSave.reason.trim() });
     setBlock({ ...block, reason: "" });
     setBlockMsg({ ok: "Time blocked." });
   }
@@ -140,16 +153,23 @@ function AvailabilityPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
-      <header className="mb-6">
-        <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Availability</p>
-        <h1 className="font-serif text-4xl">Hours</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Booking only offers times inside these hours. Existing appointments are not moved.</p>
+      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Availability</p>
+          <h1 className="font-serif text-4xl">Hours</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Booking only offers times inside these hours. Existing appointments are not moved.</p>
+        </div>
+        <Button variant="outline" className="h-11" onClick={() => openWeekly(true)}><CalendarClock /> Change weekly hours</Button>
       </header>
+      {!weeklyOpen && weeklyMsg.ok && <div className="mb-6">{msg(weeklyMsg)}</div>}
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-xl border border-border bg-card p-5">
-          <h2 className="mb-4 text-lg font-semibold">Weekly hours</h2>
-          <div className="flex flex-col divide-y divide-border">
+      <Dialog open={weeklyOpen} onOpenChange={openWeekly}>
+        <DialogContent className="flex max-h-[90vh] max-w-xl flex-col">
+          <DialogHeader>
+            <DialogTitle>Weekly hours</DialogTitle>
+            <DialogDescription>Changes the regular hours for every week. Dates with their own hours keep them.</DialogDescription>
+          </DialogHeader>
+          <div className="-mx-1 flex flex-col divide-y divide-border overflow-y-auto px-1">
             {DAYS.map((name, d) => (
               <div key={name} className="grid gap-2 py-3 sm:grid-cols-[110px_1fr]">
                 <span className="pt-3 font-medium">{name}</span>
@@ -157,13 +177,15 @@ function AvailabilityPage() {
               </div>
             ))}
           </div>
-          <div className="mt-4 flex flex-col gap-3">
-            {msg(weeklyMsg)}
-            <div><Button onClick={saveWeekly}>Save weekly hours</Button></div>
-          </div>
-        </section>
+          {weeklyMsg.error && msg(weeklyMsg)}
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" className="h-11" onClick={() => openWeekly(false)}>Cancel</Button>
+            <Button className="h-11" onClick={saveWeekly}>Save weekly hours</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        <div className="flex flex-col gap-6">
+        <div className="flex max-w-3xl flex-col gap-6">
           <section className="rounded-xl border border-border bg-card p-5">
             <h2 className="mb-1 text-lg font-semibold">Change hours for one date</h2>
             <p className="mb-4 text-sm text-muted-foreground">Add extra hours, shorten a day, or close it — only for that date.</p>
@@ -194,20 +216,21 @@ function AvailabilityPage() {
           <section className="rounded-xl border border-border bg-card p-5">
             <h2 className="mb-4 text-lg font-semibold">Block out time</h2>
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="flex flex-col gap-1.5"><Label htmlFor="b-date">Date<RequiredMark /></Label><Input id="b-date" type="date" min={today} value={block.date} onChange={(e) => setBlock({ ...block, date: e.target.value })} /></div>
-              <div className="flex flex-col gap-1.5"><Label htmlFor="b-start">From<RequiredMark /></Label><Input id="b-start" type="time" value={block.startTime} onChange={(e) => setBlock({ ...block, startTime: e.target.value })} /></div>
-              <div className="flex flex-col gap-1.5"><Label htmlFor="b-end">To<RequiredMark /></Label><Input id="b-end" type="time" value={block.endTime} onChange={(e) => setBlock({ ...block, endTime: e.target.value })} /></div>
+              <div className="flex flex-col gap-1.5"><Label htmlFor="b-date">Date<RequiredMark /></Label><Input id="b-date" type="date" min={today} value={block.date} onChange={(e) => { setBlockMsg({}); setBlock({ ...block, date: e.target.value }); }} /></div>
+              {!blockAllDay && <><div className="flex flex-col gap-1.5"><Label htmlFor="b-start">From<RequiredMark /></Label><Input id="b-start" type="time" value={block.startTime} onChange={(e) => setBlock({ ...block, startTime: e.target.value })} /></div>
+              <div className="flex flex-col gap-1.5"><Label htmlFor="b-end">To<RequiredMark /></Label><Input id="b-end" type="time" value={block.endTime} onChange={(e) => setBlock({ ...block, endTime: e.target.value })} /></div></>}
             </div>
+            <label className="mt-3 flex min-h-11 w-fit cursor-pointer items-center gap-3 text-sm font-medium"><Checkbox className="h-5 w-5" checked={blockAllDay} onCheckedChange={(checked) => { setBlockMsg({}); setBlockAllDay(checked === true); }} />Block entire day</label>
             <div className="mt-3 flex flex-col gap-1.5"><Label htmlFor="b-reason">Reason<RequiredMark /></Label><Input id="b-reason" value={block.reason} maxLength={200} placeholder="e.g. Doctor appointment" onChange={(e) => setBlock({ ...block, reason: e.target.value })} /></div>
             <div className="mt-4 flex flex-col gap-3">
               {msg(blockMsg)}
-              <div><Button onClick={saveBlock}>Block time</Button></div>
+              <div><Button onClick={saveBlock}>{blockAllDay ? "Block day" : "Block time"}</Button></div>
             </div>
             {blocks.length > 0 && (
               <ul className="mt-5 flex flex-col divide-y divide-border border-t border-border">
                 {blocks.map((b) => (
                   <li key={b.id} className="flex items-center justify-between gap-2 py-2 text-sm">
-                    <span><span className="font-medium">{longDate(b.date)}</span> · {formatTime(b.startTime)}–{formatTime(b.endTime)} · {b.reason}</span>
+                    <span><span className="font-medium">{longDate(b.date)}</span> · {blockedSpan(b)} · {b.reason}</span>
                     <Button variant="ghost" size="icon" aria-label={`Remove blocked time on ${longDate(b.date)}`} onClick={() => removeBlock(b.id)}><Trash2 /></Button>
                   </li>
                 ))}
@@ -215,7 +238,6 @@ function AvailabilityPage() {
             )}
           </section>
         </div>
-      </div>
       {dialog}
     </main>
   );

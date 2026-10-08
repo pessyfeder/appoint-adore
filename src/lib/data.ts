@@ -119,6 +119,12 @@ export function timeToISO(dateKey: string, time: string): string {
   return new Date(`${dateKey}T${time}:00`).toISOString();
 }
 
+/** A whole-day block is stored as 00:00–23:59. */
+export const ALL_DAY = { startTime: "00:00", endTime: "23:59" } as const;
+export const isAllDay = (block: { startTime: string; endTime: string }) => block.startTime === ALL_DAY.startTime && block.endTime === ALL_DAY.endTime;
+/** "All day", or the block's time range. */
+export const blockedSpan = (block: { startTime: string; endTime: string }) => isAllDay(block) ? "All day" : `${formatTime(block.startTime)}–${formatTime(block.endTime)}`;
+
 export function formatTime(time: string): string {
   const total = timeToMinutes(time);
   const hours = Math.floor(total / 60);
