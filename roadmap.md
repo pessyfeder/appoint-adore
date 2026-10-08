@@ -91,4 +91,4 @@
 - [x] View Schedule has no Block time button; time is blocked from Edit Hours.
 - [x] Tapping the Book Appointment tab (or the logo) locks Admin, so the public screen never leaves Admin open behind it.
 - [x] View Schedule: Search appointment finds bookings by client name or phone and/or date (newest first) and opens the chosen one on the calendar.
-- [x] Book Appointment: Search available time slot shows the next 2 weeks (Show more: a month) as Open / Full / Closed for a session length, with a Search start time box (2:30 pm, 14:00, 230, earliest, latest evening…). Tapping an open day lists its times; tapping a time opens the booking with length, date and time filled in.
+- [x] Book Appointment, Date & time step: Check Availability shows the next 2 weeks (Show more: a month) as Open / Full / Closed for the chosen length. Check Any time, Earliest, Latest or a Specific time; tapping an open day lists its times, and tapping one fills in the booking's date and time.

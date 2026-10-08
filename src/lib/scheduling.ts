@@ -95,3 +95,13 @@ export function noShowCharge(item: Pick<Appointment, "durationMin">) {
 export function canMarkNoShow(item: Appointment, client: AppointmentClient, now: Date = new Date()) {
   return client.status === "scheduled" && !client.startedAt && appointmentStart(item) <= now;
 }
+
+export type AvailabilityCheck = "any" | "earliest" | "latest" | "specific";
+
+/** Check Availability: the open start times a day keeps — all, its earliest or latest opening, or one specific time. */
+export function checkTimes(times: string[], check: AvailabilityCheck, specific: string | null): string[] {
+  if (check === "earliest") return times.slice(0, 1);
+  if (check === "latest") return times.slice(-1);
+  if (check === "specific") return specific && times.includes(specific) ? [specific] : [];
+  return times;
+}
