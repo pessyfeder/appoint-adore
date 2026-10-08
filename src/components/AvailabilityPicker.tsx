@@ -76,8 +76,8 @@ export function AvailabilityPicker({ durationMin, excludeId, date, time, onChang
   const nextTier = RANGE_TIERS.find((value) => value > days);
 
   return <div>
-    <p className="text-sm font-medium">Start time</p>
-    <div className="mt-1 flex flex-wrap items-center gap-2">
+    <h2 className="font-serif text-xl">Choose time</h2>
+    <div className="mt-3 flex flex-wrap items-center gap-2">
       <div className="grid flex-1 grid-cols-2 gap-1 rounded-lg bg-muted p-1 sm:grid-cols-4">
         {CHECKS.map((item) => <Button key={item.check} variant={check === item.check ? "default" : "ghost"} className="h-11" onClick={() => setCheck(item.check)}>{item.label}</Button>)}
       </div>
@@ -86,6 +86,7 @@ export function AvailabilityPicker({ durationMin, excludeId, date, time, onChang
         <SelectContent>{specificOptions.map((option) => <SelectItem className="h-10" key={option} value={option}>{formatTime(option)}</SelectItem>)}</SelectContent>
       </Select>}
     </div>
+    <h2 className="mt-7 font-serif text-xl">Choose date</h2>
     <p className={`mt-2 text-sm ${!waitingForTime && !anyOpen ? "text-destructive" : "text-muted-foreground"}`}>
       {waitingForTime ? "Choose a time to see which days have it open."
         : !anyOpen ? (check === "specific" && specific ? `${formatTime(specific)} isn't open on any day in this range.` : "No open days in this range.")
