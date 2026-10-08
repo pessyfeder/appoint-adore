@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useConfirm } from "@/components/ConfirmDialog";
+import { RequiredMark } from "@/components/RequiredMark";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -63,8 +64,8 @@ export function AdjustBalanceDialog({ client, open, onOpenChange }: { client: Cl
             <Button className="h-11" type="button" role="radio" aria-checked={direction === "owes"} variant={direction === "owes" ? "default" : "outline"} onClick={() => { setDirection("owes"); setError(""); }}>Client owes</Button>
             <Button className="h-11" type="button" role="radio" aria-checked={direction === "credit"} variant={direction === "credit" ? "default" : "outline"} onClick={() => { setDirection("credit"); setError(""); }}>Client has credit</Button>
           </div>
-          <label className="grid gap-1 text-xs text-muted-foreground">Correct amount<Input className="h-11" type="number" min="0" step="0.01" value={amount} onChange={(e) => { setAmount(e.target.value); setError(""); }} /></label>
-          <label className="grid gap-1 text-xs text-muted-foreground">Reason<Input className="h-11" maxLength={300} placeholder="e.g. Discount, or payment taken but not recorded" value={reason} onChange={(e) => { setReason(e.target.value); setError(""); }} /></label>
+          <label className="grid gap-1 text-xs text-muted-foreground">Correct amount<RequiredMark /><Input aria-required="true" className="h-11" type="number" min="0" step="0.01" value={amount} onChange={(e) => { setAmount(e.target.value); setError(""); }} /></label>
+          <label className="grid gap-1 text-xs text-muted-foreground">Reason<RequiredMark /><Input aria-required="true" className="h-11" maxLength={300} placeholder="e.g. Discount, or payment taken but not recorded" value={reason} onChange={(e) => { setReason(e.target.value); setError(""); }} /></label>
           {Number.isFinite(change) && Math.abs(change) >= 0.01 && <p className="rounded-md bg-muted p-3 text-sm">
             New balance: {client.name} {describe(target)}. Recorded as an adjustment of <span className="font-semibold">{change > 0 ? "+" : "−"}{money(change)}</span> ({change > 0 ? "adds to what they owe" : "reduces what they owe"}).
           </p>}

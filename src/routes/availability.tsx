@@ -5,6 +5,7 @@ import { CalendarOff, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RequiredMark } from "@/components/RequiredMark";
 import { blocksIssue, setAvailability, sortBlocks, useAvailability, type Availability } from "@/lib/availability";
 import { formatTime, fromDateKey, toDateKey, type BusinessBlock } from "@/lib/data";
 import { useConfirm } from "@/components/ConfirmDialog";
@@ -167,7 +168,7 @@ function AvailabilityPage() {
             <h2 className="mb-1 text-lg font-semibold">Change hours for one date</h2>
             <p className="mb-4 text-sm text-muted-foreground">Add extra hours, shorten a day, or close it — only for that date.</p>
             <div className="mb-3 flex flex-col gap-1.5">
-              <Label htmlFor="override-date">Date</Label>
+              <Label htmlFor="override-date">Date<RequiredMark /></Label>
               <Input id="override-date" type="date" className="w-48" value={date} onChange={(e) => { setDateMsg({}); setDate(e.target.value); }} />
             </div>
             <RangeEditor blocks={dateBlocks} onChange={(next) => { setDateMsg({}); setDateBlocks(next); }} />
@@ -193,11 +194,11 @@ function AvailabilityPage() {
           <section className="rounded-xl border border-border bg-card p-5">
             <h2 className="mb-4 text-lg font-semibold">Block out time</h2>
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="flex flex-col gap-1.5"><Label htmlFor="b-date">Date</Label><Input id="b-date" type="date" min={today} value={block.date} onChange={(e) => setBlock({ ...block, date: e.target.value })} /></div>
-              <div className="flex flex-col gap-1.5"><Label htmlFor="b-start">From</Label><Input id="b-start" type="time" value={block.startTime} onChange={(e) => setBlock({ ...block, startTime: e.target.value })} /></div>
-              <div className="flex flex-col gap-1.5"><Label htmlFor="b-end">To</Label><Input id="b-end" type="time" value={block.endTime} onChange={(e) => setBlock({ ...block, endTime: e.target.value })} /></div>
+              <div className="flex flex-col gap-1.5"><Label htmlFor="b-date">Date<RequiredMark /></Label><Input id="b-date" type="date" min={today} value={block.date} onChange={(e) => setBlock({ ...block, date: e.target.value })} /></div>
+              <div className="flex flex-col gap-1.5"><Label htmlFor="b-start">From<RequiredMark /></Label><Input id="b-start" type="time" value={block.startTime} onChange={(e) => setBlock({ ...block, startTime: e.target.value })} /></div>
+              <div className="flex flex-col gap-1.5"><Label htmlFor="b-end">To<RequiredMark /></Label><Input id="b-end" type="time" value={block.endTime} onChange={(e) => setBlock({ ...block, endTime: e.target.value })} /></div>
             </div>
-            <div className="mt-3 flex flex-col gap-1.5"><Label htmlFor="b-reason">Reason</Label><Input id="b-reason" value={block.reason} maxLength={200} placeholder="e.g. Doctor appointment" onChange={(e) => setBlock({ ...block, reason: e.target.value })} /></div>
+            <div className="mt-3 flex flex-col gap-1.5"><Label htmlFor="b-reason">Reason<RequiredMark /></Label><Input id="b-reason" value={block.reason} maxLength={200} placeholder="e.g. Doctor appointment" onChange={(e) => setBlock({ ...block, reason: e.target.value })} /></div>
             <div className="mt-4 flex flex-col gap-3">
               {msg(blockMsg)}
               <div><Button onClick={saveBlock}>Block time</Button></div>

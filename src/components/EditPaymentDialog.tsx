@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { useConfirm } from "@/components/ConfirmDialog";
+import { RequiredMark } from "@/components/RequiredMark";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -57,12 +58,12 @@ export function EditPaymentDialog({ payment, onClose }: { payment: Payment | nul
       <DialogContent>
         <DialogHeader><DialogTitle>Edit payment</DialogTitle><DialogDescription>{name}</DialogDescription></DialogHeader>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="grid gap-1 text-xs text-muted-foreground">Amount<Input className="h-11" type="number" min="0.01" step="0.01" value={amount} onChange={(e) => { setAmount(e.target.value); setError(""); }} /></label>
-          <label className="grid gap-1 text-xs text-muted-foreground">Date<Input className="h-11" type="date" max={today} value={date} onChange={(e) => { setDate(e.target.value); setError(""); }} /></label>
-          <label className="grid gap-1 text-xs text-muted-foreground">Method
+          <label className="grid gap-1 text-xs text-muted-foreground">Amount<RequiredMark /><Input aria-required="true" className="h-11" type="number" min="0.01" step="0.01" value={amount} onChange={(e) => { setAmount(e.target.value); setError(""); }} /></label>
+          <label className="grid gap-1 text-xs text-muted-foreground">Date<RequiredMark /><Input aria-required="true" className="h-11" type="date" max={today} value={date} onChange={(e) => { setDate(e.target.value); setError(""); }} /></label>
+          <label className="grid gap-1 text-xs text-muted-foreground">Method<RequiredMark />
             <Select value={method} onValueChange={(v) => setMethod(v as Payment["method"])}><SelectTrigger className="h-11 capitalize"><SelectValue /></SelectTrigger><SelectContent>{METHODS.map((m) => <SelectItem className="h-10 capitalize" key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select>
           </label>
-          <label className="grid gap-1 text-xs text-muted-foreground">Notes<Input className="h-11" maxLength={300} placeholder="Optional" value={notes} onChange={(e) => setNotes(e.target.value)} /></label>
+          <label className="grid gap-1 text-xs text-muted-foreground">Notes (optional)<Input className="h-11" maxLength={300} value={notes} onChange={(e) => setNotes(e.target.value)} /></label>
         </div>
         {error && <p className="text-sm text-destructive">{error}</p>}
         <DialogFooter className="flex-wrap gap-2 sm:justify-between">

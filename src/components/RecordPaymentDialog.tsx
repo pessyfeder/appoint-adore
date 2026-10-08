@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useConfirm } from "@/components/ConfirmDialog";
+import { RequiredMark } from "@/components/RequiredMark";
 import { useStore } from "@/lib/store";
 
 /** Shared payment form; saving asks "Are you sure?" first. `clientIds` limits the client choice (e.g. the clients of a just-ended session). */
@@ -38,10 +39,10 @@ export function RecordPaymentDialog({ open, onOpenChange, clientIds, defaultAmou
   return <><Dialog open={open} onOpenChange={onOpenChange}><DialogContent>
     <DialogHeader><DialogTitle>Record payment</DialogTitle><DialogDescription>Paying ahead builds a credit toward future visits.</DialogDescription></DialogHeader>
     <div className="grid gap-3">
-      <Select value={clientId} onValueChange={setClientId}><SelectTrigger className="h-11"><SelectValue placeholder="Choose client" /></SelectTrigger><SelectContent>{options.map((c) => <SelectItem className="h-10" key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select>
-      <Input className="h-11" type="number" min="0.01" step="0.01" placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
-      <Select value={method} onValueChange={(v) => setMethod(v as typeof method)}><SelectTrigger className="h-11 capitalize" aria-label="Payment method"><SelectValue placeholder="Choose payment method" /></SelectTrigger><SelectContent>{["cash", "card", "check", "other"].map((m) => <SelectItem className="h-10 capitalize" key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select>
-      <Input className="h-11" placeholder="Notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
+      <label className="grid gap-1 text-sm font-medium" htmlFor="payment-client">Client<RequiredMark /><Select value={clientId} onValueChange={setClientId}><SelectTrigger id="payment-client" className="h-11 font-normal" aria-required="true"><SelectValue placeholder="Choose client" /></SelectTrigger><SelectContent>{options.map((c) => <SelectItem className="h-10" key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></label>
+      <label className="grid gap-1 text-sm font-medium">Amount<RequiredMark /><Input className="h-11 font-normal" type="number" min="0.01" step="0.01" aria-required="true" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} /></label>
+      <label className="grid gap-1 text-sm font-medium" htmlFor="payment-method">Payment method<RequiredMark /><Select value={method} onValueChange={(v) => setMethod(v as typeof method)}><SelectTrigger id="payment-method" className="h-11 font-normal capitalize" aria-required="true"><SelectValue placeholder="Choose payment method" /></SelectTrigger><SelectContent>{["cash", "card", "check", "other"].map((m) => <SelectItem className="h-10 capitalize" key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select></label>
+      <label className="grid gap-1 text-sm font-medium">Notes <span className="font-normal text-muted-foreground">(optional)</span><Input className="h-11 font-normal" value={notes} onChange={(e) => setNotes(e.target.value)} /></label>
     </div>
     <DialogFooter><Button className="h-11" disabled={!clientId || !method || !(Number(amount) > 0)} onClick={save}>Save payment</Button></DialogFooter>
   </DialogContent></Dialog>{dialog}</>;

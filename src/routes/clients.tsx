@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Archive, ArchiveRestore, Pencil, Phone, ReceiptText, UserPlus } from "lucide-react";
 import { BillingPanel, ClientBalances } from "@/components/BillingPanel";
 import { ClientCombobox } from "@/components/ClientCombobox";
+import { RequiredMark } from "@/components/RequiredMark";
 import { ClientBillingDialog } from "@/components/ClientBillingDialog";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
@@ -109,10 +110,10 @@ function ClientsPage() {
     setNotice("Client archived.");
   }
 
-  const form = (creating || editing) && <div className="mt-4 grid gap-2 border bg-card p-4 sm:grid-cols-[1fr_1fr_auto]">
+  const form = (creating || editing) && <div className="mt-4 grid items-end gap-2 border bg-card p-4 sm:grid-cols-[1fr_1fr_auto]">
     {editing && <p className="text-sm font-medium sm:col-span-3">Edit client details</p>}
-    <Input className="h-11" aria-label="Full name" placeholder="Full name" maxLength={100} value={draft.name} onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))} />
-    <Input className="h-11" aria-label="Phone" inputMode="tel" placeholder="Phone" value={draft.phone} onChange={(event) => setDraft((current) => ({ ...current, phone: formatPhone(event.target.value) }))} />
+    <label className="block text-sm font-medium">Full name<RequiredMark /><Input className="mt-1 h-11 font-normal" aria-required="true" maxLength={100} value={draft.name} onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))} /></label>
+    <label className="block text-sm font-medium">Phone<RequiredMark /><Input className="mt-1 h-11 font-normal" aria-required="true" inputMode="tel" value={draft.phone} onChange={(event) => setDraft((current) => ({ ...current, phone: formatPhone(event.target.value) }))} /></label>
     <div className="flex gap-2">
       <Button className="h-11" disabled={!canSave} onClick={saveClient}>Save</Button>
       <Button className="h-11" variant="ghost" onClick={closeForm}>Cancel</Button>

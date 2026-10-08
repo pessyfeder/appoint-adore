@@ -92,3 +92,5 @@
 - [x] Tapping the Book Appointment tab (or the logo) locks Admin, so the public screen never leaves Admin open behind it.
 - [x] View Schedule: Search appointment finds bookings by client name or phone and/or date (newest first) and opens the chosen one on the calendar.
 - [x] Book Appointment, Date & time step: a "Check for specific time availability" search box (placeholder "Enter specific time") sits at the top left, above "Choose date"; typing a time like 7:30 pm, 7:30 or 1930 narrows the dotted days to ones with that start time open. "Choose date" is a plain month calendar (arrows, up to 12 months ahead); days with an opening for the chosen length have a dot. Tapping a day picks its earliest time (or the searched time), and "Choose a time" lists all of the day's open times, grouped Morning / Evening (no Earliest / Latest buttons).
+- [x] Book Appointment, Your details: separate First name and Last name fields (both required, saved as one client name).
+- [x] Required fields across the app show a red asterisk after their label (screen readers hear "required"); unlabeled payment fields got visible labels.

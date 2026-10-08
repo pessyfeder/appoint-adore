@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type FormEvent
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { RequiredMark } from "@/components/RequiredMark";
 import {
   createLockRecord,
   readLockRecord,
@@ -132,7 +133,7 @@ function LockScreen({ status }: { status: Status }) {
               The calendar, clients, payments and balances on this tablet stay behind this password.
             </p>
             <label className="mt-5 block text-sm font-medium" htmlFor="new-password">
-              Password
+              Password<RequiredMark />
             </label>
             <Input
               id="new-password"
@@ -144,7 +145,7 @@ function LockScreen({ status }: { status: Status }) {
               onChange={(event) => setPassphrase(event.target.value)}
             />
             <label className="mt-3 block text-sm font-medium" htmlFor="confirm-password">
-              Confirm password
+              Confirm password<RequiredMark />
             </label>
             <Input
               id="confirm-password"
@@ -163,7 +164,7 @@ function LockScreen({ status }: { status: Status }) {
             <h1 className="mt-6 font-serif text-2xl">Admin</h1>
             <p className="mt-2 text-sm text-muted-foreground">Enter your password to open the dashboard, schedule, hours, clients and billing.</p>
             <label className="mt-5 block text-sm font-medium" htmlFor="unlock-password">
-              Password
+              Password<RequiredMark />
             </label>
             <Input
               id="unlock-password"
