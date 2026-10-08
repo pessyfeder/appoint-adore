@@ -4,10 +4,7 @@ import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  clearSessionUnlock,
   createLockRecord,
-  isSessionUnlocked,
-  markSessionUnlocked,
   readLockRecord,
   setupIssue,
   verifyPassphrase,
@@ -39,7 +36,8 @@ export function LockProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<Status>("checking");
 
   useEffect(() => {
-    setStatus(readLockRecord() ? (isSessionUnlocked() ? "unlocked" : "locked") : "setup");
+    // Admin always starts locked when the app opens; the password is asked again every time.
+    setStatus(readLockRecord() ? "locked" : "setup");
   }, []);
 
   const value = useMemo<Lock>(
@@ -47,18 +45,16 @@ export function LockProvider({ children }: { children: ReactNode }) {
       status,
       async setup(passphrase) {
         writeLockRecord(await createLockRecord(passphrase));
-        markSessionUnlocked();
-        setStatus("unlocked");
+        // The new password guards Admin straight away; the app opens on the public Book screen.
+        setStatus("locked");
       },
       async unlock(passphrase) {
         const record = readLockRecord();
         if (!record || !(await verifyPassphrase(passphrase, record))) return false;
-        markSessionUnlocked();
         setStatus("unlocked");
         return true;
       },
       lock() {
-        clearSessionUnlock();
         setStatus("locked");
       },
       async verify(passphrase) {

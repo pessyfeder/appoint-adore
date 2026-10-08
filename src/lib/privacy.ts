@@ -1,5 +1,4 @@
 const LOCK_KEY = "lumiere-lock-v1";
-const SESSION_KEY = "lumiere-unlocked-v1";
 const ITERATIONS = 150_000;
 
 export const MIN_PASSPHRASE = 4;
@@ -73,32 +72,6 @@ export function writeLockRecord(record: LockRecord) {
   window.localStorage.setItem(LOCK_KEY, JSON.stringify(record));
 }
 
-/** The gate stays open for the browser session only, so closing the browser locks it again. */
-export function isSessionUnlocked() {
-  if (typeof window === "undefined") return false;
-  try {
-    return window.sessionStorage.getItem(SESSION_KEY) === "true";
-  } catch {
-    return false;
-  }
-}
-
-export function markSessionUnlocked() {
-  try {
-    window.sessionStorage.setItem(SESSION_KEY, "true");
-  } catch {
-    /* storage unavailable: the gate simply stays closed */
-  }
-}
-
-export function clearSessionUnlock() {
-  try {
-    window.sessionStorage.removeItem(SESSION_KEY);
-  } catch {
-    /* nothing to clear */
-  }
-}
-
 /** Last-resort reset: removes every studio record held on this device. */
 export function wipeStudioData() {
   if (typeof window === "undefined") return;
@@ -108,5 +81,4 @@ export function wipeStudioData() {
     if (key?.startsWith("lumiere-")) doomed.push(key);
   }
   doomed.forEach((key) => window.localStorage.removeItem(key));
-  clearSessionUnlock();
 }

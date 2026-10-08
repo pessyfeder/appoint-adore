@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-/** Device-storage keys that make up the studio's records. The unlock flag lives in sessionStorage and is never backed up. */
+/** Device-storage keys that make up the studio's records. The password record is included; Admin unlock is never stored. */
 export const BACKUP_KEYS = {
   records: "lumiere-scheduler-v2",
   hours: "lumiere-hours-v1",

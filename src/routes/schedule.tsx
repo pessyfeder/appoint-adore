@@ -5,13 +5,10 @@ import { CLIENT_BADGE, CLIENT_LABEL, STATUS_CARD, StartEndControls, StatusBadge 
 import { ClientStatusActions } from "@/components/ClientStatusActions";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { AlertTriangle, ChevronLeft, ChevronRight, CalendarPlus, Clock3, Plus, UserRound } from "lucide-react";
+import { AlertTriangle, ChevronLeft, ChevronRight, CalendarPlus, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { appointmentProgress, formatDuration, formatTime, fromDateKey, timeToMinutes, toDateKey, type Appointment } from "@/lib/data";
-import { useConfirm } from "@/components/ConfirmDialog";
-import { blockedTimeIssue } from "@/lib/scheduling";
 import { useAvailability } from "@/lib/availability";
 import { OUTSIDE_HOURS_CARD, useOutsideHours } from "@/lib/outside-hours";
 import { useStore } from "@/lib/store";
@@ -40,8 +37,7 @@ function clientNames(item: Appointment, clients: { id: string; name: string }[])
 }
 
 function SchedulePage() {
-  const { appointments, clients, blockedTimes, addBlockedTime, highlightId, setHighlightId } = useStore();
-  const { confirm, dialog: confirmDialog } = useConfirm();
+  const { appointments, clients, blockedTimes, highlightId, setHighlightId } = useStore();
   const availability = useAvailability();
   const outside = useOutsideHours();
   const hoursOn = (key: string) => availability.overrides[key] ?? availability.weekly[fromDateKey(key).getDay()] ?? [];
@@ -55,7 +51,6 @@ function SchedulePage() {
     if (toDateKey(cursor) === shownToday) setCursor(new Date());
   }
   const [selected, setSelected] = useState<Appointment | null>(null);
-  const [blockOpen, setBlockOpen] = useState(false);
   const [goOpen, setGoOpen] = useState(false);
   useEffect(() => {
     if (!highlightId) return;
@@ -66,7 +61,6 @@ function SchedulePage() {
     return () => { window.clearTimeout(scroll); window.clearTimeout(clear); };
   }, [highlightId]); // eslint-disable-line react-hooks/exhaustive-deps
   const current = selected ? appointments.find((item) => item.id === selected.id) ?? selected : null;
-  const [block, setBlock] = useState({ date: toDateKey(new Date()), startTime: "10:30", endTime: "11:30", reason: "Unavailable" });
 
   const weekDays = useMemo(() => {
     const start = startOfWeek(cursor);
@@ -78,17 +72,6 @@ function SchedulePage() {
     if (view === "week") next.setDate(next.getDate() + direction * 7);
     else next.setMonth(next.getMonth() + direction);
     setCursor(next);
-  }
-
-  const [blockError, setBlockError] = useState<string | null>(null);
-
-  async function saveBlock() {
-    const issue = blockedTimeIssue(block, appointments);
-    if (issue) return setBlockError(issue);
-    if (!(await confirm({ title: "Are you sure?", description: `Block ${fromDateKey(block.date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}, ${formatTime(block.startTime)}–${formatTime(block.endTime)}? No appointments can be booked then.`, confirmLabel: "Block time", cancelLabel: "Go back" }))) return;
-    addBlockedTime({ ...block, reason: block.reason.trim() });
-    setBlockError(null);
-    setBlockOpen(false);
   }
 
   const title = view === "week"
@@ -105,7 +88,6 @@ function SchedulePage() {
             <h1 className="mt-1 font-serif text-3xl">Schedule</h1>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" className="h-11" onClick={() => setBlockOpen(true)}><Clock3 className="opacity-60" /> Block time</Button>
             <Button asChild className="h-11"><Link to="/book" search={{ edit: undefined }}><CalendarPlus /> New appointment</Link></Button>
           </div>
         </div>
@@ -164,15 +146,8 @@ function SchedulePage() {
           {appointmentProgress(current) === "scheduled" && <DialogFooter><Button asChild variant={outside.ids.has(current.id) ? "default" : "outline"} className="h-11"><Link to="/book" search={{ edit: current.id }}>Reschedule</Link></Button></DialogFooter>}
         </>}</DialogContent>
       </Dialog>
-
-      <Dialog open={blockOpen} onOpenChange={(open) => { setBlockOpen(open); if (!open) setBlockError(null); }}><DialogContent>
-        <DialogHeader><DialogTitle>Block time</DialogTitle><DialogDescription>Keep appointments from being booked during this period.</DialogDescription></DialogHeader>
-        <div className="grid gap-3"><Input className="h-11" type="date" min={todayKey} value={block.date} onChange={(event) => setBlock({ ...block, date: event.target.value })} /><div className="grid grid-cols-2 gap-3"><Input className="h-11" type="time" value={block.startTime} onChange={(event) => setBlock({ ...block, startTime: event.target.value })} /><Input className="h-11" type="time" value={block.endTime} onChange={(event) => setBlock({ ...block, endTime: event.target.value })} /></div><Input className="h-11" aria-label="Reason" placeholder="Reason (e.g. Doctor appointment)" maxLength={200} value={block.reason} onChange={(event) => setBlock({ ...block, reason: event.target.value })} /></div>
-        {blockError && <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{blockError}</p>}
-        <DialogFooter><Button onClick={saveBlock}>Save block</Button></DialogFooter>
-      </DialogContent></Dialog>
       </div>
-    {confirmDialog}</main>
+    </main>
   );
 }
 

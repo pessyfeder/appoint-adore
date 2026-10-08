@@ -4,7 +4,6 @@ import { Download, FileUp, ShieldAlert } from "lucide-react";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { applyBackup, backupFileName, createBackup, markBackedUp, parseBackup, readLastBackup, type Backup, type BackupSummary } from "@/lib/backup";
-import { clearSessionUnlock } from "@/lib/privacy";
 
 export const Route = createFileRoute("/backup")({
   head: () => ({ meta: [
@@ -71,7 +70,6 @@ function BackupPage() {
     const current = createBackup(window.localStorage);
     download(current, backupFileName(current).replace("lumiere-backup-", "lumiere-before-restore-"));
     applyBackup(window.localStorage, picked.backup);
-    clearSessionUnlock();
     // Give the safety download a moment to start before the page reloads with the restored records.
     window.setTimeout(() => window.location.assign("/"), 800);
   }

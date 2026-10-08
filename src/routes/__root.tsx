@@ -4,6 +4,7 @@ import {
   Outlet,
   Link,
   createRootRouteWithContext,
+  useNavigate,
   useRouter,
   useRouterState,
   HeadContent,
@@ -134,9 +135,18 @@ function useOfflineSupport() {
   }, []);
 }
 
+/** The app always opens on the public Book Appointment screen; Admin is one tap (and the password) away. */
+function useOpenOnBook() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!window.location.pathname.startsWith("/book")) void navigate({ to: "/book", search: { edit: undefined }, replace: true });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   useOfflineSupport();
+  useOpenOnBook();
 
   return (
     <QueryClientProvider client={queryClient}>

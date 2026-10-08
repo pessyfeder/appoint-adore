@@ -87,3 +87,5 @@
 - [x] A reschedule link whose appointment no longer exists says so instead of showing "Appointment updated".
 - [x] If the tablet's storage for the app is full, a lasting warning explains that changes aren't being saved (instead of an error page).
 - [x] Saved working hours that can't be read fall back to the standard hours, with a Dashboard notice; backups still work.
+- [x] The app always opens on Book Appointment, and Admin asks for the password every time the app is opened (also right after choosing the password).
+- [x] View Schedule has no Block time button; time is blocked from Edit Hours.

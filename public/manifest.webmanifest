@@ -2,7 +2,7 @@
   "name": "Lumière Electrolysis",
   "short_name": "Lumière",
   "description": "Appointment scheduling for Lumière Electrolysis studio.",
-  "start_url": "/",
+  "start_url": "/book",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
