@@ -160,3 +160,37 @@ describe("pausing a session", () => {
     expect(workedMinutes(endedWhilePaused)).toBe(45);
   });
 });
+
+describe("back-to-back start times off the 15-minute grid", () => {
+  const morning = (time: string, durationMin: number): Appointment => ({ ...booked(time), id: `m-${time}`, durationMin });
+
+  it("offers the exact end of a 25-minute appointment, and skips the 5-minute sliver after it", () => {
+    const times = availableTimes(MONDAY, 30, [morning("10:30", 25)], [], at("08:00"));
+    expect(times).toContain("10:55");
+    expect(times).not.toContain("11:00");
+    expect(times).toContain("11:15");
+  });
+
+  it("offers a start that ends exactly when the next appointment begins", () => {
+    expect(availableTimes(MONDAY, 25, [morning("12:00", 30)], [], at("08:00"))).toContain("11:35");
+  });
+
+  it("offers a start that ends exactly at closing", () => {
+    const times = availableTimes(MONDAY, 25, [], [], at("08:00"));
+    expect(times).toContain("13:05");
+    expect(times).not.toContain("13:00");
+  });
+
+  it("offers the exact end of blocked time", () => {
+    const block = { id: "b1", date: MONDAY, startTime: "10:30", endTime: "10:50", reason: "Errand" };
+    const times = availableTimes(MONDAY, 30, [], [block], at("08:00"));
+    expect(times[0]).toBe("10:50");
+  });
+
+  it("every offered time passes the booking checks", () => {
+    const appointments = [morning("10:30", 25), morning("11:40", 50)];
+    for (const time of availableTimes(MONDAY, 20, appointments, [], at("08:00"))) {
+      expect(validateAppointment({ date: MONDAY, time, durationMin: 20 }, appointments, [])).toBeNull();
+    }
+  });
+});

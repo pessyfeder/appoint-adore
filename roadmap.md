@@ -100,3 +100,4 @@
 - [x] Appointment status shown by color only (card edge or dot; screen readers and hover still give the name), with a color key on the Dashboard and Schedule. Opening an appointment shows the full status name next to its color.
 - [x] Edit Hours page shows "Change hours for one date" and "Block out time"; the weekly (across-the-board) hours open in a popup from a "Change weekly hours" button.
 - [x] Block out time: "Block entire day" checkbox hides From/To and blocks the whole date (stored as 00:00–23:59, shown as "All day").
+- [x] Start times include exact back-to-back edges off the 15-minute grid (right after an appointment or blocked time ends, or ending right as the next begins or the hours close).

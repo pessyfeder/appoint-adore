@@ -61,7 +61,7 @@ export function AvailabilityPicker({ durationMin, excludeId, date, time, onChang
     const set = new Set<string>();
     for (const key of openTimes.keys()) {
       for (const block of effectiveHours(key)) {
-        for (let minute = timeToMinutes(block.start); minute + durationMin <= timeToMinutes(block.end); minute += 15) set.add(minutesToTime(minute));
+        for (let minute = timeToMinutes(block.start); minute + durationMin <= timeToMinutes(block.end); minute += 5) set.add(minutesToTime(minute));
       }
     }
     return [...set].sort();
