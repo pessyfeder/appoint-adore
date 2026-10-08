@@ -84,3 +84,6 @@
 - [x] Payment report "Owed" is as of the range's last day: payments and credits made later don't reduce it.
 - [x] Blocked time can't be added for a time that has already passed.
 - [x] Archiving a client explains exactly what is still open: a running session, upcoming appointments to cancel, and past appointments to mark No-show or Cancel (with dates).
+- [x] A reschedule link whose appointment no longer exists says so instead of showing "Appointment updated".
+- [x] If the tablet's storage for the app is full, a lasting warning explains that changes aren't being saved (instead of an error page).
+- [x] Saved working hours that can't be read fall back to the standard hours, with a Dashboard notice; backups still work.

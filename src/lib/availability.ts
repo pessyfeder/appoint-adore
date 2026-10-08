@@ -1,5 +1,7 @@
 import { useSyncExternalStore } from "react";
+import { z } from "zod";
 import type { BusinessBlock } from "./data";
+import { saveToDevice } from "./save-warning";
 
 /** Practitioner-editable working hours, stored on this device only. */
 export type Availability = {
@@ -20,8 +22,13 @@ export const DEFAULT_WEEKLY: Record<number, BusinessBlock[]> = {
   6: [],
 };
 
+const time = z.string().regex(/^\d{2}:\d{2}$/);
+const blocksSchema = z.array(z.object({ start: time, end: time }));
+const savedSchema = z.object({ weekly: z.record(blocksSchema), overrides: z.record(blocksSchema) });
+
 let current: Availability = { weekly: DEFAULT_WEEKLY, overrides: {} };
 let loaded = false;
+let damaged = false;
 const listeners = new Set<() => void>();
 
 function load() {
@@ -29,8 +36,14 @@ function load() {
   loaded = true;
   try {
     const raw = window.localStorage.getItem(KEY);
-    if (raw) current = JSON.parse(raw) as Availability;
-  } catch { /* keep defaults */ }
+    if (!raw) return;
+    // Saved hours that can't be read fall back to the standard hours (the saved copy is left untouched).
+    const parsed = savedSchema.safeParse(JSON.parse(raw));
+    if (parsed.success) current = parsed.data;
+    else damaged = true;
+  } catch {
+    damaged = true;
+  }
 }
 
 export function getAvailability(): Availability {
@@ -38,10 +51,23 @@ export function getAvailability(): Availability {
   return current;
 }
 
+/** True when the saved hours couldn't be read and the standard hours are in use instead. */
+export function hoursWereDamaged() {
+  load();
+  return damaged;
+}
+
 export function setAvailability(next: Availability) {
   current = next;
-  window.localStorage.setItem(KEY, JSON.stringify(next));
+  if (saveToDevice(KEY, JSON.stringify(next))) damaged = false;
   listeners.forEach((fn) => fn());
+}
+
+/** Test helper: forget the loaded hours so the next read loads them from storage again. */
+export function resetAvailabilityForTests() {
+  current = { weekly: DEFAULT_WEEKLY, overrides: {} };
+  loaded = false;
+  damaged = false;
 }
 
 /** Returns an error when blocks overlap or end before they start. */

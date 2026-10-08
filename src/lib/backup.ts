@@ -43,11 +43,13 @@ function readJson(storage: Storage, key: string): unknown {
 /** Snapshot of everything on this device, ready to save as a file. */
 export function createBackup(storage: Storage, now: Date = new Date()): Backup {
   const records = readJson(storage, BACKUP_KEYS.records) ?? { clients: [], appointments: [], payments: [], blockedTimes: [] };
+  // Damaged saved hours are left out rather than stopping the backup; the records are what matter.
+  const hours = readJson(storage, BACKUP_KEYS.hours);
   return backupSchema.parse({
     format: FORMAT,
     version: VERSION,
     exportedAt: now.toISOString(),
-    data: { records, hours: readJson(storage, BACKUP_KEYS.hours), lock: readJson(storage, BACKUP_KEYS.lock) },
+    data: { records, hours: hoursSchema.safeParse(hours).success ? hours : null, lock: readJson(storage, BACKUP_KEYS.lock) },
   });
 }
 

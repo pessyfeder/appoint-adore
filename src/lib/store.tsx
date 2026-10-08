@@ -2,6 +2,7 @@ import type React from "react";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { z } from "zod";
 import { noShowCharge, RATE_PER_MINUTE } from "./scheduling";
+import { saveToDevice } from "./save-warning";
 import { clientInSession, clientPaused, emptyData, formatPhone, movePaidAt, pausedMsSoFar, workedMinutes, type Appointment, type BlockedTime, type Adjustment, type Client, type Payment } from "./data";
 
 const STORAGE_KEY = "lumiere-scheduler-v2";
@@ -109,7 +110,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (ready) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    if (ready) saveToDevice(STORAGE_KEY, JSON.stringify(state));
   }, [ready, state]);
 
   const value = useMemo<Store>(() => ({

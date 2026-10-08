@@ -4,6 +4,7 @@ import { AlertTriangle, CalendarPlus, Clock3, HardDriveDownload, Users } from "l
 import { Button } from "@/components/ui/button";
 import { formatDuration, formatTime, fromDateKey } from "@/lib/data";
 import { useToday } from "@/hooks/use-today";
+import { hoursWereDamaged, useAvailability } from "@/lib/availability";
 import { OUTSIDE_HOURS_BADGE, useOutsideHours } from "@/lib/outside-hours";
 import { useStore } from "@/lib/store";
 import { StartEndControls, StatusBadge } from "@/components/AppointmentControls";
@@ -30,6 +31,7 @@ function TodayPage() {
   const label = fromDateKey(today).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   return <main className="mx-auto max-w-6xl px-4 py-8">
     <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-medium uppercase text-muted-foreground">{label}</p><h1 className="mt-1 font-serif text-3xl">Today</h1></div><Button asChild className="h-11"><Link to="/book" search={{ edit: undefined }}><CalendarPlus /> New appointment</Link></Button></div>
+    {ready && <HoursDamagedNotice />}
     {ready && outside.list.length > 0 && <RescheduleNotice />}
     {ready && (clients.length > 0 || appointments.length > 0 || payments.length > 0) && <BackupReminder />}
     <div className="mt-7 grid gap-3 sm:grid-cols-2"><Stat icon={<Clock3 />} label="Appointments" value={String(entries.length)} /><Stat icon={<Users />} label="Clients today" value={String(entries.flatMap((item) => item.clients).filter((entry) => entry.status !== "cancelled").length)} /></div>
@@ -47,6 +49,16 @@ function BackupReminder() {
   return <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-status-noshow/40 bg-status-noshow/10 p-4">
     <p className="flex items-center gap-2 text-sm"><HardDriveDownload className="h-5 w-5 shrink-0" />{days === null ? "You haven't backed up your records yet." : `Your last backup was ${days} days ago.`} Your records live only on this tablet.</p>
     <Button asChild className="h-11" variant="outline"><Link to="/backup">Back up now</Link></Button>
+  </div>;
+}
+
+/** Shown when the saved working hours couldn't be read, so the standard hours are being used instead. */
+function HoursDamagedNotice() {
+  useAvailability(); // re-check after the hours are saved again
+  if (!hoursWereDamaged()) return null;
+  return <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-500 bg-amber-50 p-4 text-amber-950">
+    <p className="flex items-center gap-2 text-sm"><AlertTriangle className="h-5 w-5 shrink-0" />Your saved working hours couldn't be read, so the standard hours are being used. Check them and save, or restore a backup.</p>
+    <Button asChild className="h-11" variant="outline"><Link to="/availability">Edit Hours</Link></Button>
   </div>;
 }
 

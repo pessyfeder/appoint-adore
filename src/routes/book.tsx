@@ -1,5 +1,5 @@
 import { toast } from "sonner";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useToday } from "@/hooks/use-today";
 import { ArrowLeft, ArrowRight, CalendarPlus, Check, UserPlus, X } from "lucide-react";
@@ -122,7 +122,7 @@ function BookPage() {
   }
 
   async function finish() {
-    if (!time) return;
+    if (!time || (edit && !existing)) return;
     if (existing && appointmentProgress(existing) !== "scheduled") { setError("Only scheduled appointments can be rescheduled."); return; }
     const noteError = notesIssue(notes);
     if (noteError) { setError(noteError); setStep(2); return; }
@@ -157,6 +157,16 @@ function BookPage() {
     toast.success(edit ? "Appointment updated" : "Appointment confirmed", { description: when });
     navigate({ to: "/schedule" });
   }
+
+  // A reschedule link whose appointment is gone (e.g. an older backup was restored) can't be saved.
+  if (edit && store.ready && !existing) return <main className="mx-auto max-w-xl px-4 py-16 text-center">
+    <h1 className="font-serif text-3xl">This appointment no longer exists</h1>
+    <p className="mt-3 text-muted-foreground">It may have been removed when a backup was restored. Nothing was changed.</p>
+    <div className="mt-8 flex flex-wrap justify-center gap-2">
+      <Button asChild variant="outline" className="h-12 px-6"><Link to="/schedule">Back to schedule</Link></Button>
+      <Button asChild className="h-12 px-6"><Link to="/book" search={{ edit: undefined }}><CalendarPlus /> New appointment</Link></Button>
+    </div>
+  </main>;
 
   if (booked) return <main className="mx-auto max-w-xl px-4 py-16 text-center">
     <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground"><Check className="h-7 w-7" /></span>
