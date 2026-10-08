@@ -157,6 +157,17 @@ export function formatPhone(value: string): string {
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 }
 
+/** A client's stored name is "First Last", or just "Last" when no first name was given. */
+export function joinName(first: string, last: string): string {
+  return `${first.trim()} ${last.trim()}`.trim().replace(/\s+/g, " ");
+}
+
+/** Splits a stored name back into its parts: the last word is the last name, anything before it the first name. */
+export function splitName(name: string): { first: string; last: string } {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  return { first: words.slice(0, -1).join(" "), last: words[words.length - 1] ?? "" };
+}
+
 export function effectiveHours(dateKey: string): BusinessBlock[] {
   const { weekly, overrides } = getAvailability();
   if (overrides[dateKey]) return overrides[dateKey]!;

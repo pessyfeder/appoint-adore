@@ -6,12 +6,13 @@ import { ClientStatusActions } from "@/components/ClientStatusActions";
 import { AppointmentSearchDialog } from "@/components/AppointmentSearchDialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { AlertTriangle, ChevronLeft, ChevronRight, CalendarPlus, Search, UserRound } from "lucide-react";
+import { AlertTriangle, ChevronLeft, ChevronRight, CalendarCheck, CalendarPlus, Search, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { appointmentProgress, blockedSpan, formatDuration, formatTime, fromDateKey, timeToMinutes, toDateKey, type Appointment } from "@/lib/data";
 import { useAvailability } from "@/lib/availability";
 import { OUTSIDE_HOURS_CARD, useOutsideHours } from "@/lib/outside-hours";
+import { availableTimes } from "@/lib/scheduling";
 import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/schedule")({
@@ -62,6 +63,27 @@ function SchedulePage() {
     const clear = window.setTimeout(() => setHighlightId(null), 6000);
     return () => { window.clearTimeout(scroll); window.clearTimeout(clear); };
   }, [highlightId]); // eslint-disable-line react-hooks/exhaustive-deps
+  // The soonest day with room for a minimum-length (15 minute) appointment, and a brief flash on it after jumping there.
+  const next = useMemo(() => {
+    for (let offset = 0; offset < 180; offset++) {
+      const day = new Date(); day.setHours(12, 0, 0, 0); day.setDate(day.getDate() + offset);
+      const key = toDateKey(day);
+      const times = availableTimes(key, 15, appointments, blockedTimes);
+      if (times[0]) return { key, time: times[0] };
+    }
+    return null;
+  }, [appointments, blockedTimes, availability, todayKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [flashKey, setFlashKey] = useState<string | null>(null);
+  useEffect(() => {
+    if (!flashKey) return;
+    const clear = window.setTimeout(() => setFlashKey(null), 6000);
+    return () => window.clearTimeout(clear);
+  }, [flashKey]);
+  function showNext() {
+    if (!next) return;
+    setCursor(fromDateKey(next.key));
+    setFlashKey(next.key);
+  }
   const current = selected ? appointments.find((item) => item.id === selected.id) ?? selected : null;
 
   const weekDays = useMemo(() => {
@@ -91,6 +113,7 @@ function SchedulePage() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" className="h-11" onClick={() => setSearchOpen(true)}><Search className="opacity-60" /> Search appointment</Button>
+            <Button variant="outline" className="h-11" disabled={!next} onClick={showNext} title="Jump to the next open time"><CalendarCheck className="opacity-60" /> {next ? `Next open: ${fromDateKey(next.key).toLocaleDateString("en-US", { month: "short", day: "numeric" })}, ${formatTime(next.time)}` : "No openings soon"}</Button>
             <Button asChild className="h-11"><Link to="/book" search={{ edit: undefined }}><CalendarPlus /> New appointment</Link></Button>
           </div>
         </div>
@@ -124,17 +147,19 @@ function SchedulePage() {
             const today = key === todayKey;
             const past = key < todayKey;
             const closed = hoursOn(key).length === 0;
-            return <div key={key} className={`flex min-h-[460px] flex-col border-r last:border-r-0 ${past ? "bg-muted/40" : closed ? "bg-[repeating-linear-gradient(135deg,transparent_0,transparent_8px,var(--color-muted)_8px,var(--color-muted)_10px)]" : ""}`}>
+            const flashing = key === flashKey;
+            return <div key={key} className={`flex min-h-[460px] flex-col border-r last:border-r-0 ${flashing ? "animate-pulse bg-primary/10 ring-2 ring-inset ring-primary" : ""} ${past ? "bg-muted/40" : closed ? "bg-[repeating-linear-gradient(135deg,transparent_0,transparent_8px,var(--color-muted)_8px,var(--color-muted)_10px)]" : ""}`}>
               <div className={`border-b px-1 py-1.5 text-center ${today ? "bg-primary text-primary-foreground" : past ? "bg-muted text-muted-foreground" : "bg-muted/40"}`}><p className="text-[11px] font-medium uppercase leading-none tracking-tight">{day.toLocaleDateString("en-US", { weekday: "short" })}</p><p className="mt-1 text-base font-semibold leading-none">{day.getDate()}</p></div>
               <div className={`space-y-2 p-2 ${past ? "opacity-75" : ""}`}>
                 {dayAppointments.map((item) => <Button key={item.id} data-appointment={item.id} variant="outline" className={`h-auto w-full items-start justify-start whitespace-normal p-2 text-left transition-shadow ${STATUS_CARD[appointmentProgress(item)]} ${outside.ids.has(item.id) ? OUTSIDE_HOURS_CARD : ""} ${item.id === highlightId ? "border-primary bg-primary/10 ring-2 ring-primary ring-offset-2" : ""}`} onClick={() => setSelected(item)}><span className="w-full"><span className="block font-semibold">{formatTime(item.time)}</span>{outside.ids.has(item.id) && <span className="mb-1 flex items-start gap-0.5 text-[10px] font-semibold leading-tight text-amber-900"><AlertTriangle className="h-3 w-3 shrink-0" />Reschedule</span>}<span className="block text-xs text-muted-foreground">{clientNames(item, clients)}</span><span className="block text-xs text-muted-foreground">{formatDuration(item.durationMin)}</span></span></Button>)}
                 {dayBlocks.map((item) => <div key={item.id} className="border border-dashed bg-muted/50 p-2 text-xs text-muted-foreground">{blockedSpan(item)}<br />{item.reason}</div>)}
+                {flashing && next && <p className="rounded-md bg-primary px-2 py-1 text-center text-xs font-medium text-primary-foreground">Next open {formatTime(next.time)}</p>}
                 {!dayAppointments.length && !dayBlocks.length && <p className="pt-5 text-center text-xs text-muted-foreground">{closed ? "Closed" : "No appointments"}</p>}
               </div>
             </div>;
           })}
         </div></div>
-      ) : <MonthGrid cursor={cursor} appointments={appointments} clients={clients} onSelect={setSelected} highlightId={highlightId} todayKey={todayKey} hoursOn={hoursOn} outsideIds={outside.ids} />}
+      ) : <MonthGrid cursor={cursor} appointments={appointments} clients={clients} onSelect={setSelected} highlightId={highlightId} todayKey={todayKey} hoursOn={hoursOn} outsideIds={outside.ids} flashKey={flashKey} />}
 
       <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)}>
         <DialogContent>{current && <>
@@ -156,12 +181,12 @@ function SchedulePage() {
   );
 }
 
-function MonthGrid({ cursor, appointments, clients, onSelect, highlightId, todayKey, hoursOn, outsideIds }: { cursor: Date; appointments: Appointment[]; clients: { id: string; name: string }[]; onSelect: (item: Appointment) => void; highlightId: string | null; todayKey: string; hoursOn: (key: string) => { start: string; end: string }[]; outsideIds: Set<string> }) {
+function MonthGrid({ cursor, appointments, clients, onSelect, highlightId, todayKey, hoursOn, outsideIds, flashKey }: { cursor: Date; appointments: Appointment[]; clients: { id: string; name: string }[]; onSelect: (item: Appointment) => void; highlightId: string | null; todayKey: string; hoursOn: (key: string) => { start: string; end: string }[]; outsideIds: Set<string>; flashKey: string | null }) {
   const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1, 12);
   const gridStart = startOfWeek(first);
   const days = Array.from({ length: 42 }, (_, index) => { const day = new Date(gridStart); day.setDate(gridStart.getDate() + index); return day; });
   return <div className="grid grid-cols-7 overflow-hidden border">
     {days.slice(0, 7).map((day) => <div key={day.getDay()} className="border-b border-r bg-muted/40 px-1 py-1 text-center text-[11px] font-medium uppercase leading-none tracking-tight last:border-r-0">{day.toLocaleDateString("en-US", { weekday: "short" })}</div>)}
-    {days.map((day) => { const key = toDateKey(day); const entries = appointments.filter((item) => item.date === key); const muted = day.getMonth() !== cursor.getMonth() || key < todayKey; const closed = hoursOn(key).length === 0; return <div key={key} className={`min-h-[112px] border-b border-r p-1 last:border-r-0 ${muted ? "bg-muted/30 text-muted-foreground" : ""} ${key === todayKey ? "ring-2 ring-inset ring-primary" : ""}`}><div className="flex items-baseline justify-between p-1 text-sm font-medium">{day.getDate()}{closed && <span className="text-[10px] font-normal text-muted-foreground">Closed</span>}</div>{entries.slice(0, 3).map((item) => <Button key={item.id} data-appointment={item.id} variant="ghost" className={`h-auto w-full justify-start overflow-hidden rounded-sm px-1 py-1 text-xs ${STATUS_CARD[appointmentProgress(item)]} ${outsideIds.has(item.id) ? OUTSIDE_HOURS_CARD : ""} ${item.id === highlightId ? "bg-primary/15 ring-2 ring-primary" : ""}`} onClick={() => onSelect(item)} title={outsideIds.has(item.id) ? "Outside business hours — needs rescheduling" : undefined}>{outsideIds.has(item.id) ? <AlertTriangle className="shrink-0 text-amber-700" /> : <UserRound className="shrink-0" />} <span className="truncate">{formatTime(item.time)} {clientNames(item, clients)}</span></Button>)}{entries.length > 3 && <p className="px-1 text-xs text-muted-foreground">+{entries.length - 3} more</p>}</div>; })}
+    {days.map((day) => { const key = toDateKey(day); const entries = appointments.filter((item) => item.date === key); const muted = day.getMonth() !== cursor.getMonth() || key < todayKey; const closed = hoursOn(key).length === 0; return <div key={key} className={`min-h-[112px] border-b border-r p-1 last:border-r-0 ${muted ? "bg-muted/30 text-muted-foreground" : ""} ${key === todayKey ? "ring-2 ring-inset ring-primary" : ""} ${key === flashKey ? "animate-pulse bg-primary/10 ring-2 ring-inset ring-primary" : ""}`}><div className="flex items-baseline justify-between p-1 text-sm font-medium">{day.getDate()}{closed && <span className="text-[10px] font-normal text-muted-foreground">Closed</span>}</div>{entries.slice(0, 3).map((item) => <Button key={item.id} data-appointment={item.id} variant="ghost" className={`h-auto w-full justify-start overflow-hidden rounded-sm px-1 py-1 text-xs ${STATUS_CARD[appointmentProgress(item)]} ${outsideIds.has(item.id) ? OUTSIDE_HOURS_CARD : ""} ${item.id === highlightId ? "bg-primary/15 ring-2 ring-primary" : ""}`} onClick={() => onSelect(item)} title={outsideIds.has(item.id) ? "Outside business hours — needs rescheduling" : undefined}>{outsideIds.has(item.id) ? <AlertTriangle className="shrink-0 text-amber-700" /> : <UserRound className="shrink-0" />} <span className="truncate">{formatTime(item.time)} {clientNames(item, clients)}</span></Button>)}{entries.length > 3 && <p className="px-1 text-xs text-muted-foreground">+{entries.length - 3} more</p>}</div>; })}
   </div>;
 }

@@ -8,7 +8,7 @@ import { ClientBillingDialog } from "@/components/ClientBillingDialog";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { appointmentStart, formatPhone, formatTime, fromDateKey } from "@/lib/data";
+import { appointmentStart, formatPhone, joinName, splitName, formatTime, fromDateKey } from "@/lib/data";
 import { clientBalance } from "@/lib/scheduling";
 import { useStore } from "@/lib/store";
 
@@ -32,7 +32,7 @@ function ClientsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState({ name: "", phone: "" });
+  const [draft, setDraft] = useState({ first: "", last: "", phone: "" });
   const [billingInfoId, setBillingInfoId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
 
@@ -50,17 +50,17 @@ function ClientsPage() {
   const unmarked = pending.filter((item) => !started(item) && appointmentStart(item) <= new Date());
   const upcoming = pending.filter((item) => !started(item) && appointmentStart(item) > new Date());
   const active = store.clients.filter((client) => !client.archived).length;
-  const canSave = draft.name.trim().length > 0 && PHONE_PATTERN.test(draft.phone);
+  const canSave = draft.last.trim().length > 0 && PHONE_PATTERN.test(draft.phone);
 
   function startNew(name = "") {
-    setDraft({ name, phone: "" });
+    setDraft({ ...splitName(name), phone: "" });
     setEditing(false);
     setCreating(true);
   }
 
   function startEdit() {
     if (!selected) return;
-    setDraft({ name: selected.name, phone: selected.phone });
+    setDraft({ ...splitName(selected.name), phone: selected.phone });
     setCreating(false);
     setEditing(true);
     setNotice("");
@@ -69,16 +69,16 @@ function ClientsPage() {
   function closeForm() {
     setCreating(false);
     setEditing(false);
-    setDraft({ name: "", phone: "" });
+    setDraft({ first: "", last: "", phone: "" });
   }
 
   function saveClient() {
     if (!canSave) return;
     if (editing && selected) {
-      store.updateClient(selected.id, { name: draft.name.trim(), phone: draft.phone });
+      store.updateClient(selected.id, { name: joinName(draft.first, draft.last), phone: draft.phone });
       setNotice("Client details saved.");
     } else {
-      const client = store.addClient({ name: draft.name.trim(), phone: draft.phone });
+      const client = store.addClient({ name: joinName(draft.first, draft.last), phone: draft.phone });
       setSelectedId(client.id);
     }
     closeForm();
@@ -110,9 +110,10 @@ function ClientsPage() {
     setNotice("Client archived.");
   }
 
-  const form = (creating || editing) && <div className="mt-4 grid items-end gap-2 border bg-card p-4 sm:grid-cols-[1fr_1fr_auto]">
-    {editing && <p className="text-sm font-medium sm:col-span-3">Edit client details</p>}
-    <label className="block text-sm font-medium">Full name<RequiredMark /><Input className="mt-1 h-11 font-normal" aria-required="true" maxLength={100} value={draft.name} onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))} /></label>
+  const form = (creating || editing) && <div className="mt-4 grid items-end gap-2 border bg-card p-4 sm:grid-cols-[1fr_1fr_1fr_auto]">
+    {editing && <p className="text-sm font-medium sm:col-span-4">Edit client details</p>}
+    <label className="block text-sm font-medium">First name <span className="font-normal text-muted-foreground">(optional)</span><Input className="mt-1 h-11 font-normal" maxLength={50} value={draft.first} onChange={(event) => setDraft((current) => ({ ...current, first: event.target.value }))} /></label>
+    <label className="block text-sm font-medium">Last name<RequiredMark /><Input className="mt-1 h-11 font-normal" aria-required="true" maxLength={50} value={draft.last} onChange={(event) => setDraft((current) => ({ ...current, last: event.target.value }))} /></label>
     <label className="block text-sm font-medium">Phone<RequiredMark /><Input className="mt-1 h-11 font-normal" aria-required="true" inputMode="tel" value={draft.phone} onChange={(event) => setDraft((current) => ({ ...current, phone: formatPhone(event.target.value) }))} /></label>
     <div className="flex gap-2">
       <Button className="h-11" disabled={!canSave} onClick={saveClient}>Save</Button>
