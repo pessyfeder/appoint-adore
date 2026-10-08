@@ -74,3 +74,8 @@
 - [x] Admin tabs renamed: View Schedule, Edit Hours.
 - [x] Client billing window: edit a finished session or no-show (start/end, paused minutes, charge from time or typed, notes).
 - [x] Adjust a client's balance: enter the correct balance and a reason; saved as an adjustment (listed, removable, counted in the report).
+- [x] Booking notes accept any alphabet (e.g. Hebrew), numbers and phone numbers, and words like "lengths"; gibberish is still rejected.
+- [x] Dashboard, Schedule, Book and Hours move to the new day at midnight when the tablet stays open.
+- [x] Undoing a no-show or ending a timed session clears a hand-set charge, so Correct times re-bills the session.
+- [x] Correcting a booked length re-bills a no-show on the same appointment (hand-set charges are kept).
+- [x] A public booking by an archived client restores their record instead of creating a duplicate.

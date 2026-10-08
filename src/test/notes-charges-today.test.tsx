@@ -50,6 +50,32 @@ describe("hand-set charges", () => {
   });
 });
 
+describe("correcting a shared appointment's length", () => {
+  afterEach(() => window.localStorage.clear());
+
+  it("re-bills a no-show for the new booked length, but leaves a hand-set no-show charge alone", () => {
+    const wrapper = ({ children }: { children: ReactNode }) => <StoreProvider>{children}</StoreProvider>;
+    const { result } = renderHook(() => useStore(), { wrapper });
+    let appointmentId = "";
+    const ids: string[] = [];
+    act(() => {
+      for (const [name, phone] of [["Ana Test", "5550001111"], ["Bea Test", "5550002222"], ["Cy Test", "5550003333"]] as const) ids.push(result.current.addClient({ name, phone }).id);
+      appointmentId = result.current.addAppointment({ date: "2030-01-07", time: "10:30", durationMin: 30, clientIds: ids, notes: "" }).id;
+    });
+    const [timed, noShow, handSet] = ids as [string, string, string];
+    act(() => result.current.setClientStatus(appointmentId, noShow, "no_show"));
+    act(() => result.current.setClientStatus(appointmentId, handSet, "no_show"));
+    act(() => result.current.editSession(appointmentId, handSet, { charge: 10, notes: "" }));
+    act(() => result.current.startClient(appointmentId, timed));
+    const charge = (id: string) => result.current.appointments[0]!.clients.find((c) => c.clientId === id)!.charge;
+    expect(charge(noShow)).toBe(75);
+
+    act(() => result.current.correctTimes(appointmentId, { durationMin: 45, clients: [{ clientId: timed, startedAt: result.current.appointments[0]!.clients[0]!.startedAt! }] }));
+    expect(charge(noShow)).toBe(112.5);
+    expect(charge(handSet)).toBe(10);
+  });
+});
+
 describe("today", () => {
   afterEach(() => vi.useRealTimers());
 

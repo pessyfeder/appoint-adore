@@ -153,7 +153,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const patch = new Map(parsed.clients.map((entry) => [entry.clientId, entry]));
           const clients = item.clients.map((client) => {
             const next = patch.get(client.clientId);
-            if (!next) return client;
+            // No-shows are billed the full booked length, so a corrected length re-bills them (unless set by hand).
+            if (!next) return client.status === "no_show" && !client.customCharge ? { ...client, charge: noShowCharge(parsed) } : client;
             const charge = next.endedAt && !client.customCharge ? workedMinutes({ ...client, startedAt: next.startedAt, endedAt: next.endedAt }) * RATE_PER_MINUTE : client.charge;
             return { ...client, startedAt: next.startedAt, endedAt: next.endedAt, charge, status: next.endedAt ? ("completed" as const) : client.status };
           });

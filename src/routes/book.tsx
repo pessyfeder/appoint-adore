@@ -142,7 +142,10 @@ function BookPage() {
       const digits = phone.replace(/\D/g, "");
       // Requiring the name too means a typed phone number alone can't attach a booking to someone else.
       const sameName = (a: string, b: string) => a.trim().replace(/\s+/g, " ").toLowerCase() === b.trim().replace(/\s+/g, " ").toLowerCase();
-      const match = store.clients.find((client) => !client.archived && client.phone.replace(/\D/g, "") === digits && sameName(client.name, guest.name));
+      const matches = store.clients.filter((client) => client.phone.replace(/\D/g, "") === digits && sameName(client.name, guest.name));
+      // Prefer an active record; a returning client who was archived is restored rather than duplicated.
+      const match = matches.find((client) => !client.archived) ?? matches[0];
+      if (match?.archived) store.setClientArchived(match.id, false);
       try { ids = [match ? match.id : store.addClient({ name: guest.name.trim(), phone }).id]; }
       catch { setError("Enter a name and 10-digit phone number."); setStep(2); return; }
     }
