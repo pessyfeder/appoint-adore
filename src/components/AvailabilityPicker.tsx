@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { useToday } from "@/hooks/use-today";
 import { useAvailability } from "@/lib/availability";
 import { effectiveHours, formatDuration, formatTime, fromDateKey, minutesToTime, timeToMinutes, toDateKey } from "@/lib/data";
@@ -10,23 +10,39 @@ import { useStore } from "@/lib/store";
 
 /** How far ahead the month arrows go. */
 const MONTHS_AHEAD = 12;
-const ANY = "any";
 
 const monthStart = (key: string) => { const day = fromDateKey(key); day.setDate(1); return day; };
+
+/**
+ * The 24-hour start times a typed time could mean: "7:30 pm" → 19:30, "1930" → 19:30, "7:30" or "7" → both
+ * the morning and evening time. Null when it isn't a time.
+ */
+export function parseTimeQuery(query: string): string[] | null {
+  const match = /^(\d{1,2})(?::?(\d{2}))?(a|p)?m?$/.exec(query.toLowerCase().replace(/[\s.]/g, ""));
+  if (!match) return null;
+  const hour = Number(match[1]);
+  const minute = Number(match[2] ?? 0);
+  const half = match[3];
+  if (minute > 59 || hour > 23 || (half && (hour < 1 || hour > 12))) return null;
+  const pad = (value: number) => `${String(value).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  if (half) return [pad((hour % 12) + (half === "p" ? 12 : 0))];
+  if (hour === 0 || hour > 12) return [pad(hour)];
+  return [pad(hour % 12), pad((hour % 12) + 12)];
+}
+
 const longDay = (key: string) => fromDateKey(key).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 
 /**
  * The booking's Date & time step. Choose date: a month calendar where days with an opening for this length
- * have a dot (optionally only days with a chosen start time open). Then confirm the day's earliest or latest
- * time, or pick another from the full list.
+ * have a dot. "Check for specific time availability" narrows the dots to days with a typed start time open.
+ * Then pick from the day's open times.
  */
 export function AvailabilityPicker({ durationMin, excludeId, date, time, onChange }: { durationMin: number; excludeId?: string | undefined; date: string; time: string | null; onChange: (date: string, time: string | null) => void }) {
   const { appointments, blockedTimes } = useStore();
   const availability = useAvailability();
   const today = useToday();
   const [month, setMonth] = useState(() => monthStart(date < today ? today : date));
-  const [hasTime, setHasTime] = useState<string>(ANY);
-  const [showAll, setShowAll] = useState(false);
+  const [query, setQuery] = useState("");
   const others = useMemo(() => appointments.filter((item) => item.id !== excludeId), [appointments, excludeId]);
 
   // Open start times for every bookable day of the shown month.
@@ -40,8 +56,8 @@ export function AvailabilityPicker({ durationMin, excludeId, date, time, onChang
     // `availability` re-runs this when the working hours change.
   }, [month, today, durationMin, others, blockedTimes, availability]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Every start time the working hours allow this month, booked or not, for "Has this time open".
-  const filterOptions = useMemo(() => {
+  // Every start time the working hours allow this month, booked or not, for the specific-time check.
+  const workingTimes = useMemo(() => {
     const set = new Set<string>();
     for (const key of openTimes.keys()) {
       for (const block of effectiveHours(key)) {
@@ -51,9 +67,15 @@ export function AvailabilityPicker({ durationMin, excludeId, date, time, onChang
     return [...set].sort();
   }, [openTimes, durationMin]);
 
+  // The start times the typed text means, kept to ones the working hours allow (empty: no filter).
+  const parsed = query.trim() ? parseTimeQuery(query.trim()) : [];
+  const wanted = (parsed ?? []).filter((value) => workingTimes.includes(value));
+  const filtering = wanted.length > 0;
+  const queryIssue = !query.trim() ? "" : parsed === null ? "Enter a time like 7:30 pm." : !filtering ? `${parsed.map(formatTime).join(" or ")} isn't within working hours this month.` : "";
+
   const isOpen = (key: string) => {
     const times = openTimes.get(key) ?? [];
-    return hasTime === ANY ? times.length > 0 : times.includes(hasTime);
+    return filtering ? times.some((value) => wanted.includes(value)) : times.length > 0;
   };
   // The picked day's times (it may sit in another month than the one shown).
   const dayTimes = useMemo(() => openTimes.get(date) ?? (date >= today ? availableTimes(date, durationMin, others, blockedTimes) : []), [openTimes, date, today, durationMin, others, blockedTimes]);
@@ -65,29 +87,25 @@ export function AvailabilityPicker({ durationMin, excludeId, date, time, onChang
 
   function pickDay(key: string) {
     const times = openTimes.get(key) ?? [];
-    // Tapping a day picks a time to confirm: the filtered time, otherwise the day's earliest.
-    onChange(key, hasTime !== ANY && times.includes(hasTime) ? hasTime : times[0] ?? null);
+    // Tapping a day picks a time to confirm: the checked time, otherwise the day's earliest.
+    onChange(key, times.find((value) => wanted.includes(value)) ?? times[0] ?? null);
   }
 
   const days: string[] = [];
   for (const cursor = new Date(month); cursor.getMonth() === month.getMonth(); cursor.setDate(cursor.getDate() + 1)) days.push(toDateKey(cursor));
-  const earliest = dayTimes[0];
-  const latest = dayTimes[dayTimes.length - 1];
-  // A time that is neither the earliest nor the latest (e.g. when rescheduling) keeps the full list open so it shows.
-  const midDayPicked = Boolean(time && time !== earliest && time !== latest);
-  const listOpen = showAll || midDayPicked;
 
   return <div>
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <h2 className="font-serif text-2xl">Choose date</h2>
-      <Select value={hasTime} onValueChange={setHasTime}>
-        <SelectTrigger aria-label="Has this time open" className="h-11 w-auto min-w-56"><SelectValue /></SelectTrigger>
-        <SelectContent>
-          <SelectItem className="h-10" value={ANY}>Has this time open: any time</SelectItem>
-          {filterOptions.map((option) => <SelectItem className="h-10" key={option} value={option}>Has {formatTime(option)} open</SelectItem>)}
-        </SelectContent>
-      </Select>
+    <div className="max-w-sm">
+      <label className="block font-medium" htmlFor="specific-time">Check for specific time availability</label>
+      <div className="relative mt-2">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input id="specific-time" className="h-12 pl-9 pr-11 text-base" autoComplete="off" placeholder="Enter specific time" value={query} onChange={(event) => setQuery(event.target.value)} />
+        {query && <Button variant="ghost" size="icon" className="absolute right-0.5 top-1/2 h-11 w-11 -translate-y-1/2" aria-label="Clear specific time" onClick={() => setQuery("")}><X /></Button>}
+      </div>
+      {queryIssue && <p className="mt-1.5 text-sm text-destructive">{queryIssue}</p>}
     </div>
+
+    <h2 className="mt-6 font-serif text-2xl">Choose date</h2>
 
     <div className="mt-4 flex items-center justify-between">
       <Button variant="ghost" size="icon" className="h-11 w-11" aria-label="Previous month" disabled={month <= firstMonth} onClick={() => moveMonth(-1)}><ChevronLeft /></Button>
@@ -107,28 +125,16 @@ export function AvailabilityPicker({ durationMin, excludeId, date, time, onChang
         </button>;
       })}
     </div>
-    {![...openTimes.keys()].some(isOpen) && <p className="mt-3 text-center text-sm text-muted-foreground">{hasTime === ANY ? `No open days this month for ${formatDuration(durationMin)}.` : `No days this month have ${formatTime(hasTime)} open.`} Try the next month.</p>}
+    {![...openTimes.keys()].some(isOpen) && <p className="mt-3 text-center text-sm text-muted-foreground">{filtering ? `No days this month have ${wanted.map(formatTime).join(" or ")} open.` : `No open days this month for ${formatDuration(durationMin)}.`} Try the next month.</p>}
 
     <div className="mt-6 border-t pt-6" aria-live="polite">
       {dayTimes.length === 0 ? <p className="text-muted-foreground">Tap a day with a dot to see its times.</p> : <>
         <h2 className="font-serif text-2xl">{time ? "Confirm or choose a different time" : "Choose a time"}</h2>
         <p className="mt-1 text-muted-foreground">{longDay(date)}{time ? ` at ${formatTime(time)} — tap Continue to confirm.` : ""}</p>
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          <BigTime label={earliest === latest ? "Only time" : "Earliest"} value={earliest!} chosen={time === earliest} onPick={() => onChange(date, earliest!)} />
-          {earliest !== latest && <BigTime label="Latest" value={latest!} chosen={time === latest} onPick={() => onChange(date, latest!)} />}
-        </div>
-        {dayTimes.length > 2 && !midDayPicked && <Button variant="link" className="mt-2 h-11 px-0 text-base" onClick={() => setShowAll(!listOpen)}>{listOpen ? <>Hide times <ChevronUp /></> : <>See all times <ChevronDown /></>}</Button>}
-        {listOpen && <AllTimes dateKey={date} times={dayTimes} time={time} onPick={(picked) => onChange(date, picked)} />}
+        <AllTimes dateKey={date} times={dayTimes} time={time} onPick={(picked) => onChange(date, picked)} />
       </>}
     </div>
   </div>;
-}
-
-function BigTime({ label, value, chosen, onPick }: { label: string; value: string; chosen: boolean; onPick: () => void }) {
-  return <button type="button" aria-pressed={chosen} className={`flex h-20 flex-col items-center justify-center rounded-2xl border transition-colors ${chosen ? "border-2 border-primary bg-primary/10" : "bg-card hover:bg-secondary"}`} onClick={onPick}>
-    <span className="text-sm text-muted-foreground">{label}</span>
-    <span className="text-xl font-semibold">{formatTime(value)}</span>
-  </button>;
 }
 
 /** Every open start time of the day, grouped by block of working hours. */
