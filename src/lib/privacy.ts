@@ -3,7 +3,22 @@ const ITERATIONS = 150_000;
 
 export const MIN_PASSPHRASE = 4;
 
-export type LockRecord = { salt: string; hash: string; createdAt: string };
+/** Two security questions; the answers are kept only as a salted hash, like the password. */
+export type RecoveryRecord = { questions: [string, string]; salt: string; hash: string };
+export type LockRecord = { salt: string; hash: string; createdAt: string; recovery?: RecoveryRecord | undefined };
+
+export const SECURITY_QUESTIONS = [
+  "What was the name of your first pet?",
+  "What city were you born in?",
+  "What is your mother's maiden name?",
+  "What was the name of your elementary school?",
+  "What street did you grow up on?",
+  "What was the make of your first car?",
+  "What was your childhood nickname?",
+  "What is the name of your favorite teacher?",
+];
+
+export const MIN_ANSWER = 2;
 
 function toHex(bytes: Uint8Array) {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
@@ -41,9 +56,29 @@ function digestsMatch(a: string, b: string) {
   return diff === 0;
 }
 
-export async function createLockRecord(passphrase: string): Promise<LockRecord> {
+export async function createLockRecord(passphrase: string, recovery?: RecoveryRecord): Promise<LockRecord> {
   const salt = randomSalt();
-  return { salt, hash: await hashPassphrase(passphrase, salt), createdAt: new Date().toISOString() };
+  return { salt, hash: await hashPassphrase(passphrase, salt), createdAt: new Date().toISOString(), recovery };
+}
+
+/** Answers match regardless of capitals and extra spaces ("  New  York" = "new york"). */
+const normalizeAnswer = (answer: string) => answer.trim().replace(/\s+/g, " ").toLowerCase();
+const answersKey = (answers: [string, string]) => answers.map(normalizeAnswer).join("\u0000");
+
+export async function createRecoveryRecord(questions: [string, string], answers: [string, string]): Promise<RecoveryRecord> {
+  const salt = randomSalt();
+  return { questions, salt, hash: await hashPassphrase(answersKey(answers), salt) };
+}
+
+export async function verifyRecoveryAnswers(answers: [string, string], recovery: RecoveryRecord) {
+  return digestsMatch(await hashPassphrase(answersKey(answers), recovery.salt), recovery.hash);
+}
+
+export function securityQuestionsIssue(questions: [string, string], answers: [string, string]): string | null {
+  if (!questions[0] || !questions[1]) return "Choose two security questions.";
+  if (questions[0] === questions[1]) return "Choose two different security questions.";
+  if (answers.some((answer) => normalizeAnswer(answer).length < MIN_ANSWER)) return `Answer both security questions (at least ${MIN_ANSWER} characters each).`;
+  return null;
 }
 
 export async function verifyPassphrase(passphrase: string, record: LockRecord) {
@@ -62,7 +97,10 @@ export function readLockRecord(): LockRecord | null {
     const raw = window.localStorage.getItem(LOCK_KEY);
     if (!raw) return null;
     const record = JSON.parse(raw) as Partial<LockRecord>;
-    return typeof record?.salt === "string" && typeof record?.hash === "string" ? (record as LockRecord) : null;
+    if (typeof record?.salt !== "string" || typeof record?.hash !== "string") return null;
+    const recovery = record.recovery;
+    const validRecovery = recovery && Array.isArray(recovery.questions) && recovery.questions.length === 2 && typeof recovery.salt === "string" && typeof recovery.hash === "string";
+    return { ...(record as LockRecord), recovery: validRecovery ? recovery : undefined };
   } catch {
     return null;
   }

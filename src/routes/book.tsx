@@ -103,9 +103,10 @@ function BookPage() {
   const guestValid = guest.firstName.trim().length > 0 && guest.lastName.trim().length > 0 && guest.phone.replace(/\D/g, "").length === 10;
   const canContinue = step === 0 || (step === 1 && Boolean(time)) || (step === 2 && (isPublic ? guestValid : clientIds.length > 0));
 
-  function resetForm() {
+  /** Start a new booking. `keepGuest` keeps the client's name and phone for "Book another appointment"; Done clears them for the next person. */
+  function resetForm(keepGuest = false) {
     setStep(0); setDuration(30); setDate(toDateKey(new Date())); setTime(null);
-    setClientIds([]); setNotes(""); setGuest({ firstName: "", lastName: "", phone: "" }); setError(""); setBooked(null);
+    setClientIds([]); setNotes(""); if (!keepGuest) setGuest({ firstName: "", lastName: "", phone: "" }); setError(""); setBooked(null);
   }
 
   function addNewClient() {
@@ -170,7 +171,10 @@ function BookPage() {
     <h1 className="mt-5 font-serif text-3xl">Appointment booked</h1>
     <p className="mt-3 text-lg">{booked}</p>
     <p className="mt-1 text-muted-foreground">{formatDuration(durationMin)}</p>
-    <Button className="mt-8 h-12 px-6" onClick={resetForm}><CalendarPlus /> Book another appointment</Button>
+    <div className="mt-8 flex flex-wrap justify-center gap-3">
+      <Button className="h-12 px-6" variant="outline" onClick={() => resetForm(true)}><CalendarPlus /> Book another appointment</Button>
+      <Button className="h-12 px-6" onClick={() => resetForm()}><Check /> Done</Button>
+    </div>
   </main>;
 
   return <main className="mx-auto max-w-3xl px-4 py-8">

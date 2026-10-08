@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Download, FileUp, ShieldAlert } from "lucide-react";
 import { useConfirm } from "@/components/ConfirmDialog";
+import { SecurityQuestionsSection } from "@/components/SecurityQuestionsSection";
 import { Button } from "@/components/ui/button";
 import { applyBackup, backupFileName, createBackup, markBackedUp, parseBackup, readLastBackup, type Backup, type BackupSummary } from "@/lib/backup";
 
@@ -77,7 +78,7 @@ function BackupPage() {
   return <main className="mx-auto max-w-3xl px-4 py-8">
     <p className="text-xs font-medium uppercase text-muted-foreground">Practitioner only</p>
     <h1 className="mt-1 font-serif text-3xl">Backup</h1>
-    <p className="mt-2 text-sm text-muted-foreground">Everything is stored only in this browser on this tablet. Clearing browsing data, resetting the password, or a broken tablet would erase it — keep a recent backup file somewhere safe, like a USB stick or your email.</p>
+    <p className="mt-2 text-sm text-muted-foreground">Everything is stored only in this browser on this tablet. Clearing browsing data, erasing the tablet after a forgotten password, or a broken tablet would erase it — keep a recent backup file somewhere safe, like a USB stick or your email.</p>
 
     <section className="mt-7 rounded-xl border bg-card p-5">
       <h2 className="font-serif text-xl">Save a backup</h2>
@@ -103,6 +104,8 @@ function BackupPage() {
         </div>
       </div>}
     </section>
+
+    <SecurityQuestionsSection />
     {dialog}
   </main>;
 }
