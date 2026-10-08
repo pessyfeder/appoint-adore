@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useToday } from "@/hooks/use-today";
 import { createFileRoute } from "@tanstack/react-router";
 import { CalendarOff, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -131,7 +132,7 @@ function AvailabilityPage() {
     setBlockMsg({ ok: "Time blocked." });
   }
 
-  const today = toDateKey(new Date());
+  const today = useToday();
   const overrides = Object.entries(availability.overrides).filter(([k]) => k >= today).sort(([a], [b]) => a.localeCompare(b));
   const blocks = [...blockedTimes].filter((b) => b.date >= today).sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime));
   const msg = (m: { error?: string; ok?: string }) => m.error ? <p className="text-sm text-destructive">{m.error}</p> : m.ok ? <p className="text-sm text-muted-foreground">{m.ok}</p> : null;

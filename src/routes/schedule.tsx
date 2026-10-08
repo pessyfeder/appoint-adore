@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useToday } from "@/hooks/use-today";
 import { CLIENT_BADGE, CLIENT_LABEL, STATUS_CARD, StartEndControls, StatusBadge } from "@/components/AppointmentControls";
 import { ClientStatusActions } from "@/components/ClientStatusActions";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -44,9 +45,15 @@ function SchedulePage() {
   const availability = useAvailability();
   const outside = useOutsideHours();
   const hoursOn = (key: string) => availability.overrides[key] ?? availability.weekly[fromDateKey(key).getDay()] ?? [];
-  const todayKey = toDateKey(new Date());
+  const todayKey = useToday();
   const [view, setView] = useState<"week" | "month">("week");
   const [cursor, setCursor] = useState(() => new Date());
+  // When the day rolls over while the calendar is on "today", move it along to the new day.
+  const [shownToday, setShownToday] = useState(todayKey);
+  if (shownToday !== todayKey) {
+    setShownToday(todayKey);
+    if (toDateKey(cursor) === shownToday) setCursor(new Date());
+  }
   const [selected, setSelected] = useState<Appointment | null>(null);
   const [blockOpen, setBlockOpen] = useState(false);
   const [goOpen, setGoOpen] = useState(false);
@@ -107,9 +114,9 @@ function SchedulePage() {
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-11 w-11 rounded-lg" onClick={() => move(-1)} aria-label={`Previous ${view}`}><ChevronLeft /></Button>
             <div className="flex rounded-lg bg-muted p-1">
-              <Button variant={toDateKey(cursor) === toDateKey(new Date()) ? "secondary" : "ghost"} className="h-10 rounded-md px-4 shadow-sm" onClick={() => setCursor(new Date())}>Today</Button>
+              <Button variant={toDateKey(cursor) === todayKey ? "secondary" : "ghost"} className="h-10 rounded-md px-4 shadow-sm" onClick={() => setCursor(new Date())}>Today</Button>
               <Popover open={goOpen} onOpenChange={setGoOpen}>
-                <PopoverTrigger asChild><Button variant={toDateKey(cursor) !== toDateKey(new Date()) ? "secondary" : "ghost"} className="h-10 rounded-md px-4 shadow-sm">Go to date</Button></PopoverTrigger>
+                <PopoverTrigger asChild><Button variant={toDateKey(cursor) !== todayKey ? "secondary" : "ghost"} className="h-10 rounded-md px-4 shadow-sm">Go to date</Button></PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={cursor} defaultMonth={cursor} onSelect={(day) => { if (day) { const next = new Date(day); next.setHours(12, 0, 0, 0); setCursor(next); setGoOpen(false); } }} className="pointer-events-auto p-3" /></PopoverContent>
               </Popover>
             </div>

@@ -1,6 +1,7 @@
 import { toast } from "sonner";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useToday } from "@/hooks/use-today";
 import { ArrowLeft, ArrowRight, CalendarPlus, Check, UserPlus, X } from "lucide-react";
 import { useLock } from "@/lib/lock";
 import { useConfirm } from "@/components/ConfirmDialog";
@@ -52,9 +53,15 @@ function BookPage() {
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [step, setStep] = useState(0);
   const [durationMin, setDuration] = useState(existing?.durationMin ?? 30);
-  const today = toDateKey(new Date());
+  const today = useToday();
   const [date, setDate] = useState(existing?.date ?? today);
   const [time, setTime] = useState<string | null>(existing?.time ?? null);
+  // When the day rolls over with yesterday still picked, move the booking to the new day (yesterday's times are gone).
+  const [shownToday, setShownToday] = useState(today);
+  if (shownToday !== today) {
+    setShownToday(today);
+    if (date < today) { setDate(today); setTime(null); }
+  }
   const [clientIds, setClientIds] = useState<string[]>(existing?.clients.map((item) => item.clientId) ?? []);
   const [notes, setNotes] = useState(existing?.notes ?? "");
   const [newClient, setNewClient] = useState({ name: "", phone: "" });

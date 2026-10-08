@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AlertTriangle, CalendarPlus, Clock3, HardDriveDownload, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatDuration, formatTime, fromDateKey, toDateKey } from "@/lib/data";
+import { formatDuration, formatTime, fromDateKey } from "@/lib/data";
+import { useToday } from "@/hooks/use-today";
 import { OUTSIDE_HOURS_BADGE, useOutsideHours } from "@/lib/outside-hours";
 import { useStore } from "@/lib/store";
 import { StartEndControls, StatusBadge } from "@/components/AppointmentControls";
@@ -24,9 +25,9 @@ export const Route = createFileRoute("/")({
 function TodayPage() {
   const { appointments, clients, payments, ready } = useStore();
   const outside = useOutsideHours();
-  const today = toDateKey(new Date());
+  const today = useToday();
   const entries = appointments.filter((item) => item.date === today && item.clients.some((client) => client.status !== "cancelled")).sort((a, b) => a.time.localeCompare(b.time));
-  const label = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  const label = fromDateKey(today).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   return <main className="mx-auto max-w-6xl px-4 py-8">
     <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-medium uppercase text-muted-foreground">{label}</p><h1 className="mt-1 font-serif text-3xl">Today</h1></div><Button asChild className="h-11"><Link to="/book" search={{ edit: undefined }}><CalendarPlus /> New appointment</Link></Button></div>
     {ready && outside.list.length > 0 && <RescheduleNotice />}

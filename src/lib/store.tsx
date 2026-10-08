@@ -128,7 +128,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const now = Date.now();
       const endedAt = new Date(now).toISOString();
       // Ending while paused closes the pause at the end time, so the paused stretch is never billed.
-      const finished = { ...running, endedAt, pausedMs: pausedMsSoFar(running, now), pausedAt: undefined, status: "completed" as const };
+      // A timed session is billed from its clock, so any earlier hand-set charge flag is dropped.
+      const finished = { ...running, endedAt, pausedMs: pausedMsSoFar(running, now), pausedAt: undefined, customCharge: undefined, status: "completed" as const };
       const minutes = workedMinutes(finished, now);
       const amount = minutes * RATE_PER_MINUTE;
       const next = item.clients.find((c) => c.status === "scheduled" && !c.startedAt && c.clientId !== running.clientId);
@@ -186,7 +187,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setState((current) => ({ ...current, appointments: current.appointments.map((item) => item.id === id ? { ...item, date: parsed.date, time: parsed.time, durationMin: parsed.durationMin, notes: parsed.notes, clients: parsed.clientIds.map((clientId) => item.clients.find((client) => client.clientId === clientId) ?? { clientId, status: "scheduled", charge: 0 }) } : item) }));
     },
     setClientStatus(appointmentId, clientId, status) {
-      setState((current) => ({ ...current, appointments: current.appointments.map((item) => item.id === appointmentId ? { ...item, clients: item.clients.map((client) => client.clientId === clientId ? { ...client, status, charge: status === "completed" || status === "no_show" ? noShowCharge(item) : 0 } : client) } : item) }));
+      setState((current) => ({ ...current, appointments: current.appointments.map((item) => item.id === appointmentId ? { ...item, clients: item.clients.map((client) => client.clientId === clientId ? { ...client, status, charge: status === "completed" || status === "no_show" ? noShowCharge(item) : 0, customCharge: undefined } : client) } : item) }));
     },
     addPayment(input) {
       const parsed = paymentSchema.parse(input);

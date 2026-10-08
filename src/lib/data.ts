@@ -188,13 +188,17 @@ export function notesIssue(raw: string): string | null {
   if (!text) return null;
   const message = "Please enter clear notes or leave the field blank.";
   const visible = text.replace(/\s/g, "");
-  const letters = visible.match(/[a-z]/gi)?.length ?? 0;
-  if (letters < 2 || letters / visible.length < 0.5) return message;
-  if (/(.)\1{3,}/i.test(visible)) return message;
+  // Letters in any alphabet (Hebrew, accented, …) and digits both count, so phone numbers and times are fine.
+  const letters = visible.match(/\p{L}/gu)?.length ?? 0;
+  const meaningful = letters + (visible.match(/\p{N}/gu)?.length ?? 0);
+  if (letters < 1 || meaningful < 2 || meaningful / visible.length < 0.5) return message;
+  if (/(.)\1{3,}/iu.test(visible)) return message;
+  // Spelling checks only apply to English words; other alphabets skip them.
   const words = text.toLowerCase().match(/[a-z]+/g) ?? [];
   for (const word of words) {
     if (word.length > 20) return message;
-    if (/[bcdfghjklmnpqrstvwxz]{5,}/.test(word)) return message;
+    // A plural "s" can end a real five-consonant run ("lengths", "strengths"), so it is left out of the check.
+    if (/[bcdfghjklmnpqrstvwxz]{5,}/.test(word.replace(/s$/, ""))) return message;
     if (word.length >= 4 && !/[aeiouy]/.test(word)) return message;
   }
   return null;
