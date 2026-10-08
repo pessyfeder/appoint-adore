@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useToday } from "@/hooks/use-today";
-import { CLIENT_BADGE, CLIENT_LABEL, STATUS_CARD, StartEndControls, StatusBadge } from "@/components/AppointmentControls";
+import { CLIENT_PROGRESS, STATUS_CARD, StartEndControls, StatusBadge, StatusKey, StatusLabel } from "@/components/AppointmentControls";
 import { ClientStatusActions } from "@/components/ClientStatusActions";
 import { AppointmentSearchDialog } from "@/components/AppointmentSearchDialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -112,6 +112,7 @@ function SchedulePage() {
             {(["week", "month"] as const).map((mode) => <Button key={mode} variant={view === mode ? "secondary" : "ghost"} className="h-10 rounded-md capitalize shadow-sm" onClick={() => setView(mode)}>{mode}</Button>)}
           </div>
         </div>
+        <StatusKey className="-mt-3 px-1" />
       </header>
 
       {view === "week" ? (
@@ -126,7 +127,7 @@ function SchedulePage() {
             return <div key={key} className={`flex min-h-[460px] flex-col border-r last:border-r-0 ${past ? "bg-muted/40" : closed ? "bg-[repeating-linear-gradient(135deg,transparent_0,transparent_8px,var(--color-muted)_8px,var(--color-muted)_10px)]" : ""}`}>
               <div className={`border-b px-1 py-1.5 text-center ${today ? "bg-primary text-primary-foreground" : past ? "bg-muted text-muted-foreground" : "bg-muted/40"}`}><p className="text-[11px] font-medium uppercase leading-none tracking-tight">{day.toLocaleDateString("en-US", { weekday: "short" })}</p><p className="mt-1 text-base font-semibold leading-none">{day.getDate()}</p></div>
               <div className={`space-y-2 p-2 ${past ? "opacity-75" : ""}`}>
-                {dayAppointments.map((item) => <Button key={item.id} data-appointment={item.id} variant="outline" className={`h-auto w-full items-start justify-start whitespace-normal p-2 text-left transition-shadow ${STATUS_CARD[appointmentProgress(item)]} ${outside.ids.has(item.id) ? OUTSIDE_HOURS_CARD : ""} ${item.id === highlightId ? "border-primary bg-primary/10 ring-2 ring-primary ring-offset-2" : ""}`} onClick={() => setSelected(item)}><span className="w-full"><span className="block font-semibold">{formatTime(item.time)}</span><span className="mb-1 block"><StatusBadge item={item} /></span>{outside.ids.has(item.id) && <span className="mb-1 flex items-start gap-0.5 text-[10px] font-semibold leading-tight text-amber-900"><AlertTriangle className="h-3 w-3 shrink-0" />Reschedule</span>}<span className="block text-xs text-muted-foreground">{clientNames(item, clients)}</span><span className="block text-xs text-muted-foreground">{formatDuration(item.durationMin)}</span></span></Button>)}
+                {dayAppointments.map((item) => <Button key={item.id} data-appointment={item.id} variant="outline" className={`h-auto w-full items-start justify-start whitespace-normal p-2 text-left transition-shadow ${STATUS_CARD[appointmentProgress(item)]} ${outside.ids.has(item.id) ? OUTSIDE_HOURS_CARD : ""} ${item.id === highlightId ? "border-primary bg-primary/10 ring-2 ring-primary ring-offset-2" : ""}`} onClick={() => setSelected(item)}><span className="w-full"><span className="block font-semibold">{formatTime(item.time)}</span>{outside.ids.has(item.id) && <span className="mb-1 flex items-start gap-0.5 text-[10px] font-semibold leading-tight text-amber-900"><AlertTriangle className="h-3 w-3 shrink-0" />Reschedule</span>}<span className="block text-xs text-muted-foreground">{clientNames(item, clients)}</span><span className="block text-xs text-muted-foreground">{formatDuration(item.durationMin)}</span></span></Button>)}
                 {dayBlocks.map((item) => <div key={item.id} className="border border-dashed bg-muted/50 p-2 text-xs text-muted-foreground">{formatTime(item.startTime)}–{formatTime(item.endTime)}<br />{item.reason}</div>)}
                 {!dayAppointments.length && !dayBlocks.length && <p className="pt-5 text-center text-xs text-muted-foreground">{closed ? "Closed" : "No appointments"}</p>}
               </div>
@@ -139,10 +140,10 @@ function SchedulePage() {
         <DialogContent>{current && <>
           <DialogHeader><DialogTitle>{clientNames(current, clients)}</DialogTitle><DialogDescription>{fromDateKey(current.date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} at {formatTime(current.time)} · {formatDuration(current.durationMin)}</DialogDescription></DialogHeader>
           {outside.ids.has(current.id) && <p className="flex items-start gap-2 rounded-lg border border-amber-500 bg-amber-50 p-3 text-sm text-amber-900"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /><span><span className="font-semibold">Needs rescheduling.</span> Your hours changed and this booking is now outside them. Reschedule it or cancel it.</span></p>}
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/40 p-3"><StatusBadge item={current} /><StartEndControls item={current} /></div>
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/40 p-3"><StatusLabel progress={appointmentProgress(current)} /><StartEndControls item={current} /></div>
           <div className="space-y-3">{current.clients.map((entry) => {
             return <div key={entry.clientId} className="border-b pb-3">
-              <div className="flex flex-wrap items-center justify-between gap-2"><span>{clients.find((client) => client.id === entry.clientId)?.name}</span><div className="flex items-center gap-2"><span className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${entry.startedAt && !entry.endedAt ? "border-status-progress bg-status-progress text-foreground" : CLIENT_BADGE[entry.status]}`}>{entry.startedAt && !entry.endedAt ? "In progress" : CLIENT_LABEL[entry.status]}</span><ClientStatusActions item={current} clientId={entry.clientId} /></div></div>
+              <div className="flex flex-wrap items-center justify-between gap-2"><span>{clients.find((client) => client.id === entry.clientId)?.name}</span><div className="flex items-center gap-3"><StatusLabel progress={entry.startedAt && !entry.endedAt ? (entry.pausedAt ? "paused" : "in_progress") : CLIENT_PROGRESS[entry.status]} /><ClientStatusActions item={current} clientId={entry.clientId} /></div></div>
             </div>;
           })}</div>
           {current.notes && <p className="text-sm text-muted-foreground">{current.notes}</p>}

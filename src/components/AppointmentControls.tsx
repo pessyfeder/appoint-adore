@@ -9,18 +9,6 @@ import { RecordPaymentDialog } from "@/components/RecordPaymentDialog";
 import { useStore, type EndSummary } from "@/lib/store";
 import { CorrectTimesDialog } from "@/components/CorrectTimesDialog";
 
-export const STATUS_BADGE: Record<AppointmentProgress, string> = {
-  scheduled: "border-status-scheduled/40 bg-status-scheduled/15 text-status-scheduled",
-  in_progress: "border-status-progress bg-status-progress text-foreground",
-  paused: "border-status-progress border-dashed bg-muted text-foreground",
-  ended: "border-status-completed/40 bg-status-completed/15 text-status-completed",
-  cancelled: "border-status-cancelled/40 bg-status-cancelled/15 text-status-cancelled line-through",
-  no_show: "border-status-noshow/40 bg-status-noshow/15 text-status-noshow",
-};
-
-export const CLIENT_BADGE = { scheduled: STATUS_BADGE.scheduled, completed: STATUS_BADGE.ended, cancelled: STATUS_BADGE.cancelled, no_show: STATUS_BADGE.no_show } as const;
-export const CLIENT_LABEL = { scheduled: "Scheduled", completed: "Completed", cancelled: "Cancelled", no_show: "No-show" } as const;
-
 /** Left accent + tint for calendar cards. */
 export const STATUS_CARD: Record<AppointmentProgress, string> = {
   scheduled: "border-l-4 border-l-status-scheduled bg-status-scheduled/5",
@@ -31,9 +19,40 @@ export const STATUS_CARD: Record<AppointmentProgress, string> = {
   no_show: "border-l-4 border-l-status-noshow bg-status-noshow/5",
 };
 
+/** Solid color for status dots and the key. */
+export const STATUS_DOT: Record<AppointmentProgress, string> = {
+  scheduled: "bg-status-scheduled",
+  in_progress: "bg-status-progress",
+  paused: "border-2 border-dashed border-status-progress bg-muted",
+  ended: "bg-status-completed",
+  cancelled: "bg-status-cancelled",
+  no_show: "bg-status-noshow",
+};
+
+/** Client entry status → the matching appointment color. */
+export const CLIENT_PROGRESS = { scheduled: "scheduled", completed: "ended", cancelled: "cancelled", no_show: "no_show" } as const;
+
+/** Status shown by color only; the name is still read out by screen readers and shown on hover. */
+export function StatusDot({ progress }: { progress: AppointmentProgress }) {
+  return <span className={`inline-block h-3 w-3 shrink-0 rounded-full ${STATUS_DOT[progress]}`} title={PROGRESS_LABEL[progress]}><span className="sr-only">{PROGRESS_LABEL[progress]}</span></span>;
+}
+
+/** Color dot with the status name, for an opened appointment. */
+export function StatusLabel({ progress }: { progress: AppointmentProgress }) {
+  return <span className="inline-flex items-center gap-1.5 text-sm font-medium"><span aria-hidden="true" className={`inline-block h-3 w-3 shrink-0 rounded-full ${STATUS_DOT[progress]}`} />{PROGRESS_LABEL[progress]}</span>;
+}
+
 export function StatusBadge({ item }: { item: Appointment }) {
-  const progress = appointmentProgress(item);
-  return <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${STATUS_BADGE[progress]}`}>{PROGRESS_LABEL[progress]}</span>;
+  return <StatusDot progress={appointmentProgress(item)} />;
+}
+
+const KEY_ORDER: AppointmentProgress[] = ["scheduled", "in_progress", "paused", "ended", "no_show", "cancelled"];
+
+/** Color key for the status colors used on appointments. */
+export function StatusKey({ className = "" }: { className?: string }) {
+  return <ul className={`flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground ${className}`} aria-label="Status color key">
+    {KEY_ORDER.map((progress) => <li key={progress} className="flex items-center gap-1.5"><span aria-hidden="true" className={`inline-block h-3 w-3 rounded-full ${STATUS_DOT[progress]}`} />{PROGRESS_LABEL[progress]}</li>)}
+  </ul>;
 }
 
 function clock(iso?: string) {

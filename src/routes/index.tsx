@@ -2,12 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AlertTriangle, CalendarPlus, Clock3, HardDriveDownload, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatDuration, formatTime, fromDateKey } from "@/lib/data";
+import { appointmentProgress, formatDuration, formatTime, fromDateKey } from "@/lib/data";
 import { useToday } from "@/hooks/use-today";
 import { hoursWereDamaged, useAvailability } from "@/lib/availability";
 import { OUTSIDE_HOURS_BADGE, useOutsideHours } from "@/lib/outside-hours";
 import { useStore } from "@/lib/store";
-import { StartEndControls, StatusBadge } from "@/components/AppointmentControls";
+import { STATUS_CARD, StartEndControls, StatusKey } from "@/components/AppointmentControls";
 import { ClientStatusActions } from "@/components/ClientStatusActions";
 import { BACKUP_REMINDER_DAYS, daysSinceBackup, readLastBackup } from "@/lib/backup";
 
@@ -35,7 +35,7 @@ function TodayPage() {
     {ready && outside.list.length > 0 && <RescheduleNotice />}
     {ready && (clients.length > 0 || appointments.length > 0 || payments.length > 0) && <BackupReminder />}
     <div className="mt-7 grid gap-3 sm:grid-cols-2"><Stat icon={<Clock3 />} label="Appointments" value={String(entries.length)} /><Stat icon={<Users />} label="Clients today" value={String(entries.flatMap((item) => item.clients).filter((entry) => entry.status !== "cancelled").length)} /></div>
-    <section className="mt-9"><h2 className="font-serif text-2xl">Today’s appointments</h2>{entries.length === 0 ? <p className="mt-4 border border-dashed p-8 text-center text-muted-foreground">No appointments today.</p> : <ul className="mt-4 divide-y border-y">{entries.map((item) => <li key={item.id} className="flex flex-wrap items-center gap-4 py-4"><div className="w-28"><p className="font-semibold">{formatTime(item.time)}</p><StatusBadge item={item} />{outside.ids.has(item.id) && <span className={`mt-1 ${OUTSIDE_HOURS_BADGE}`}><AlertTriangle className="h-3 w-3" /> Reschedule</span>}<p className="text-xs text-muted-foreground">{formatDuration(item.durationMin)}</p></div><div className="min-w-48 flex-1"><p className="font-medium">{item.clients.map((entry) => clients.find((client) => client.id === entry.clientId)?.name).filter(Boolean).join(" & ")}</p>{item.notes && <p className="text-sm text-muted-foreground">{item.notes}</p>}</div><div className="flex flex-wrap items-center gap-2"><StartEndControls item={item} />{item.clients.map((entry) => <ClientStatusActions key={entry.clientId} item={item} clientId={entry.clientId} showName={item.clients.length > 1} />)}</div></li>)}</ul>}</section>
+    <section className="mt-9"><div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2"><h2 className="font-serif text-2xl">Today’s appointments</h2><StatusKey /></div>{entries.length === 0 ? <p className="mt-4 border border-dashed p-8 text-center text-muted-foreground">No appointments today.</p> : <ul className="mt-4 space-y-2">{entries.map((item) => <li key={item.id} className={`flex flex-wrap items-center gap-4 border px-4 py-4 ${STATUS_CARD[appointmentProgress(item)]}`}><div className="w-28"><p className="font-semibold">{formatTime(item.time)}</p>{outside.ids.has(item.id) && <span className={`mt-1 ${OUTSIDE_HOURS_BADGE}`}><AlertTriangle className="h-3 w-3" /> Reschedule</span>}<p className="text-xs text-muted-foreground">{formatDuration(item.durationMin)}</p></div><div className="min-w-48 flex-1"><p className="font-medium">{item.clients.map((entry) => clients.find((client) => client.id === entry.clientId)?.name).filter(Boolean).join(" & ")}</p>{item.notes && <p className="text-sm text-muted-foreground">{item.notes}</p>}</div><div className="flex flex-wrap items-center gap-2"><StartEndControls item={item} />{item.clients.map((entry) => <ClientStatusActions key={entry.clientId} item={item} clientId={entry.clientId} showName={item.clients.length > 1} />)}</div></li>)}</ul>}</section>
   </main>;
 }
 

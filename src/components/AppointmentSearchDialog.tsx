@@ -30,8 +30,7 @@ export function AppointmentSearchDialog({ open, onOpenChange, onPick }: { open: 
           : results.length === 0 ? <p className="p-6 text-center text-sm text-muted-foreground">No matching appointments.</p>
           : <ul className="divide-y">{results.map((item) => <li key={item.id}>
             <button type="button" className="flex min-h-14 w-full items-center justify-between gap-3 px-2 py-3 text-left hover:bg-muted/60 active:bg-muted" onClick={() => onPick(item)}>
-              <span><span className="block font-semibold">{fromDateKey(item.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })} · {formatTime(item.time)}</span><span className="block text-sm text-muted-foreground">{names(item)}</span></span>
-              <StatusBadge item={item} />
+              <span className="flex items-center gap-3"><StatusBadge item={item} /><span><span className="block font-semibold">{fromDateKey(item.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })} · {formatTime(item.time)}</span><span className="block text-sm text-muted-foreground">{names(item)}</span></span></span>
             </button>
           </li>)}</ul>}
       </div>
