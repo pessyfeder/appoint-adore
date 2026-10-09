@@ -2,10 +2,11 @@ import { toast } from "sonner";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useToday } from "@/hooks/use-today";
-import { ArrowLeft, ArrowRight, CalendarPlus, Check, Pencil, UserPlus, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarPlus, Check, Pencil, Search, UserPlus, X } from "lucide-react";
 import { useLock } from "@/lib/lock";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { AvailabilityPicker } from "@/components/AvailabilityPicker";
+import { ClientCalendar, FindAppointmentsForm } from "@/components/ClientCalendar";
 import { RequiredMark } from "@/components/RequiredMark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,6 +69,9 @@ function BookPage() {
   const [error, setError] = useState("");
   const [guest, setGuest] = useState({ firstName: "", lastName: "", phone: "" });
   const [booked, setBooked] = useState<string | null>(null);
+  // After booking, "Done" opens a read-only calendar of this client's own appointments; "Find my appointments" reaches the same view by name + phone.
+  const [mine, setMine] = useState<{ ids: string[]; highlightId?: string } | null>(null);
+  const [finding, setFinding] = useState(false);
   const seeded = store.ready && Boolean(edit);
 
   // Saved data loads just after first paint, so re-sync the form once the
@@ -106,6 +110,7 @@ function BookPage() {
   /** Start a new booking. `keepGuest` keeps the client's name and phone for "Book another appointment"; Done clears them for the next person. */
   function resetForm(keepGuest = false) {
     setStep(0); setDuration(30); setDate(toDateKey(new Date())); setTime(null);
+    setMine(null); setFinding(false);
     setClientIds([]); setNotes(""); if (!keepGuest) setGuest({ firstName: "", lastName: "", phone: "" }); setError(""); setBooked(null);
   }
 
@@ -150,7 +155,7 @@ function BookPage() {
     const input = { date, time, durationMin, clientIds: ids, notes };
     const savedId = edit ? (store.updateAppointment(edit, input), edit) : store.addAppointment(input).id;
     const when = `${fromDateKey(date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} at ${formatTime(time)}`;
-    if (isPublic) { setBooked(when); return; }
+    if (isPublic) { setMine({ ids, highlightId: savedId }); setBooked(when); return; }
     store.setHighlightId(savedId);
     toast.success(edit ? "Appointment updated" : "Appointment confirmed", { description: when });
     navigate({ to: "/schedule" });
@@ -166,6 +171,9 @@ function BookPage() {
     </div>
   </main>;
 
+  if (!booked && isPublic && finding) return <FindAppointmentsForm onBack={() => setFinding(false)} onFound={(ids) => { setFinding(false); setMine({ ids }); }} />;
+  if (!booked && isPublic && mine) return <ClientCalendar clientIds={mine.ids} highlightId={mine.highlightId} onExit={() => resetForm()} />;
+
   if (booked) return <main className="mx-auto max-w-xl px-4 py-16 text-center">
     <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground"><Check className="h-7 w-7" /></span>
     <h1 className="mt-5 font-serif text-3xl">Appointment booked</h1>
@@ -173,7 +181,7 @@ function BookPage() {
     <p className="mt-1 text-muted-foreground">{formatDuration(durationMin)}</p>
     <div className="mt-8 flex flex-wrap justify-center gap-3">
       <Button className="h-12 px-6" variant="outline" onClick={() => resetForm(true)}><CalendarPlus /> Book another appointment</Button>
-      <Button className="h-12 px-6" onClick={() => resetForm()}><Check /> Done</Button>
+      <Button className="h-12 px-6" onClick={() => setBooked(null)}><Check /> Done</Button>
     </div>
   </main>;
 
@@ -183,6 +191,7 @@ function BookPage() {
         <p className="text-xs font-medium uppercase text-muted-foreground">Appointment</p>
         <h1 className="mt-1 font-serif text-3xl">{edit ? "Reschedule appointment" : "New appointment"}</h1>
       </div>
+      {isPublic && <Button variant="outline" className="h-11" onClick={() => setFinding(true)}><Search /> Find my appointments</Button>}
       {existing && <Button variant="outline" className="h-11" onClick={cancelReschedule}><X /> Cancel reschedule</Button>}
     </div>
     <ol className="mt-6 grid grid-cols-4 gap-1">{STEPS.map((label, index) => <li key={label} className="min-w-0 text-center"><span className={`mx-auto flex h-8 w-8 items-center justify-center rounded-full text-sm ${index <= step ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}>{index < step ? <Check /> : index + 1}</span><span className="mt-1 block truncate text-xs text-muted-foreground">{isPublic && label === "Clients" ? "Your details" : label}</span></li>)}</ol>
