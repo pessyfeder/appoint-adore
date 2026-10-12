@@ -235,7 +235,7 @@ function LockScreen({ status }: { status: Status }) {
     <div className="mt-5 border border-dashed p-4">
       <p className="text-sm font-medium">Erase and start over?</p>
       <p className="mt-1 text-sm text-muted-foreground">
-        This erases every appointment, client and payment stored on this tablet, then lets you choose a new password. If you have a backup file, you can bring everything back afterwards from Admin → Backup.
+        This erases every appointment, client and payment stored on this tablet, then lets you choose a new password. An automatic copy stays on this tablet: after you erase, the password screen offers to restore it. A backup file can also be restored from Admin → Backup.
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
         {erasing ? (
