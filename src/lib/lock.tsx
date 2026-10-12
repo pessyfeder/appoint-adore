@@ -4,6 +4,8 @@ import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RequiredMark } from "@/components/RequiredMark";
+import { applyBackup } from "./backup";
+import { autoBackupAvailable, deviceSnapshots, listSnapshots, snapshotNow, type SnapshotInfo } from "./auto-backup";
 import { emptySecurityAnswers, SecurityQuestionsFields } from "@/components/SecurityQuestionsFields";
 import {
   createLockRecord,
@@ -126,6 +128,13 @@ function LockScreen({ status }: { status: Status }) {
   const [mode, setMode] = useState<"unlock" | "recover" | "wipe">("unlock");
   const [wrongAnswers, setWrongAnswers] = useState(0);
   const [waitUntil, setWaitUntil] = useState(0);
+  const [erasing, setErasing] = useState(false);
+  const [latestCopy, setLatestCopy] = useState<SnapshotInfo | null>(null);
+  // After an erase, the automatic copy kept on this tablet can bring everything back (including the old password).
+  useEffect(() => {
+    if (status !== "setup" || !autoBackupAvailable()) return;
+    void listSnapshots(deviceSnapshots).then((list) => setLatestCopy(list[0] ?? null)).catch(() => {});
+  }, [status]);
   const recovery = status === "locked" ? readLockRecord()?.recovery : undefined;
 
   function switchMode(next: typeof mode) {
@@ -229,18 +238,31 @@ function LockScreen({ status }: { status: Status }) {
         This erases every appointment, client and payment stored on this tablet, then lets you choose a new password. If you have a backup file, you can bring everything back afterwards from Admin → Backup.
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
+        {erasing ? (
+          <p className="w-full text-sm font-semibold text-destructive">
+            Are you sure? Every appointment, client and payment on this tablet will be erased. An automatic copy is kept on this tablet and can be restored afterwards, but only from the password screen that follows.
+          </p>
+        ) : null}
         <Button
           className="h-11"
           variant="destructive"
           type="button"
-          onClick={() => {
+          disabled={busy}
+          onClick={async () => {
+            if (!erasing) {
+              setErasing(true);
+              return;
+            }
+            setBusy(true);
+            // Make sure the latest records are in the automatic copy before anything is erased.
+            await snapshotNow();
             wipeStudioData();
             window.location.reload();
           }}
         >
-          Erase and reset
+          {erasing ? "Yes, erase everything" : "Erase and reset"}
         </Button>
-        <Button className="h-11" variant="ghost" type="button" onClick={() => switchMode("unlock")}>
+        <Button className="h-11" variant="ghost" type="button" onClick={() => { setErasing(false); switchMode("unlock"); }}>
           Keep trying
         </Button>
       </div>
@@ -263,6 +285,25 @@ function LockScreen({ status }: { status: Status }) {
             <p className="mt-2 text-sm text-muted-foreground">
               The calendar, clients, payments and balances on this tablet stay behind this password.
             </p>
+            {latestCopy && (
+              <div className="mt-4 border border-dashed p-4">
+                <p className="text-sm font-medium">Automatic copy found on this tablet</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Saved {new Date(latestCopy.summary.exportedAt).toLocaleString("en-US")} · {latestCopy.summary.clients} clients · {latestCopy.summary.appointments} appointments · {latestCopy.summary.payments} payments. Restoring brings back the records and the password that was in use then.
+                </p>
+                <Button
+                  className="mt-3 h-11"
+                  variant="outline"
+                  type="button"
+                  onClick={() => {
+                    applyBackup(window.localStorage, latestCopy.backup);
+                    window.location.reload();
+                  }}
+                >
+                  Restore the automatic copy
+                </Button>
+              </div>
+            )}
             {newPasswordFields}
             <h2 className="mt-6 font-serif text-lg">Security questions</h2>
             <p className="mb-3 mt-1 text-sm text-muted-foreground">If you forget your password, answering these lets you choose a new one without losing anything.</p>

@@ -4,6 +4,7 @@ import { Download, FileUp, ShieldAlert } from "lucide-react";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { SecurityQuestionsSection } from "@/components/SecurityQuestionsSection";
 import { Button } from "@/components/ui/button";
+import { autoBackupAvailable, DAYS_KEPT, deviceSnapshots, listSnapshots, type SnapshotInfo } from "@/lib/auto-backup";
 import { applyBackup, backupFileName, createBackup, markBackedUp, parseBackup, readLastBackup, type Backup, type BackupSummary } from "@/lib/backup";
 
 export const Route = createFileRoute("/backup")({
@@ -38,7 +39,12 @@ function BackupPage() {
   const [picked, setPicked] = useState<{ name: string; backup: Backup; summary: BackupSummary } | null>(null);
   const [error, setError] = useState("");
 
+  const [copies, setCopies] = useState<SnapshotInfo[]>([]);
+
   useEffect(() => setLastBackup(readLastBackup(window.localStorage)), []);
+  useEffect(() => {
+    if (autoBackupAvailable()) void listSnapshots(deviceSnapshots).then(setCopies).catch(() => {});
+  }, []);
 
   function saveBackup() {
     const backup = createBackup(window.localStorage);
@@ -104,6 +110,15 @@ function BackupPage() {
         </div>
       </div>}
     </section>
+
+    {copies.length > 0 && <section className="mt-6 rounded-xl border bg-card p-5">
+      <h2 className="font-serif text-xl">Automatic copies</h2>
+      <p className="mt-1 text-sm text-muted-foreground">The app saves a copy on this tablet a few seconds after every change, plus the last state of each of the past {DAYS_KEPT} days. They survive "Erase and reset", but not a broken tablet or cleared browser data, so still download a backup file now and then.</p>
+      <ul className="mt-3 divide-y rounded-lg border">{copies.map((copy) => <li key={copy.key} className="flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
+        <span>{when(copy.summary.exportedAt)} <span className="text-muted-foreground">· {plural(copy.summary.clients, "client")} · {plural(copy.summary.appointments, "appointment")} · {plural(copy.summary.payments, "payment")}</span></span>
+        <Button className="h-10" variant="outline" onClick={() => { setError(""); setPicked({ name: "Automatic copy", backup: copy.backup, summary: copy.summary }); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Restore…</Button>
+      </li>)}</ul>
+    </section>}
 
     <SecurityQuestionsSection />
     {dialog}

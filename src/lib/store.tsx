@@ -4,6 +4,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { noShowCharge, RATE_PER_MINUTE } from "./scheduling";
 import { saveToDevice } from "./save-warning";
+import { queueSnapshot } from "./auto-backup";
 import { clientInSession, clientPaused, emptyData, formatPhone, movePaidAt, pausedMsSoFar, workedMinutes, type Appointment, type BlockedTime, type Adjustment, type Client, type Payment } from "./data";
 
 const STORAGE_KEY = "lumiere-scheduler-v2";
@@ -122,7 +123,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!ready) return;
     const text = JSON.stringify(state);
     lastSaved.current = text;
-    saveToDevice(STORAGE_KEY, text);
+    if (saveToDevice(STORAGE_KEY, text)) queueSnapshot();
   }, [ready, state]);
 
   // Another tab saved newer records: show them here instead of overwriting them on our next save.
