@@ -64,6 +64,9 @@ function SchedulePage() {
     return () => { window.clearTimeout(scroll); window.clearTimeout(clear); };
   }, [highlightId]); // eslint-disable-line react-hooks/exhaustive-deps
   // The soonest day with room for a minimum-length (15 minute) appointment, and a brief flash on it after jumping there.
+  // Re-check every minute so "Next open" never points at a time that has already passed.
+  const [minute, setMinute] = useState(0);
+  useEffect(() => { const timer = window.setInterval(() => setMinute((value) => value + 1), 60000); return () => window.clearInterval(timer); }, []);
   const next = useMemo(() => {
     for (let offset = 0; offset < 180; offset++) {
       const day = new Date(); day.setHours(12, 0, 0, 0); day.setDate(day.getDate() + offset);
@@ -72,7 +75,7 @@ function SchedulePage() {
       if (times[0]) return { key, time: times[0] };
     }
     return null;
-  }, [appointments, blockedTimes, availability, todayKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [appointments, blockedTimes, availability, todayKey, minute]); // eslint-disable-line react-hooks/exhaustive-deps
   const [flashKey, setFlashKey] = useState<string | null>(null);
   useEffect(() => {
     if (!flashKey) return;

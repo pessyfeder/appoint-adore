@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useToday } from "@/hooks/use-today";
 import { Download, FileText, Pencil, ReceiptText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -6,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { ReportDetailDialog } from "@/components/ReportDetailDialog";
 import { EditPaymentDialog } from "@/components/EditPaymentDialog";
 import { buildReport, paymentsCsv, type LedgerRow } from "@/lib/billing";
-import { fromDateKey, paymentDateKey, toDateKey } from "@/lib/data";
+import { fromDateKey, paymentDateKey } from "@/lib/data";
 import { clientBalance } from "@/lib/scheduling";
 import { useStore } from "@/lib/store";
 
@@ -18,10 +19,15 @@ export function BillingPanel() {
 
 function BillingContent() {
   const store = useStore();
-  const today = toDateKey(new Date());
-  const monthStart = today.slice(0, 8) + "01";
-  const [from, setFrom] = useState(monthStart);
+  const today = useToday();
+  const [from, setFrom] = useState(today.slice(0, 8) + "01");
   const [to, setTo] = useState(today);
+  // Left open past midnight, a report range that still ended on yesterday moves on to the new day.
+  const [shownToday, setShownToday] = useState(today);
+  if (shownToday !== today) {
+    setShownToday(today);
+    if (to === shownToday) setTo(today);
+  }
   const [reportOpen, setReportOpen] = useState(false);
   const [detail, setDetail] = useState<LedgerRow | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);

@@ -83,7 +83,7 @@ function BookPage() {
     setTime(existing.time);
     setClientIds(existing.clients.map((item) => item.clientId));
     setNotes(existing.notes);
-  }, [seeded]);
+  }, [seeded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /** Leave the reschedule without saving: the appointment keeps its original time. Asks first only if something was changed. */
   async function cancelReschedule() {
