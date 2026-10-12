@@ -55,7 +55,8 @@ export function buildReport(from: string, to: string, appointments: Appointment[
 }
 
 export function paymentsCsv(from: string, to: string, payments: Payment[], clients: Client[]) {
-  const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
+  // A leading = + - @ (or tab/CR) would run as a formula when opened in a spreadsheet, so those cells get a leading apostrophe.
+  const esc = (v: string) => `"${(/^[=+\-@\t\r]/.test(v) ? `'${v}` : v).replace(/"/g, '""')}"`;
   const lines = ["Date,Client,Amount,Method,Notes"];
   for (const p of [...payments].sort((a, b) => a.paidAt.localeCompare(b.paidAt))) {
     const date = paymentDateKey(p.paidAt);

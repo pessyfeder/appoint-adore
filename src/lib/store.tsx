@@ -1,5 +1,5 @@
 import type React from "react";
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { noShowCharge, RATE_PER_MINUTE } from "./scheduling";
@@ -115,9 +115,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setReady(true);
   }, []);
 
+  // What this tab last wrote, so a change made by another tab (the installed app plus a browser tab) can be told apart from our own.
+  const lastSaved = useRef<string | null>(null);
+
   useEffect(() => {
-    if (ready) saveToDevice(STORAGE_KEY, JSON.stringify(state));
+    if (!ready) return;
+    const text = JSON.stringify(state);
+    lastSaved.current = text;
+    saveToDevice(STORAGE_KEY, text);
   }, [ready, state]);
+
+  // Another tab saved newer records: show them here instead of overwriting them on our next save.
+  useEffect(() => {
+    function onStorage(event: StorageEvent) {
+      if (event.key !== STORAGE_KEY || !event.newValue || event.newValue === lastSaved.current) return;
+      try { setState(removeDemoRecords(migrateLegacyTimes({ ...emptyData(), ...(JSON.parse(event.newValue) as Partial<StoreState>) }))); } catch { /* unreadable write: our next save replaces it */ }
+    }
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 
   const value = useMemo<Store>(() => ({
     ...state,

@@ -18,6 +18,9 @@ import {
   type RecoveryRecord,
 } from "./privacy";
 
+/** Time with no taps or keys before Admin locks itself. */
+const IDLE_LOCK_MS = 10 * 60 * 1000;
+
 type Status = "checking" | "setup" | "locked" | "unlocked";
 
 type Lock = {
@@ -48,6 +51,17 @@ export function LockProvider({ children }: { children: ReactNode }) {
     // Admin always starts locked when the app opens; the password is asked again every time.
     setStatus(readLockRecord() ? "locked" : "setup");
   }, []);
+
+  // Admin locks itself after a stretch with no taps or keys, so records aren't left open on an unattended tablet.
+  useEffect(() => {
+    if (status !== "unlocked") return;
+    const lockNow = () => setStatus("locked");
+    let timer = window.setTimeout(lockNow, IDLE_LOCK_MS);
+    const reset = () => { window.clearTimeout(timer); timer = window.setTimeout(lockNow, IDLE_LOCK_MS); };
+    const events = ["pointerdown", "keydown", "touchstart", "scroll"] as const;
+    events.forEach((name) => window.addEventListener(name, reset, { passive: true, capture: true }));
+    return () => { window.clearTimeout(timer); events.forEach((name) => window.removeEventListener(name, reset, { capture: true })); };
+  }, [status]);
 
   const value = useMemo<Lock>(
     () => ({

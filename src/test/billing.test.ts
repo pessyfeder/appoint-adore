@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildReport } from "../lib/billing";
+import { buildReport, paymentsCsv } from "../lib/billing";
 import type { Adjustment, Appointment, Payment } from "../lib/data";
 import { clientBalance } from "../lib/scheduling";
 
@@ -41,5 +41,14 @@ describe("payment report", () => {
   it("only counts sessions marked completed (or no-shows), never ones still scheduled", () => {
     const waiting: Appointment = { ...visit("a2", "2030-01-08", 0), clients: [{ clientId: "c1", status: "scheduled", charge: 0 }] };
     expect(buildReport("2030-01-01", "2030-01-31", [visit("a1", "2030-01-07", 75), waiting], [], []).owed).toBe(75);
+  });
+});
+
+describe("payments CSV", () => {
+  it("defuses spreadsheet formulas in names and notes", () => {
+    const clients = [{ id: "c", name: "=HYPERLINK(\"x\")", phone: "", createdAt: "", archived: false }];
+    const csv = paymentsCsv("2020-01-01", "2030-01-01", [{ id: "p", clientId: "c", amount: 5, method: "cash", paidAt: "2025-01-01", notes: "+1 ok" }], clients);
+    expect(csv).toContain('"\'=HYPERLINK(""x"")"');
+    expect(csv).toContain('"\'+1 ok"');
   });
 });
