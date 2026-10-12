@@ -82,6 +82,7 @@ export function appointmentsOutsideHours(appointments: Appointment[], hoursFor: 
 /** Blocked time may not sit on top of a booked appointment; returns the reason it can't be saved. */
 export function blockedTimeIssue(block: Omit<BlockedTime, "id">, appointments: Appointment[], now: Date = new Date()): string | null {
   if (!block.reason.trim()) return "Please add a short reason.";
+  if (!/^\d{2}:\d{2}$/.test(block.startTime) || !/^\d{2}:\d{2}$/.test(block.endTime)) return "Enter both a start and an end time.";
   if (block.endTime <= block.startTime) return "The end time must be after the start time.";
   if (appointmentStart({ date: block.date, time: block.endTime }) <= now) return "That time has already passed. Choose a later date or time.";
   const start = timeToMinutes(block.startTime);

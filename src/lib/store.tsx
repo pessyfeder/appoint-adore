@@ -1,6 +1,7 @@
 import type React from "react";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { z } from "zod";
+import { toast } from "sonner";
 import { noShowCharge, RATE_PER_MINUTE } from "./scheduling";
 import { saveToDevice } from "./save-warning";
 import { clientInSession, clientPaused, emptyData, formatPhone, movePaidAt, pausedMsSoFar, workedMinutes, type Appointment, type BlockedTime, type Adjustment, type Client, type Payment } from "./data";
@@ -104,7 +105,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const saved = window.localStorage.getItem(STORAGE_KEY);
     if (saved) {
-      try { setState(removeDemoRecords(migrateLegacyTimes({ ...emptyData(), ...(JSON.parse(saved) as Partial<StoreState>) }))); } catch { window.localStorage.removeItem(STORAGE_KEY); }
+      try { setState(removeDemoRecords(migrateLegacyTimes({ ...emptyData(), ...(JSON.parse(saved) as Partial<StoreState>) }))); } catch {
+        // Never delete records that can't be read: keep the unreadable copy aside (and in a backup it stays recoverable) and say so.
+        try { window.localStorage.setItem(`${STORAGE_KEY}-unreadable-${Date.now()}`, saved); } catch { /* storage full: leave the original in place */ }
+        window.localStorage.removeItem(STORAGE_KEY);
+        toast.error("Your saved records couldn't be read", { id: "records-unreadable", duration: Infinity, description: "The app is starting empty. The unreadable copy was kept on this tablet; get help before adding new records, or restore a backup from Admin → Backup." });
+      }
     }
     setReady(true);
   }, []);

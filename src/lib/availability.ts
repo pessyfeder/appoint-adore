@@ -22,7 +22,8 @@ export const DEFAULT_WEEKLY: Record<number, BusinessBlock[]> = {
   6: [],
 };
 
-const time = z.string().regex(/^\d{2}:\d{2}$/);
+const TIME_PATTERN = /^\d{2}:\d{2}$/;
+const time = z.string().regex(TIME_PATTERN);
 const blocksSchema = z.array(z.object({ start: time, end: time }));
 const savedSchema = z.object({ weekly: z.record(blocksSchema), overrides: z.record(blocksSchema) });
 
@@ -72,6 +73,7 @@ export function resetAvailabilityForTests() {
 
 /** Returns an error when blocks overlap or end before they start. */
 export function blocksIssue(blocks: BusinessBlock[]): string | null {
+  if (blocks.some((b) => !TIME_PATTERN.test(b.start) || !TIME_PATTERN.test(b.end))) return "Enter both a start and an end time for every range.";
   const sorted = [...blocks].sort((a, b) => a.start.localeCompare(b.start));
   for (let i = 0; i < sorted.length; i++) {
     if (sorted[i]!.end <= sorted[i]!.start) return "Each end time must be after its start time.";

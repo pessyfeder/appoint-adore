@@ -194,3 +194,13 @@ describe("back-to-back start times off the 15-minute grid", () => {
     }
   });
 });
+
+describe("empty time fields", () => {
+  it("are rejected for working hours and blocked time", async () => {
+    const { blocksIssue } = await import("../lib/availability");
+    expect(blocksIssue([{ start: "", end: "13:00" }])).toMatch(/start and an end/);
+    expect(blocksIssue([{ start: "10:00", end: "" }])).toMatch(/start and an end/);
+    expect(blocksIssue([{ start: "10:00", end: "13:00" }])).toBeNull();
+    expect(blockedTimeIssue({ date: "2030-01-07", startTime: "", endTime: "11:00", reason: "x" }, [])).toMatch(/start and an end/);
+  });
+});
