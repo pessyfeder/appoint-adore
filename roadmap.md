@@ -95,7 +95,7 @@
 - [x] Book Appointment, Your details: separate First name and Last name fields (both required, saved as one client name).
 - [x] Required fields across the app show a red asterisk after their label (screen readers hear "required"); unlabeled payment fields got visible labels.
 - [x] Book Appointment confirmation: "Book another appointment" (keeps the client's name and phone) and "Done" (clears the form for the next person).
-- [x] Password recovery by security questions: setup asks for two questions and answers (stored hashed, not case-sensitive); "Forgot password?" answers them to choose a new password without erasing anything (short wait after 5 wrong tries). Admin → Backup can add or change the questions after entering the current password. Erasing the tablet remains the last resort.
+- [x] Forgot password: an optional hint set at setup is shown; otherwise the only way back in is erasing the tablet (an automatic copy can be restored afterwards).
 - [x] Removed the Exit Admin button; tapping Book Appointment (or the logo) is how Admin is locked.
 - [x] Appointment status shown by color only (card edge or dot; screen readers and hover still give the name), with a color key on the Dashboard and Schedule. Opening an appointment shows the full status name next to its color.
 - [x] Edit Hours page shows "Change hours for one date" and "Block out time"; the weekly (across-the-board) hours open in a popup from a "Change weekly hours" button.

@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Download, FileUp, ShieldAlert } from "lucide-react";
 import { useConfirm } from "@/components/ConfirmDialog";
-import { SecurityQuestionsSection } from "@/components/SecurityQuestionsSection";
 import { Button } from "@/components/ui/button";
 import { autoBackupAvailable, DAYS_KEPT, deviceSnapshots, listSnapshots, type SnapshotInfo } from "@/lib/auto-backup";
 import { applyBackup, backupFileName, createBackup, markBackedUp, parseBackup, readLastBackup, type Backup, type BackupSummary } from "@/lib/backup";
@@ -120,7 +119,6 @@ function BackupPage() {
       </li>)}</ul>
     </section>}
 
-    <SecurityQuestionsSection />
     {dialog}
   </main>;
 }
