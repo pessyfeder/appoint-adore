@@ -16,9 +16,9 @@ const PHONE_PATTERN = /^\(\d{3}\) \d{3}-\d{4}$/;
 
 export const Route = createFileRoute("/clients")({
   head: () => ({ meta: [
-    { title: "Clients & Billing | Lumière Electrolysis" },
+    { title: "Clients & Billing | Electrolysis Scheduler" },
     { name: "description", content: "Type a name or phone number to pull up a client, review their balance, and record payments." },
-    { property: "og:title", content: "Clients & Billing | Lumière Electrolysis" },
+    { property: "og:title", content: "Clients & Billing | Electrolysis Scheduler" },
     { property: "og:description", content: "Type a name or phone number to pull up a client, review their balance, and record payments." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },

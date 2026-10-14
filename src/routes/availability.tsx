@@ -16,9 +16,9 @@ import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/availability")({
   head: () => ({ meta: [
-    { title: "Hours & Availability | Lumière Electrolysis" },
+    { title: "Hours & Availability | Electrolysis Scheduler" },
     { name: "description", content: "Set weekly working hours, change hours for a specific date, and block out time." },
-    { property: "og:title", content: "Hours & Availability | Lumière Electrolysis" },
+    { property: "og:title", content: "Hours & Availability | Electrolysis Scheduler" },
     { property: "og:description", content: "Set weekly working hours, change hours for a specific date, and block out time." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },

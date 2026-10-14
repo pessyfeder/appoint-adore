@@ -17,9 +17,9 @@ import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/schedule")({
   head: () => ({ meta: [
-    { title: "Schedule | Lumière Electrolysis" },
+    { title: "Schedule | Electrolysis Scheduler" },
     { name: "description", content: "Review weekly and monthly electrolysis appointments." },
-    { property: "og:title", content: "Schedule | Lumière Electrolysis" },
+    { property: "og:title", content: "Schedule | Electrolysis Scheduler" },
     { property: "og:description", content: "Review weekly and monthly electrolysis appointments." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },

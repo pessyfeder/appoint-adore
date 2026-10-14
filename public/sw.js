@@ -1,5 +1,5 @@
 /*
- * Offline support for Lumière Electrolysis.
+ * Offline support for Electrolysis Scheduler.
  *
  * Every page and the code it needs is saved on the device, so the app opens and works without internet.
  * - Pages: network first (always fresh when online), saved copy when offline.

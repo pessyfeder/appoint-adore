@@ -13,10 +13,10 @@ import { BACKUP_REMINDER_DAYS, daysSinceBackup, readLastBackup } from "@/lib/bac
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [
-    { title: "Today | Lumière Electrolysis" },
-    { name: "description", content: "Today's appointments and studio totals for Lumière Electrolysis." },
-    { property: "og:title", content: "Today | Lumière Electrolysis" },
-    { property: "og:description", content: "Today's appointments and studio totals for Lumière Electrolysis." },
+    { title: "Today | Electrolysis Scheduler" },
+    { name: "description", content: "Today's appointments and studio totals." },
+    { property: "og:title", content: "Today | Electrolysis Scheduler" },
+    { property: "og:description", content: "Today's appointments and studio totals." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
   ] }),

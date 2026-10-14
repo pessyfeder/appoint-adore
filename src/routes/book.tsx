@@ -19,9 +19,9 @@ import { useStore } from "@/lib/store";
 export const Route = createFileRoute("/book")({
   validateSearch: (search: Record<string, unknown>) => ({ edit: typeof search["edit"] === "string" ? search["edit"] : undefined }),
   head: () => ({ meta: [
-    { title: "New Appointment | Lumière Electrolysis" },
+    { title: "New Appointment | Electrolysis Scheduler" },
     { name: "description", content: "Schedule an electrolysis appointment safely within business hours." },
-    { property: "og:title", content: "New Appointment | Lumière Electrolysis" },
+    { property: "og:title", content: "New Appointment | Electrolysis Scheduler" },
     { property: "og:description", content: "Schedule an electrolysis appointment safely within business hours." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },

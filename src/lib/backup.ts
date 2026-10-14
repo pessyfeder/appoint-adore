@@ -61,12 +61,12 @@ export function backupFileName(backup: Backup) {
 /** Reads a backup file's text; returns a plain-language error when it isn't a usable backup. */
 export function parseBackup(text: string): { backup: Backup; summary: BackupSummary } | { error: string } {
   let json: unknown;
-  try { json = JSON.parse(text); } catch { return { error: "This file isn't a Lumière backup (it couldn't be read)." }; }
+  try { json = JSON.parse(text); } catch { return { error: "This file isn't an Electrolysis Scheduler backup (it couldn't be read)." }; }
   const parsed = backupSchema.safeParse(json);
   if (!parsed.success) {
     const format = (json as { format?: unknown } | null)?.format;
     if (format === FORMAT) return { error: "This backup is damaged or was made by a newer version of the app." };
-    return { error: "This file isn't a Lumière backup." };
+    return { error: "This file isn't an Electrolysis Scheduler backup." };
   }
   const { data, exportedAt } = parsed.data;
   return {

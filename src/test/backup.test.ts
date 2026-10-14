@@ -46,8 +46,8 @@ describe("backup", () => {
   });
 
   it("rejects files that aren't backups", () => {
-    expect(parseBackup("not json")).toEqual({ error: expect.stringMatching(/isn't a Lumière backup/) });
-    expect(parseBackup(JSON.stringify({ hello: 1 }))).toEqual({ error: expect.stringMatching(/isn't a Lumière backup/) });
+    expect(parseBackup("not json")).toEqual({ error: expect.stringMatching(/isn't an Electrolysis Scheduler backup/) });
+    expect(parseBackup(JSON.stringify({ hello: 1 }))).toEqual({ error: expect.stringMatching(/isn't an Electrolysis Scheduler backup/) });
     const damaged = { ...createBackup(localStorage), data: { records: { clients: "oops" }, hours: null, lock: null } };
     expect(parseBackup(JSON.stringify(damaged))).toEqual({ error: expect.stringMatching(/damaged/) });
   });

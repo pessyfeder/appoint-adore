@@ -8,9 +8,9 @@ import { applyBackup, backupFileName, createBackup, markBackedUp, parseBackup, r
 
 export const Route = createFileRoute("/backup")({
   head: () => ({ meta: [
-    { title: "Backup | Lumière Electrolysis" },
+    { title: "Backup | Electrolysis Scheduler" },
     { name: "description", content: "Save a backup file of every appointment, client and payment, or restore one." },
-    { property: "og:title", content: "Backup | Lumière Electrolysis" },
+    { property: "og:title", content: "Backup | Electrolysis Scheduler" },
     { property: "og:description", content: "Save a backup file of every appointment, client and payment, or restore one." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },

@@ -172,7 +172,7 @@ function LockScreen({ status }: { status: Status }) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <p className="font-display text-lg font-semibold tracking-tight text-muted-foreground">
-          Lumière Electrolysis
+          Electrolysis Scheduler
         </p>
       </div>
     );
@@ -268,7 +268,7 @@ function LockScreen({ status }: { status: Status }) {
             <Sparkles className="h-4 w-4" />
           </span>
           <span className="font-display text-lg font-semibold tracking-tight">
-            Lumière Electrolysis
+            Electrolysis Scheduler
           </span>
         </div>
 

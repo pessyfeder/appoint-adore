@@ -28,7 +28,7 @@ export function Nav() {
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <Sparkles className="h-4 w-4" />
           </span>
-          <span className="font-display text-xl font-semibold tracking-tight">Lumière Electrolysis</span>
+          <span className="font-display text-xl font-semibold tracking-tight">Electrolysis Scheduler</span>
         </Link>
         <nav className="flex items-center gap-1">
           <Link to="/book" search={{ edit: undefined }} className={`${tab} ${onBook ? activeTab : ""}`} onClick={toPublicBook}>

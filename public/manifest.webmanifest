@@ -1,7 +1,7 @@
 {
-  "name": "Lumière Electrolysis",
-  "short_name": "Lumière",
-  "description": "Appointment scheduling for Lumière Electrolysis studio.",
+  "name": "Electrolysis Scheduler",
+  "short_name": "Scheduler",
+  "description": "Appointment scheduling for an electrolysis studio.",
   "start_url": "/book",
   "scope": "/",
   "display": "standalone",
