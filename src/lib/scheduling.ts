@@ -38,11 +38,11 @@ export function pastStartIssue(date: string, time: string, now: Date = new Date(
 }
 
 /**
- * Start times that fit: every 15 minutes from when the hours open, plus the exact edges off that grid (right when
+ * Start times that fit: every `step` minutes (15 by default) from when the hours open, plus the exact edges off that grid (right when
  * another appointment or blocked time ends, or ending right when the next one starts or the hours close), so
  * back-to-back booking is always offered even after a 25- or 50-minute appointment.
  */
-export function availableTimes(date: string, durationMin: number, appointments: Appointment[], blocks: BlockedTime[], now: Date = new Date()): string[] {
+export function availableTimes(date: string, durationMin: number, appointments: Appointment[], blocks: BlockedTime[], now: Date = new Date(), step = 15): string[] {
   const edges: number[] = [];
   for (const item of appointments) {
     if (item.date === date && item.clients.some((client) => client.status !== "cancelled")) edges.push(timeToMinutes(item.time), timeToMinutes(item.time) + item.durationMin);
@@ -53,7 +53,7 @@ export function availableTimes(date: string, durationMin: number, appointments: 
     const start = timeToMinutes(block.start);
     const end = timeToMinutes(block.end);
     const candidates = new Set<number>();
-    for (let minute = start; minute + durationMin <= end; minute += 15) candidates.add(minute);
+    for (let minute = start; minute + durationMin <= end; minute += step) candidates.add(minute);
     for (const edge of [...edges, end]) candidates.add(edge).add(edge - durationMin);
     for (const minute of [...candidates].sort((a, b) => a - b)) {
       if (minute < start || minute + durationMin > end) continue;

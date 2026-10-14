@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToday } from "@/hooks/use-today";
 import { useAvailability } from "@/lib/availability";
 import { effectiveHours, formatDuration, formatTime, fromDateKey, minutesToTime, timeToMinutes, toDateKey } from "@/lib/data";
@@ -80,6 +81,9 @@ export function AvailabilityPicker({ durationMin, excludeId, date, time, onChang
   // The picked day's times (it may sit in another month than the one shown).
   const dayTimes = useMemo(() => openTimes.get(date) ?? (date >= today ? availableTimes(date, durationMin, others, blockedTimes) : []), [openTimes, date, today, durationMin, others, blockedTimes]);
 
+  // Every 5-minute start that fits on the picked day, for the "Other time" list.
+  const allDayTimes = useMemo(() => (date >= today ? availableTimes(date, durationMin, others, blockedTimes, new Date(), 5) : []), [date, today, durationMin, others, blockedTimes, availability]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const firstMonth = monthStart(today);
   const lastMonth = monthStart(today);
   lastMonth.setMonth(lastMonth.getMonth() + MONTHS_AHEAD);
@@ -131,19 +135,33 @@ export function AvailabilityPicker({ durationMin, excludeId, date, time, onChang
       {dayTimes.length === 0 ? <p className="text-muted-foreground">Tap a day with a dot to see its times.</p> : <>
         <h2 className="font-serif text-2xl">{time ? "Confirm or choose a different time" : "Choose a time"}</h2>
         <p className="mt-1 text-muted-foreground">{longDay(date)}{time ? ` at ${formatTime(time)} — tap Continue to confirm.` : ""}</p>
-        <AllTimes dateKey={date} times={dayTimes} time={time} onPick={(picked) => onChange(date, picked)} />
+        <AllTimes dateKey={date} times={dayTimes} allTimes={allDayTimes} time={time} onPick={(picked) => onChange(date, picked)} />
       </>}
     </div>
   </div>;
 }
 
-/** Every open start time of the day, grouped by block of working hours. */
-function AllTimes({ dateKey, times, time, onPick }: { dateKey: string; times: string[]; time: string | null; onPick: (time: string) => void }) {
-  const groups = effectiveHours(dateKey)
-    .map((block) => ({ block, times: times.filter((value) => timeToMinutes(block.start) <= timeToMinutes(value) && timeToMinutes(value) < timeToMinutes(block.end)) }))
-    .filter((group) => group.times.length > 0);
-  return <div>{groups.map(({ block, times: blockTimes }) => <div key={block.start} className="mt-3">
-    <p className="text-xs uppercase tracking-wide text-muted-foreground">{timeToMinutes(block.start) < 12 * 60 ? "Morning" : "Evening"}</p>
-    <div className="mt-1.5 grid grid-cols-3 gap-2 sm:grid-cols-4">{blockTimes.map((value) => <Button key={value} variant={value === time ? "default" : "outline"} className="h-12" onClick={() => onPick(value)}>{formatTime(value)}</Button>)}</div>
-  </div>)}</div>;
+/** The most times shown as buttons; every other open time is in the "Other time" list. */
+const MAX_SUGGESTED = 6;
+
+/** Up to six open times spread evenly across the day (all of them when there are six or fewer). */
+export function suggestedTimes(times: string[]): string[] {
+  if (times.length <= MAX_SUGGESTED) return times;
+  return Array.from({ length: MAX_SUGGESTED }, (_, index) => times[Math.round((index * (times.length - 1)) / (MAX_SUGGESTED - 1))]!);
+}
+
+/** Open start times of the day: a few evenly spread buttons, plus a list of every 5-minute start. */
+function AllTimes({ dateKey, times, allTimes, time, onPick }: { dateKey: string; times: string[]; allTimes: string[]; time: string | null; onPick: (time: string) => void }) {
+  const shown = suggestedTimes(times);
+  const other = time !== null && !shown.includes(time);
+  return <div>
+    <div className="mt-3 grid grid-cols-3 gap-2">{shown.map((value) => <Button key={value} variant={value === time ? "default" : "outline"} className="h-12" onClick={() => onPick(value)}>{formatTime(value)}</Button>)}</div>
+    <div className="mt-4 flex flex-wrap items-center gap-3">
+      <label className="text-sm text-muted-foreground" htmlFor="other-time">Other time</label>
+      <Select key={dateKey} value={other ? time : ""} onValueChange={onPick}>
+        <SelectTrigger id="other-time" className={`h-12 w-44 ${other ? "border-primary ring-2 ring-primary/30" : ""}`}><SelectValue placeholder="Choose" /></SelectTrigger>
+        <SelectContent>{allTimes.map((value) => <SelectItem className="h-10" key={value} value={value}>{formatTime(value)}</SelectItem>)}</SelectContent>
+      </Select>
+    </div>
+  </div>;
 }
