@@ -1,0 +1,35 @@
+INSTALLING APPOINT-ADORE ON A TABLET
+====================================
+
+This is a web app (PWA). There is no app store download. You install it from
+the tablet's browser, and it then works offline.
+
+Link: https://appoint-adore.lovable.app
+
+BEFORE YOU START
+- Open the link once while the tablet is online, so the offline cache can load.
+
+IPAD (Safari)
+1. Open the link in Safari. Other browsers on iPad cannot install it.
+2. Tap the Share button (the square with an arrow).
+3. Tap "Add to Home Screen", then "Add".
+
+ANDROID TABLET (Chrome)
+1. Open the link in Chrome.
+2. Tap the three-dot menu, then "Install app" (or "Add to Home screen").
+3. Confirm.
+
+WINDOWS TABLET (Edge or Chrome)
+- Click the install icon at the right end of the address bar, or open the
+  browser menu and choose Apps > "Install this site as an app".
+
+AFTER INSTALLING
+- Open the app once from the home-screen icon while online, and click through
+  Book and Admin so the pages are cached. After that it works with no internet.
+- All data is stored on that tablet only. It does not sync with your computer
+  or phone. Use the backup feature in Admin to move data between devices.
+- Clearing the browser's site data deletes the records. Take a backup first
+  if you do that.
+- Offline use depends on the service worker, which only registers in the
+  published version, not in the Lovable editor preview. Install from the live
+  link above.
