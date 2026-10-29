@@ -15,4 +15,4 @@ npm run build    # static site in ./dist
 
 ## Hosting
 
-Upload `dist` to any static host (`404.html` and `_redirects` are generated for deep links). For a sub-path such as GitHub Pages, build with `VITE_BASE=/appoint-adore/ npm run build`; `.github/workflows/pages.yml` does that on pushes to `main`.
+Upload `dist` to any static host (`404.html` and `_redirects` are generated for deep links). For a sub-path such as GitHub Pages, build with `VITE_BASE=/electrolysis-scheduler-web/ npm run build`; `.github/workflows/pages.yml` does that on pushes to `main`.

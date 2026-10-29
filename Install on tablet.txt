@@ -4,7 +4,7 @@ INSTALLING APPOINT-ADORE ON A TABLET
 This is a web app (PWA). There is no app store download. You install it from
 the tablet's browser, and it then works offline.
 
-Link: https://pessyfeder.github.io/appoint-adore/
+Link: https://pessyfeder.github.io/electrolysis-scheduler-web/
 
 BEFORE YOU START
 - Open the link once while the tablet is online, so the offline cache can load.

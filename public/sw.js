@@ -13,7 +13,7 @@ const VERSION = "v1";
 const PAGES = `lumiere-pages-${VERSION}`;
 const ASSETS = `lumiere-assets-${VERSION}`;
 const FONTS = `lumiere-fonts-${VERSION}`;
-// Where the app is hosted ("/" or a sub-path such as "/appoint-adore/"), taken from this worker's own scope.
+// Where the app is hosted ("/" or a sub-path such as "/electrolysis-scheduler-web/"), taken from this worker's own scope.
 const BASE = new URL(self.registration.scope).pathname;
 const SHELL = BASE;
 const STATIC = ["manifest.webmanifest", "favicon.ico", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/icon.svg"].map((file) => BASE + file);
