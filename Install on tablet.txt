@@ -32,6 +32,3 @@ AFTER INSTALLING
   if you do that.
 - Offline use depends on the service worker, which only registers on the
   published site. Install from the live link above.
-- Records belong to one web address. If you used the old appoint-adore.lovable.app
-  link, download a backup there (Admin > Backup) and restore it in the new app
-  before you stop using the old one.
