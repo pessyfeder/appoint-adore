@@ -4,7 +4,7 @@ INSTALLING APPOINT-ADORE ON A TABLET
 This is a web app (PWA). There is no app store download. You install it from
 the tablet's browser, and it then works offline.
 
-Link: https://appoint-adore.lovable.app
+Link: https://pessyfeder.github.io/appoint-adore/
 
 BEFORE YOU START
 - Open the link once while the tablet is online, so the offline cache can load.
@@ -30,6 +30,8 @@ AFTER INSTALLING
   or phone. Use the backup feature in Admin to move data between devices.
 - Clearing the browser's site data deletes the records. Take a backup first
   if you do that.
-- Offline use depends on the service worker, which only registers in the
-  published version, not in the Lovable editor preview. Install from the live
-  link above.
+- Offline use depends on the service worker, which only registers on the
+  published site. Install from the live link above.
+- Records belong to one web address. If you used the old appoint-adore.lovable.app
+  link, download a backup there (Admin > Backup) and restore it in the new app
+  before you stop using the old one.
