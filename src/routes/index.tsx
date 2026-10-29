@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { appStorage } from "@/lib/app-mode";
 import { useEffect, useState } from "react";
 import { AlertTriangle, CalendarPlus, Clock3, HardDriveDownload, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -44,7 +45,7 @@ function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; va
 /** Nudges the practitioner to save a backup when there has never been one, or the last is over a week old. */
 function BackupReminder() {
   const [days, setDays] = useState<number | null | undefined>(undefined);
-  useEffect(() => setDays(daysSinceBackup(readLastBackup(window.localStorage))), []);
+  useEffect(() => setDays(daysSinceBackup(readLastBackup(appStorage))), []);
   if (days === undefined || (days !== null && days < BACKUP_REMINDER_DAYS)) return null;
   return <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-status-noshow/40 bg-status-noshow/10 p-4">
     <p className="flex items-center gap-2 text-sm"><HardDriveDownload className="h-5 w-5 shrink-0" />{days === null ? "You haven't backed up your records yet." : `Your last backup was ${days} days ago.`} Your records live only on this tablet.</p>

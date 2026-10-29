@@ -1,4 +1,5 @@
 import type React from "react";
+import { appStorage, STORAGE_EVENT_PREFIX } from "./app-mode";
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -104,12 +105,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [highlightId, setHighlightId] = useState<string | null>(null);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
+    const saved = appStorage.getItem(STORAGE_KEY);
     if (saved) {
       try { setState(removeDemoRecords(migrateLegacyTimes({ ...emptyData(), ...(JSON.parse(saved) as Partial<StoreState>) }))); } catch {
         // Never delete records that can't be read: keep the unreadable copy aside (and in a backup it stays recoverable) and say so.
-        try { window.localStorage.setItem(`${STORAGE_KEY}-unreadable-${Date.now()}`, saved); } catch { /* storage full: leave the original in place */ }
-        window.localStorage.removeItem(STORAGE_KEY);
+        try { appStorage.setItem(`${STORAGE_KEY}-unreadable-${Date.now()}`, saved); } catch { /* storage full: leave the original in place */ }
+        appStorage.removeItem(STORAGE_KEY);
         toast.error("Your saved records couldn't be read", { id: "records-unreadable", duration: Infinity, description: "The app is starting empty. The unreadable copy was kept on this tablet; get help before adding new records, or restore a backup from Admin → Backup." });
       }
     }
@@ -129,7 +130,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // Another tab saved newer records: show them here instead of overwriting them on our next save.
   useEffect(() => {
     function onStorage(event: StorageEvent) {
-      if (event.key !== STORAGE_KEY || !event.newValue || event.newValue === lastSaved.current) return;
+      if (event.key !== STORAGE_EVENT_PREFIX + STORAGE_KEY || !event.newValue || event.newValue === lastSaved.current) return;
       try { setState(removeDemoRecords(migrateLegacyTimes({ ...emptyData(), ...(JSON.parse(event.newValue) as Partial<StoreState>) }))); } catch { /* unreadable write: our next save replaces it */ }
     }
     window.addEventListener("storage", onStorage);

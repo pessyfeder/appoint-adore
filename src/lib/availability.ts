@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { appStorage } from "./app-mode";
 import { z } from "zod";
 import type { BusinessBlock } from "./data";
 import { saveToDevice } from "./save-warning";
@@ -36,7 +37,7 @@ function load() {
   if (loaded || typeof window === "undefined") return;
   loaded = true;
   try {
-    const raw = window.localStorage.getItem(KEY);
+    const raw = appStorage.getItem(KEY);
     if (!raw) return;
     // Saved hours that can't be read fall back to the standard hours (the saved copy is left untouched).
     const parsed = savedSchema.safeParse(JSON.parse(raw));

@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { appStorage } from "./app-mode";
 
 const TOAST_ID = "save-failed";
 
@@ -8,7 +9,7 @@ const TOAST_ID = "save-failed";
  */
 export function saveToDevice(key: string, value: string): boolean {
   try {
-    window.localStorage.setItem(key, value);
+    appStorage.setItem(key, value);
     toast.dismiss(TOAST_ID);
     return true;
   } catch {

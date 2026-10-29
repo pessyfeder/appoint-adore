@@ -1,4 +1,5 @@
 import { createBackup, parseBackup, type Backup, type BackupSummary } from "./backup";
+import { appStorage, AUTO_BACKUP_DB } from "./app-mode";
 
 /**
  * Automatic backups kept on this tablet, outside the app's normal records: after every change a copy is saved to
@@ -51,7 +52,7 @@ export async function listSnapshots(store: SnapshotStore): Promise<SnapshotInfo[
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open("lumiere-auto-backup", 1);
+    const request = indexedDB.open(AUTO_BACKUP_DB, 1);
     request.onupgradeneeded = () => request.result.createObjectStore("snapshots");
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -84,7 +85,7 @@ export const autoBackupAvailable = () => typeof indexedDB !== "undefined";
 export async function snapshotNow(): Promise<void> {
   if (!autoBackupAvailable()) return;
   try {
-    await saveSnapshot(deviceSnapshots, createBackup(window.localStorage));
+    await saveSnapshot(deviceSnapshots, createBackup(appStorage));
     void navigator.storage?.persist?.();
   } catch { /* storage unavailable: nothing to do */ }
 }

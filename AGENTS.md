@@ -1,14 +1,3 @@
-<!-- LOVABLE:BEGIN -->
-> [!IMPORTANT]
-> This project is connected to [Lovable](https://lovable.dev). Avoid rewriting
-> published git history — force pushing, or rebasing/amending/squashing commits
-> that are already pushed — as it rewrites history on Lovable's side and the
-> user will likely lose their project history.
->
-> Commits you push to the connected branch sync back to Lovable and show up in
-> the editor, so keep the branch in a working state.
-<!-- LOVABLE:END -->
-
 ## Project architecture
 
 - Keep this scheduler offline-only: persist operational records in device-local browser storage because the single practitioner must not depend on a network service.
@@ -19,5 +8,11 @@
 - Read working hours only through `effectiveHours` (backed by `src/lib/availability.ts`, device-local) so weekly hours and per-date changes apply to every booking path.
 - Never change appointment status on a timer: no-shows are marked by the practitioner (`canMarkNoShow` / `noShowCharge` in `src/lib/scheduling.ts`), and a fresh install starts with `emptyData()`, never demo records.
 - Any new device-storage key holding studio records must be added to `BACKUP_KEYS` in `src/lib/backup.ts` so backups stay complete.
-- Offline support lives in `public/sw.js` (registered from `__root.tsx`, production only, never inside the editor iframe). When adding a page, add its path to `ROUTES` in `public/sw.js` so it opens offline.
+- Offline support lives in `public/sw.js` (registered from `__root.tsx`, production only). It saves one copy of the single-page shell, so new pages need no change there.
 - Never overwrite a client's balance: corrections are `adjustments` (store) with a reason. Pass `store.adjustments` to `clientBalance` and `buildReport` wherever balances are shown.
+
+## Public demo at /demo
+
+- `/demo/*` runs this same app on sample data for showing people. `src/lib/app-mode.ts` decides this from the URL: in the demo the router basepath is `/demo`, every record read/write goes through `appStorage` (localStorage keys prefixed `demo:`, its own IndexedDB), and the offline worker is not registered.
+- Never read or write `window.localStorage` directly in app code: use `appStorage`, or the demo would see (or wipe) the real records and password. A new storage key still needs adding to `BACKUP_KEYS`.
+- Sample records and the password ("demo") live in `src/lib/demo.ts` and are only ever loaded when `DEMO_MODE` is true. A fresh real install still starts with `emptyData()`.

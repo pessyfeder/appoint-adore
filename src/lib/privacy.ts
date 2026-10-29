@@ -1,4 +1,5 @@
 const LOCK_KEY = "lumiere-lock-v1";
+import { appStorage } from "./app-mode";
 const ITERATIONS = 150_000;
 
 export const MIN_PASSPHRASE = 4;
@@ -76,7 +77,7 @@ export function setupIssue(passphrase: string, confirmation: string): string | n
 export function readLockRecord(): LockRecord | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(LOCK_KEY);
+    const raw = appStorage.getItem(LOCK_KEY);
     if (!raw) return null;
     const record = JSON.parse(raw) as Partial<LockRecord>;
     if (typeof record?.salt !== "string" || typeof record?.hash !== "string") return null;
@@ -92,16 +93,16 @@ export function readLockRecord(): LockRecord | null {
 }
 
 export function writeLockRecord(record: LockRecord) {
-  window.localStorage.setItem(LOCK_KEY, JSON.stringify(record));
+  appStorage.setItem(LOCK_KEY, JSON.stringify(record));
 }
 
 /** Last-resort reset: removes every studio record held on this device. */
 export function wipeStudioData() {
   if (typeof window === "undefined") return;
   const doomed: string[] = [];
-  for (let index = 0; index < window.localStorage.length; index += 1) {
-    const key = window.localStorage.key(index);
+  for (let index = 0; index < appStorage.length; index += 1) {
+    const key = appStorage.key(index);
     if (key?.startsWith("lumiere-")) doomed.push(key);
   }
-  doomed.forEach((key) => window.localStorage.removeItem(key));
+  doomed.forEach((key) => appStorage.removeItem(key));
 }

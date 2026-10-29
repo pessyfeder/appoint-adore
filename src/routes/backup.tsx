@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { appStorage, APP_BASE_URL } from "@/lib/app-mode";
 import { useEffect, useRef, useState } from "react";
 import { Download, FileUp, ShieldAlert } from "lucide-react";
 import { useConfirm } from "@/components/ConfirmDialog";
@@ -40,15 +41,15 @@ function BackupPage() {
 
   const [copies, setCopies] = useState<SnapshotInfo[]>([]);
 
-  useEffect(() => setLastBackup(readLastBackup(window.localStorage)), []);
+  useEffect(() => setLastBackup(readLastBackup(appStorage)), []);
   useEffect(() => {
     if (autoBackupAvailable()) void listSnapshots(deviceSnapshots).then(setCopies).catch(() => {});
   }, []);
 
   function saveBackup() {
-    const backup = createBackup(window.localStorage);
+    const backup = createBackup(appStorage);
     download(backup);
-    markBackedUp(window.localStorage, new Date(backup.exportedAt));
+    markBackedUp(appStorage, new Date(backup.exportedAt));
     setLastBackup(backup.exportedAt);
     setSaved(true);
   }
@@ -73,11 +74,11 @@ function BackupPage() {
       destructive: true,
     });
     if (!ok) return;
-    const current = createBackup(window.localStorage);
+    const current = createBackup(appStorage);
     download(current, backupFileName(current).replace("lumiere-backup-", "lumiere-before-restore-"));
-    applyBackup(window.localStorage, picked.backup);
+    applyBackup(appStorage, picked.backup);
     // Give the safety download a moment to start before the page reloads with the restored records.
-    window.setTimeout(() => window.location.assign("/"), 800);
+    window.setTimeout(() => window.location.assign(APP_BASE_URL), 800);
   }
 
   return <main className="mx-auto max-w-3xl px-4 py-8">
